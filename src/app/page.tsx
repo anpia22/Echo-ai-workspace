@@ -12,6 +12,13 @@ type CanvasAction = {
   nodeType?: string;
   title?: string;
   description?: string;
+  sourceTitle?: string;
+  targetTitle?: string;
+  relationship?: string;
+  position?: {
+    x: number;
+    y: number;
+  };
 };
 
 type Message = {
@@ -385,6 +392,31 @@ export default function Home() {
     setTranscript("");
   };
 
+
+  // --------------------------------------------------
+  // update node position on drag
+  // --------------------------------------------------
+
+  const updateNodePosition = (
+    title: string,
+    position: {
+      x: number;
+      y: number;
+    }
+  ) => {
+    setActions((currentActions) =>
+      currentActions.map((action) =>
+        action.type === "CREATE_NODE" &&
+          action.title === title
+          ? {
+            ...action,
+            position,
+          }
+          : action
+      )
+    );
+  };
+
   // --------------------------------------------------
   // Analyze transcript
   // --------------------------------------------------
@@ -440,6 +472,16 @@ export default function Home() {
 
           body: JSON.stringify({
             transcript: userMessage,
+
+            conversationHistory: [
+              ...messages,
+              newUserMessage,
+            ]
+              .slice(-12)
+              .map((message) => ({
+                role: message.role,
+                content: message.content,
+              })),
 
             currentCanvas: actions
               .filter(
@@ -616,6 +658,9 @@ export default function Home() {
 
             <EchoCanvas
               actions={actions}
+              onNodePositionChange={
+                updateNodePosition
+              }
             />
 
           </section>
