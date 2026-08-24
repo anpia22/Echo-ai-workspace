@@ -20,15 +20,24 @@ import "@xyflow/react/dist/style.css";
 
 type CanvasAction = {
   type: string;
+
   nodeType?: string;
   title?: string;
   description?: string;
+
   sourceTitle?: string;
   targetTitle?: string;
   relationship?: string;
+
   position?: {
     x: number;
     y: number;
+  };
+
+  updates?: {
+    title?: string;
+    description?: string;
+    nodeType?: string;
   };
 };
 
@@ -90,6 +99,239 @@ const getNodeStyle = (nodeType?: string) => {
   }
 };
 
+const NODE_WIDTH = 250;
+const NODE_VERTICAL_GAP = 100;
+const NODE_HORIZONTAL_GAP = 100;
+
+function getSmartNodePosition(
+  action: CanvasAction,
+  index: number,
+  allActions: CanvasAction[]
+) {
+  /*
+   * Never overwrite a manually saved position.
+   */
+  if (action.position) {
+    return action.position;
+  }
+
+  /*
+   * Find connected edges.
+   */
+
+  const incomingEdges = allActions.filter(
+    (candidate) =>
+      candidate.type === "CREATE_EDGE" &&
+      candidate.targetTitle === action.title
+  );
+
+  const outgoingEdges = allActions.filter(
+    (candidate) =>
+      candidate.type === "CREATE_EDGE" &&
+      candidate.sourceTitle === action.title
+  );
+
+  const findNode = (title?: string) =>
+    allActions.find(
+      (candidate) =>
+        candidate.type === "CREATE_NODE" &&
+        candidate.title === title
+    );
+
+  /*
+   * --------------------------------------------------
+   * CASE 1: SOLUTION
+   *
+   * Solutions should normally appear BELOW
+   * the problem they solve.
+   * --------------------------------------------------
+   */
+
+  if (action.nodeType === "solution") {
+    const solvesEdge =
+      outgoingEdges.find(
+        (edge) =>
+          edge.relationship === "solves"
+      );
+
+    if (solvesEdge) {
+      const targetNode =
+        findNode(
+          solvesEdge.targetTitle
+        );
+
+      if (targetNode?.position) {
+        return {
+          x: targetNode.position.x,
+          y:
+            targetNode.position.y +
+            300,
+        };
+      }
+    }
+  }
+
+  /*
+   * --------------------------------------------------
+   * CASE 2: PROBLEM
+   *
+   * If an idea/cause points to this problem,
+   * place the problem BELOW it.
+   * --------------------------------------------------
+   */
+
+  if (action.nodeType === "problem") {
+    const causeEdge =
+      incomingEdges.find(
+        (edge) =>
+          edge.relationship === "causes"
+      );
+
+    if (causeEdge) {
+      const causeNode =
+        findNode(
+          causeEdge.sourceTitle
+        );
+
+      if (causeNode?.position) {
+        return {
+          x: causeNode.position.x,
+          y:
+            causeNode.position.y +
+            300,
+        };
+      }
+    }
+  }
+
+  /*
+   * --------------------------------------------------
+   * CASE 3: IDEA
+   *
+   * Ideas that cause a problem go ABOVE it.
+   * --------------------------------------------------
+   */
+
+  if (action.nodeType === "idea") {
+    const causeEdge =
+      outgoingEdges.find(
+        (edge) =>
+          edge.relationship === "causes"
+      );
+
+    if (causeEdge) {
+      const targetNode =
+        findNode(
+          causeEdge.targetTitle
+        );
+
+      if (targetNode?.position) {
+        return {
+          x: targetNode.position.x,
+          y:
+            targetNode.position.y -
+            300,
+        };
+      }
+    }
+  }
+
+  /*
+   * --------------------------------------------------
+   * CASE 4: DECISION
+   *
+   * Put decisions to the right of related nodes.
+   * --------------------------------------------------
+   */
+
+  if (
+    action.nodeType === "decision"
+  ) {
+    const relatedEdge =
+      incomingEdges[0] ||
+      outgoingEdges[0];
+
+    if (relatedEdge) {
+      const relatedTitle =
+        relatedEdge.sourceTitle ===
+          action.title
+          ? relatedEdge.targetTitle
+          : relatedEdge.sourceTitle;
+
+      const relatedNode =
+        findNode(relatedTitle);
+
+      if (relatedNode?.position) {
+        return {
+          x:
+            relatedNode.position.x +
+            NODE_WIDTH +
+            NODE_HORIZONTAL_GAP,
+
+          y:
+            relatedNode.position.y,
+        };
+      }
+    }
+  }
+
+  /*
+   * --------------------------------------------------
+   * CASE 5: TASK
+   *
+   * Tasks go below decisions/solutions.
+   * --------------------------------------------------
+   */
+
+  if (action.nodeType === "task") {
+    const relatedEdge =
+      incomingEdges[0] ||
+      outgoingEdges[0];
+
+    if (relatedEdge) {
+      const relatedTitle =
+        relatedEdge.sourceTitle ===
+          action.title
+          ? relatedEdge.targetTitle
+          : relatedEdge.sourceTitle;
+
+      const relatedNode =
+        findNode(relatedTitle);
+
+      if (relatedNode?.position) {
+        return {
+          x:
+            relatedNode.position.x +
+            NODE_WIDTH +
+            NODE_HORIZONTAL_GAP,
+
+          y:
+            relatedNode.position.y,
+        };
+      }
+    }
+  }
+
+  /*
+   * --------------------------------------------------
+   * FALLBACK
+   * --------------------------------------------------
+   */
+
+  return {
+    x:
+      100 +
+      (index % 3) *
+      (NODE_WIDTH +
+        NODE_HORIZONTAL_GAP),
+
+    y:
+      100 +
+      Math.floor(index / 3) *
+      300,
+  };
+}
+
 export default function EchoCanvas({
   actions,
   onNodePositionChange,
@@ -108,18 +350,13 @@ export default function EchoCanvas({
           action.title
       )
       .map((action, index) => ({
-        id: `echo-node-${index}`,
+        id: `echo-node-${action.title}`,
 
-        position:
-          action.position || {
-            x:
-              100 +
-              (index % 3) * 280,
-
-            y:
-              100 +
-              Math.floor(index / 3) * 180,
-          },
+        position: getSmartNodePosition(
+          action,
+          index,
+          actions
+        ),
 
         data: {
           nodeType: action.nodeType,
@@ -195,6 +432,59 @@ export default function EchoCanvas({
           return null;
         }
 
+        /*
+         * --------------------------------------------------
+         * Relationship
+         * --------------------------------------------------
+         */
+
+        const relationship =
+          action.relationship
+            ?.toLowerCase()
+            .trim() || "related to";
+
+        /*
+         * --------------------------------------------------
+         * Relationship-specific styling
+         * --------------------------------------------------
+         */
+
+        let strokeWidth = 2;
+        let animated = false;
+
+        switch (relationship) {
+          case "causes":
+            strokeWidth = 2;
+            animated = true;
+            break;
+
+          case "solves":
+            strokeWidth = 2.5;
+            animated = true;
+            break;
+
+          case "supports":
+            strokeWidth = 2;
+            animated = false;
+            break;
+
+          case "depends on":
+            strokeWidth = 2;
+            animated = true;
+            break;
+
+          case "decided by":
+            strokeWidth = 2;
+            animated = false;
+            break;
+
+          case "related to":
+          default:
+            strokeWidth = 1.5;
+            animated = false;
+            break;
+        }
+
         return {
           id: `echo-edge-${index}`,
 
@@ -202,23 +492,56 @@ export default function EchoCanvas({
 
           target: targetNode.id,
 
-          label: action.relationship,
-
-          animated: true,
-
-          style: {
-            strokeWidth: 2,
+          /*
+           * Arrow direction
+           */
+          markerEnd: {
+            type: "arrowclosed",
           },
 
+          /*
+           * Relationship label
+           */
+          label: relationship,
+
+          /*
+           * Animation
+           */
+          animated,
+
+          /*
+           * Line thickness
+           */
+          style: {
+            strokeWidth,
+          },
+
+          /*
+           * Label text
+           */
           labelStyle: {
             fill: "#a1a1aa",
             fontSize: 11,
+            fontWeight: 500,
           },
 
+          /*
+           * Label background
+           */
           labelBgStyle: {
             fill: "#18181b",
-            fillOpacity: 0.9,
+            fillOpacity: 0.95,
           },
+
+          /*
+           * Makes the label easier to read.
+           */
+          labelBgPadding: [
+            6,
+            3,
+          ],
+
+          labelBgBorderRadius: 6,
         };
       })
       .filter(Boolean) as Edge[];
@@ -260,30 +583,29 @@ export default function EchoCanvas({
 
   useEffect(() => {
     setNodes((currentNodes) => {
-      const nextNodes = generatedNodes;
-
-      return nextNodes.map((newNode) => {
+      return generatedNodes.map((newNode) => {
         const existingNode =
           currentNodes.find(
             (node) =>
               node.id === newNode.id
           );
 
-        /*
-         * Preserve the current React Flow
-         * position when possible.
-         */
-
-        if (existingNode) {
-          return {
-            ...newNode,
-
-            position:
-              existingNode.position,
-          };
+        if (!existingNode) {
+          return newNode;
         }
 
-        return newNode;
+        return {
+          ...newNode,
+
+          position:
+            existingNode.position,
+
+          selected:
+            existingNode.selected,
+
+          dragging:
+            existingNode.dragging,
+        };
       });
     });
 

@@ -9,15 +9,24 @@ import EchoCanvas from "./components/EchoCanvas";
 
 type CanvasAction = {
   type: string;
+
   nodeType?: string;
   title?: string;
   description?: string;
+
   sourceTitle?: string;
   targetTitle?: string;
   relationship?: string;
+
   position?: {
     x: number;
     y: number;
+  };
+
+  updates?: {
+    title?: string;
+    description?: string;
+    nodeType?: string;
   };
 };
 
@@ -56,6 +65,13 @@ export default function Home() {
   const [transcript, setTranscript] = useState("");
 
   const [actions, setActions] = useState<CanvasAction[]>([]);
+
+  useEffect(() => {
+    console.log(
+      "PAGE ACTION STATE:",
+      JSON.stringify(actions, null, 2)
+    );
+  }, [actions]);
 
   const [messages, setMessages] = useState<Message[]>([]);
 
@@ -417,6 +433,300 @@ export default function Home() {
     );
   };
 
+
+  // --------------------------------------------------
+  // apply canvas actions
+  // --------------------------------------------------
+
+  const applyCanvasActions = (
+    currentActions: CanvasAction[],
+    newActions: CanvasAction[]
+  ): CanvasAction[] => {
+    let nextActions = [...currentActions];
+
+    for (const action of newActions) {
+      // --------------------------------------------------
+      // CREATE_NODE
+      // --------------------------------------------------
+
+      if (
+        action.type === "CREATE_NODE" &&
+        action.title
+      ) {
+        const exists = nextActions.some(
+          (existingAction) =>
+            existingAction.type === "CREATE_NODE" &&
+            existingAction.title === action.title
+        );
+
+        if (!exists) {
+          nextActions.push(action);
+        }
+
+        continue;
+      }
+
+      // --------------------------------------------------
+      // CREATE_EDGE
+      // --------------------------------------------------
+
+      if (
+        action.type === "CREATE_EDGE" &&
+        action.sourceTitle &&
+        action.targetTitle
+      ) {
+        const sourceExists = nextActions.some(
+          (existingAction) =>
+            existingAction.type === "CREATE_NODE" &&
+            existingAction.title ===
+            action.sourceTitle
+        );
+
+        const targetExists = nextActions.some(
+          (existingAction) =>
+            existingAction.type === "CREATE_NODE" &&
+            existingAction.title ===
+            action.targetTitle
+        );
+
+        // Never allow an edge to a non-existent node
+        if (!sourceExists || !targetExists) {
+          console.warn(
+            "Ignored CREATE_EDGE because node does not exist:",
+            action
+          );
+
+          continue;
+        }
+
+        const edgeExists = nextActions.some(
+          (existingAction) =>
+            existingAction.type === "CREATE_EDGE" &&
+            existingAction.sourceTitle ===
+            action.sourceTitle &&
+            existingAction.targetTitle ===
+            action.targetTitle &&
+            existingAction.relationship ===
+            action.relationship
+        );
+
+        if (!edgeExists) {
+          nextActions.push(action);
+        }
+
+        continue;
+      }
+
+      // --------------------------------------------------
+      // UPDATE_NODE
+      // --------------------------------------------------
+
+      if (
+        action.type === "UPDATE_NODE" &&
+        action.targetTitle &&
+        action.updates
+      ) {
+        const targetExists = nextActions.some(
+          (existingAction) =>
+            existingAction.type === "CREATE_NODE" &&
+            existingAction.title ===
+            action.targetTitle
+        );
+
+        if (!targetExists) {
+          console.warn(
+            "Ignored UPDATE_NODE because target does not exist:",
+            action
+          );
+
+          continue;
+        }
+
+        const oldTitle = action.targetTitle;
+
+        const newTitle =
+          action.updates.title ??
+          oldTitle;
+
+        nextActions = nextActions.map(
+          (existingAction) => {
+            // Update node
+            if (
+              existingAction.type === "CREATE_NODE" &&
+              existingAction.title === oldTitle
+            ) {
+              return {
+                ...existingAction,
+
+                title: newTitle,
+
+                description:
+                  action.updates.description ??
+                  existingAction.description,
+
+                nodeType:
+                  action.updates.nodeType ??
+                  existingAction.nodeType,
+              };
+            }
+
+            // Update edge references when node is renamed
+            if (
+              existingAction.type === "CREATE_EDGE"
+            ) {
+              return {
+                ...existingAction,
+
+                sourceTitle:
+                  existingAction.sourceTitle ===
+                    oldTitle
+                    ? newTitle
+                    : existingAction.sourceTitle,
+
+                targetTitle:
+                  existingAction.targetTitle ===
+                    oldTitle
+                    ? newTitle
+                    : existingAction.targetTitle,
+              };
+            }
+
+            return existingAction;
+          }
+        );
+
+        continue;
+      }
+
+      // --------------------------------------------------
+      // DELETE_NODE
+      // --------------------------------------------------
+
+      if (
+        action.type === "DELETE_NODE" &&
+        action.targetTitle
+      ) {
+        const targetExists = nextActions.some(
+          (existingAction) =>
+            existingAction.type === "CREATE_NODE" &&
+            existingAction.title ===
+            action.targetTitle
+        );
+
+        if (!targetExists) {
+          console.warn(
+            "Ignored DELETE_NODE because target does not exist:",
+            action
+          );
+
+          continue;
+        }
+
+        nextActions = nextActions.filter(
+          (existingAction) => {
+            // Remove node
+            if (
+              existingAction.type === "CREATE_NODE" &&
+              existingAction.title ===
+              action.targetTitle
+            ) {
+              return false;
+            }
+
+            // Remove connected edges
+            if (
+              existingAction.type === "CREATE_EDGE" &&
+              (
+                existingAction.sourceTitle ===
+                action.targetTitle ||
+                existingAction.targetTitle ===
+                action.targetTitle
+              )
+            ) {
+              return false;
+            }
+
+            return true;
+          }
+        );
+
+        continue;
+      }
+
+      // --------------------------------------------------
+      // DELETE_EDGE
+      // --------------------------------------------------
+
+      if (
+        action.type === "DELETE_EDGE" &&
+        action.sourceTitle &&
+        action.targetTitle
+      ) {
+        const edgeExists = nextActions.some(
+          (existingAction) =>
+            existingAction.type === "CREATE_EDGE" &&
+            existingAction.sourceTitle ===
+            action.sourceTitle &&
+            existingAction.targetTitle ===
+            action.targetTitle &&
+            (
+              !action.relationship ||
+              existingAction.relationship ===
+              action.relationship
+            )
+        );
+
+        if (!edgeExists) {
+          console.warn(
+            "Ignored DELETE_EDGE because edge does not exist:",
+            action
+          );
+
+          continue;
+        }
+
+        nextActions = nextActions.filter(
+          (existingAction) => {
+            if (
+              existingAction.type !== "CREATE_EDGE"
+            ) {
+              return true;
+            }
+
+            const sameConnection =
+              existingAction.sourceTitle ===
+              action.sourceTitle &&
+              existingAction.targetTitle ===
+              action.targetTitle;
+
+            const sameRelationship =
+              !action.relationship ||
+              existingAction.relationship ===
+              action.relationship;
+
+            return !(
+              sameConnection &&
+              sameRelationship
+            );
+          }
+        );
+
+        continue;
+      }
+
+      // --------------------------------------------------
+      // UNKNOWN ACTION
+      // --------------------------------------------------
+
+      console.warn(
+        "Ignored unknown canvas action:",
+        action
+      );
+    }
+
+    return nextActions;
+  };
+
   // --------------------------------------------------
   // Analyze transcript
   // --------------------------------------------------
@@ -483,20 +793,30 @@ export default function Home() {
                 content: message.content,
               })),
 
-            currentCanvas: actions
-              .filter(
-                (action) =>
-                  action.type ===
-                  "CREATE_NODE"
-              )
-              .map((action) => ({
-                title:
-                  action.title,
-                nodeType:
-                  action.nodeType,
-                description:
-                  action.description,
-              })),
+            currentCanvas: {
+              nodes: actions
+                .filter(
+                  (action) =>
+                    action.type === "CREATE_NODE"
+                )
+                .map((action) => ({
+                  title: action.title,
+                  nodeType: action.nodeType,
+                  description: action.description,
+                  position: action.position,
+                })),
+
+              edges: actions
+                .filter(
+                  (action) =>
+                    action.type === "CREATE_EDGE"
+                )
+                .map((action) => ({
+                  sourceTitle: action.sourceTitle,
+                  targetTitle: action.targetTitle,
+                  relationship: action.relationship,
+                })),
+            },
           }),
         }
       );
@@ -514,14 +834,17 @@ export default function Home() {
         data
       );
 
-      if (
-        Array.isArray(data.actions)
-      ) {
-        setActions(
-          (currentActions) => [
-            ...currentActions,
-            ...data.actions,
-          ]
+      console.log(
+        "AI ACTIONS:",
+        JSON.stringify(data.actions, null, 2)
+      );
+
+      if (Array.isArray(data.actions)) {
+        setActions((currentActions) =>
+          applyCanvasActions(
+            currentActions,
+            data.actions
+          )
         );
       }
 
