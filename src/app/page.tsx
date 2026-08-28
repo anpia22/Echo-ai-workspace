@@ -6,6 +6,11 @@ import {
   useState,
 } from "react";
 import EchoCanvas from "./components/EchoCanvas";
+import { calculateIncrementalLayout } from "./lib/canvasLayout";
+import {
+  buildGraphContext,
+  logGraphContext,
+} from "./lib/graphContext";
 
 type CanvasAction = {
   type: string;
@@ -30,6 +35,29 @@ type CanvasAction = {
   };
 };
 
+type CanvasNode = {
+  id: string;
+  nodeType: string;
+  title: string;
+  description?: string;
+  position: {
+    x: number;
+    y: number;
+  };
+};
+
+type CanvasEdge = {
+  id: string;
+  sourceId: string;
+  targetId: string;
+  relationship?: string;
+};
+
+type CanvasState = {
+  nodes: CanvasNode[];
+  edges: CanvasEdge[];
+};
+
 type Message = {
   id: string;
   role: "user" | "assistant";
@@ -41,37 +69,261 @@ type Conversation = {
   id: string;
   title: string;
   messages: Message[];
-  actions: CanvasAction[];
+  actions?: CanvasAction[];
+  canvas: CanvasState;
   createdAt: string;
   updatedAt: string;
 };
 
 const STORAGE_KEY = "echo-conversations";
 
+const DEFAULT_CONVERSATION_TITLE = "New Conversation";
+
+function isPlaceholderTitle(title: string): boolean {
+  return title.trim() === "" || title.trim() === DEFAULT_CONVERSATION_TITLE;
+}
+
+function generateConversationTitle(message: string): string {
+  let text = message.trim().replace(/\s+/g, " ");
+
+  const leadingFiller =
+    /^(please\s+|hey[,.\s]+|hi[,.\s]+|hello[,.\s]+|can you\s+|could you\s+|would you\s+|i(?:'d| would)? like to\s+|i want to\s+|i need to\s+)/i;
+
+  while (text && leadingFiller.test(text)) {
+    text = text.replace(leadingFiller, "").trim();
+  }
+
+  const words = text
+    .split(/\s+/)
+    .map((word) =>
+      word.replace(/^[^\p{L}\p{N}]+|[^\p{L}\p{N}]+$/gu, "")
+    )
+    .filter((word) => word.length > 0);
+
+  if (words.length === 0) {
+    return DEFAULT_CONVERSATION_TITLE;
+  }
+
+  const wordCount = words.length <= 6 ? words.length : 5;
+  const title = words.slice(0, wordCount).join(" ");
+
+  return title.charAt(0).toUpperCase() + title.slice(1);
+}
+
+function conversationMatchesSearch(
+  conversation: Conversation,
+  query: string
+): boolean {
+  const needle = query.trim().toLowerCase();
+
+  if (!needle) {
+    return true;
+  }
+
+  if (conversation.title.toLowerCase().includes(needle)) {
+    return true;
+  }
+
+  return conversation.messages.some(
+    (message) =>
+      message.role === "user" &&
+      message.content.toLowerCase().includes(needle)
+  );
+}
+
+function formatRelativeTimestamp(
+  isoString: string,
+  now = new Date()
+): string {
+  const date = new Date(isoString);
+
+  if (Number.isNaN(date.getTime())) {
+    return "";
+  }
+
+  const diffMs = Math.max(0, now.getTime() - date.getTime());
+  const diffMinutes = Math.floor(diffMs / 60000);
+
+  if (diffMinutes < 1) {
+    return "Just now";
+  }
+
+  if (diffMinutes < 60) {
+    return `${diffMinutes} min ago`;
+  }
+
+  const diffHours = Math.floor(diffMinutes / 60);
+
+  if (diffHours < 24) {
+    return diffHours === 1 ? "1 hour ago" : `${diffHours} hours ago`;
+  }
+
+  const startOfToday = new Date(
+    now.getFullYear(),
+    now.getMonth(),
+    now.getDate()
+  );
+  const startOfDate = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate()
+  );
+  const diffDays = Math.round(
+    (startOfToday.getTime() - startOfDate.getTime()) / 86400000
+  );
+
+  if (diffDays === 1) {
+    return "Yesterday";
+  }
+
+  if (diffDays > 1 && diffDays < 7) {
+    return `${diffDays} days ago`;
+  }
+
+  return date.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function hasMeaningfulCanvasContent(canvas: CanvasState): boolean {
+  if (canvas.edges.length > 0) {
+    return true;
+  }
+
+  return canvas.nodes.some((node) => {
+    const title = node.title.trim();
+    const description = node.description?.trim() ?? "";
+
+    return title.length > 0 || description.length > 0;
+  });
+}
+
+function getConversationPreview(conversation: Conversation): string {
+  for (
+    let index = conversation.messages.length - 1;
+    index >= 0;
+    index -= 1
+  ) {
+    const content = conversation.messages[index].content
+      .replace(/\s+/g, " ")
+      .trim();
+
+    if (content) {
+      return content;
+    }
+  }
+
+  return "";
+}
+
+function readStoredConversations(): Conversation[] {
+  const saved = localStorage.getItem(STORAGE_KEY);
+
+  if (!saved) {
+    return [];
+  }
+
+  const parsed = JSON.parse(saved);
+
+  return Array.isArray(parsed) ? parsed : [];
+}
+
 function createConversation(): Conversation {
   const now = new Date().toISOString();
 
   return {
     id: crypto.randomUUID(),
-    title: "New Conversation",
+    title: DEFAULT_CONVERSATION_TITLE,
     messages: [],
     actions: [],
+    canvas: {
+      nodes: [],
+      edges: [],
+    },
     createdAt: now,
     updatedAt: now,
   };
 }
 
+type SpeechRecognitionResultLike = {
+  isFinal: boolean;
+  0: { transcript: string };
+};
+
+type SpeechRecognitionEventLike = {
+  resultIndex: number;
+  results: ArrayLike<SpeechRecognitionResultLike>;
+};
+
+type SpeechRecognitionErrorEventLike = {
+  error: string;
+};
+
+type SpeechRecognitionInstance = {
+  continuous: boolean;
+  interimResults: boolean;
+  lang: string;
+  onstart: (() => void) | null;
+  onresult: ((event: SpeechRecognitionEventLike) => void) | null;
+  onerror: ((event: SpeechRecognitionErrorEventLike) => void) | null;
+  onend: (() => void) | null;
+  start: () => void;
+  stop: () => void;
+};
+
+type SpeechRecognitionCtor = new () => SpeechRecognitionInstance;
+
+function getSpeechRecognitionCtor(): SpeechRecognitionCtor | null {
+  if (typeof window === "undefined") {
+    return null;
+  }
+
+  const speechWindow = window as Window & {
+    SpeechRecognition?: SpeechRecognitionCtor;
+    webkitSpeechRecognition?: SpeechRecognitionCtor;
+  };
+
+  return (
+    speechWindow.SpeechRecognition ||
+    speechWindow.webkitSpeechRecognition ||
+    null
+  );
+}
+
+function getVoiceErrorMessage(code: string): string {
+  switch (code) {
+    case "not-allowed":
+      return "Microphone permission was denied. Allow microphone access to use voice input.";
+    case "audio-capture":
+      return "No microphone was detected.";
+    case "network":
+      return "Speech recognition could not connect. Check your internet connection.";
+    case "no-speech":
+      return "No speech was detected.";
+    case "not-supported":
+      return "Voice input isn't supported in this browser. Try Chrome or Edge.";
+    case "aborted":
+      return "Voice input stopped.";
+    default:
+      return "Voice input stopped.";
+  }
+}
+
 export default function Home() {
   const [transcript, setTranscript] = useState("");
 
-  const [actions, setActions] = useState<CanvasAction[]>([]);
+  const [canvas, setCanvas] = useState<CanvasState>({
+    nodes: [],
+    edges: [],
+  });
 
   useEffect(() => {
     console.log(
-      "PAGE ACTION STATE:",
-      JSON.stringify(actions, null, 2)
+      "PAGE CANVAS STATE:",
+      JSON.stringify(canvas, null, 2)
     );
-  }, [actions]);
+  }, [canvas]);
 
   const [messages, setMessages] = useState<Message[]>([]);
 
@@ -91,14 +343,48 @@ export default function Home() {
   const [isListening, setIsListening] =
     useState(false);
 
+  const [voiceFeedback, setVoiceFeedback] = useState<
+    | { kind: "idle" }
+    | { kind: "listening" }
+    | { kind: "info"; message: string }
+    | { kind: "error"; message: string }
+  >({ kind: "idle" });
+
   const recognitionRef =
-    useRef<any>(null);
+    useRef<SpeechRecognitionInstance | null>(null);
 
   const finalTranscriptRef =
     useRef("");
 
+  const isMountedRef =
+    useRef(true);
+
+  const userStoppedRef =
+    useRef(false);
+
+  const speechReceivedRef =
+    useRef(false);
+
+  const voiceErrorShownRef =
+    useRef(false);
+
+  const skipAutosaveRef =
+    useRef(false);
+
+  const skipRenameCommitRef =
+    useRef(false);
+
   const [voiceLanguage, setVoiceLanguage] =
     useState("en-US");
+
+  const [renamingConversationId, setRenamingConversationId] =
+    useState<string | null>(null);
+
+  const [renameDraft, setRenameDraft] =
+    useState("");
+
+  const [conversationSearch, setConversationSearch] =
+    useState("");
 
   // --------------------------------------------------
   // Load saved conversation
@@ -132,8 +418,11 @@ export default function Home() {
             latestConversation.messages || []
           );
 
-          setActions(
-            latestConversation.actions || []
+          setCanvas(
+            latestConversation.canvas || {
+              nodes: [],
+              edges: [],
+            }
           );
 
           setIsLoaded(true);
@@ -154,7 +443,10 @@ export default function Home() {
 
       setMessages([]);
 
-      setActions([]);
+      setCanvas({
+        nodes: [],
+        edges: [],
+      });
 
       setIsLoaded(true);
     } catch (error) {
@@ -176,6 +468,11 @@ export default function Home() {
       return;
     }
 
+    if (skipAutosaveRef.current) {
+      skipAutosaveRef.current = false;
+      return;
+    }
+
     try {
       const saved =
         localStorage.getItem(STORAGE_KEY);
@@ -191,43 +488,37 @@ export default function Home() {
       const now =
         new Date().toISOString();
 
-      const updatedConversation: Conversation = {
-        id: conversationId,
-        title: conversationTitle,
-        messages,
-        actions,
-        createdAt:
-          storedConversations.find(
-            (conversation) =>
-              conversation.id ===
-              conversationId
-          )?.createdAt || now,
-        updatedAt: now,
-      };
-
-      const existingIndex =
-        storedConversations.findIndex(
+      const existingConversation =
+        storedConversations.find(
           (conversation) =>
             conversation.id ===
             conversationId
         );
 
-      let updatedConversations: Conversation[];
+      const updatedConversation: Conversation = {
+        id: conversationId,
+        title: conversationTitle,
+        messages,
+        actions:
+          existingConversation?.actions || [],
+        canvas,
+        createdAt:
+          existingConversation?.createdAt ||
+          now,
+        updatedAt: now,
+      };
 
-      if (existingIndex >= 0) {
-        updatedConversations = [
-          ...storedConversations,
-        ];
+      const remainingConversations =
+        storedConversations.filter(
+          (conversation) =>
+            conversation.id !==
+            conversationId
+        );
 
-        updatedConversations[
-          existingIndex
-        ] = updatedConversation;
-      } else {
-        updatedConversations = [
-          updatedConversation,
-          ...storedConversations,
-        ];
-      }
+      const updatedConversations = [
+        updatedConversation,
+        ...remainingConversations,
+      ];
 
       setConversations(
         updatedConversations
@@ -246,7 +537,7 @@ export default function Home() {
       );
     }
   }, [
-    actions,
+    canvas,
     messages,
     conversationId,
     conversationTitle,
@@ -254,47 +545,99 @@ export default function Home() {
   ]);
 
   // --------------------------------------------------
-  // toggle listening
+  // Voice / speech-to-text (composer input only)
   // --------------------------------------------------
 
+  useEffect(() => {
+    isMountedRef.current = true;
+
+    return () => {
+      isMountedRef.current = false;
+      userStoppedRef.current = true;
+
+      const recognition = recognitionRef.current;
+      recognitionRef.current = null;
+
+      if (recognition) {
+        recognition.onstart = null;
+        recognition.onresult = null;
+        recognition.onerror = null;
+        recognition.onend = null;
+        recognition.stop();
+      }
+    };
+  }, []);
+
+  const stopRecognitionSession = () => {
+    userStoppedRef.current = true;
+
+    const recognition = recognitionRef.current;
+
+    if (recognition) {
+      recognition.stop();
+    }
+
+    setIsListening(false);
+  };
+
   const toggleListening = () => {
-    if (isListening) {
-      recognitionRef.current?.stop();
-      setIsListening(false);
+    if (loading) {
       return;
     }
 
-    const SpeechRecognition =
-      (window as any).SpeechRecognition ||
-      (window as any)
-        .webkitSpeechRecognition;
+    if (isListening || recognitionRef.current) {
+      stopRecognitionSession();
+      return;
+    }
 
-    if (!SpeechRecognition) {
-      alert(
-        "Speech recognition is not supported in this browser. Please use Chrome or Edge."
-      );
+    const SpeechRecognitionCtor =
+      getSpeechRecognitionCtor();
+
+    if (!SpeechRecognitionCtor) {
+      setVoiceFeedback({
+        kind: "error",
+        message:
+          "Voice input isn't supported in this browser. Try Chrome or Edge.",
+      });
 
       return;
     }
 
     const recognition =
-      new SpeechRecognition();
+      new SpeechRecognitionCtor();
 
     recognition.continuous = true;
     recognition.interimResults = true;
     recognition.lang = voiceLanguage;
 
-    recognition.onstart = () => {
-      setIsListening(true);
+    userStoppedRef.current = false;
+    speechReceivedRef.current = false;
+    voiceErrorShownRef.current = false;
 
-      // Preserve anything the user already typed
-      finalTranscriptRef.current =
-        transcript.trim();
+    // Preserve anything the user already typed
+    finalTranscriptRef.current =
+      transcript.trim();
+
+    recognition.onstart = () => {
+      console.log("🎙️ SPEECH onstart");
+
+      if (!isMountedRef.current) {
+        return;
+      }
+
+      setIsListening(true);
+      setVoiceFeedback({ kind: "listening" });
     };
 
     recognition.onresult = (
-      event: any
+      event: SpeechRecognitionEventLike
     ) => {
+      console.log("🗣️ SPEECH onresult FIRED", event);
+
+      if (!isMountedRef.current) {
+        return;
+      }
+
       let interimTranscript = "";
 
       for (
@@ -305,8 +648,20 @@ export default function Home() {
         const result =
           event.results[i];
 
+        console.log("📝 SPEECH result:", {
+          index: i,
+          isFinal: result.isFinal,
+          transcript: result[0]?.transcript,
+        });
+
         const text =
           result[0].transcript.trim();
+
+        if (!text) {
+          continue;
+        }
+
+        speechReceivedRef.current = true;
 
         if (result.isFinal) {
           // Save final speech only once
@@ -325,31 +680,111 @@ export default function Home() {
       const interimText =
         interimTranscript.trim();
 
+      console.log("📄 TRANSCRIPT UPDATE:", {
+        finalText,
+        interimText,
+      });
+
       setTranscript(
         `${finalText} ${interimText}`.trim()
       );
     };
 
     recognition.onerror = (
-      event: any
+      event: SpeechRecognitionErrorEventLike
     ) => {
+      console.log("⚠️ SPEECH onerror:", event.error);
+
+      const errorCode = event.error;
+
+      if (!isMountedRef.current) {
+        return;
+      }
+
+      // Chrome emits this when the user stayed silent.
+      // It is not an application failure. Final UI is set in onend.
+      if (errorCode === "no-speech") {
+        setIsListening(false);
+        return;
+      }
+
       console.error(
         "Speech recognition error:",
-        event.error
+        errorCode
       );
 
       setIsListening(false);
+
+      if (
+        errorCode === "aborted" &&
+        userStoppedRef.current
+      ) {
+        return;
+      }
+
+      voiceErrorShownRef.current = true;
+
+      setVoiceFeedback({
+        kind: "error",
+        message: getVoiceErrorMessage(errorCode),
+      });
     };
 
     recognition.onend = () => {
+      console.log("🛑 SPEECH onend", {
+        speechReceived: speechReceivedRef.current,
+        userStopped: userStoppedRef.current,
+      });
+
+      if (recognitionRef.current === recognition) {
+        recognitionRef.current = null;
+      }
+
+      if (!isMountedRef.current) {
+        return;
+      }
+
       setIsListening(false);
-      recognitionRef.current = null;
+
+      if (voiceErrorShownRef.current) {
+        userStoppedRef.current = false;
+        return;
+      }
+
+      if (
+        !speechReceivedRef.current &&
+        !userStoppedRef.current
+      ) {
+        setVoiceFeedback({
+          kind: "info",
+          message: "No speech was detected.",
+        });
+      } else {
+        setVoiceFeedback({
+          kind: "idle",
+        });
+      }
+
+      userStoppedRef.current = false;
     };
 
-    recognitionRef.current =
-      recognition;
+    recognitionRef.current = recognition;
 
-    recognition.start();
+    try {
+      recognition.start();
+    } catch (error) {
+      console.error(
+        "Speech recognition failed to start:",
+        error
+      );
+
+      recognitionRef.current = null;
+      setIsListening(false);
+      setVoiceFeedback({
+        kind: "error",
+        message: getVoiceErrorMessage("not-supported"),
+      });
+    }
   };
 
   // --------------------------------------------------
@@ -357,29 +792,105 @@ export default function Home() {
   // --------------------------------------------------
 
   const createNewConversation = () => {
-    const newConversation =
-      createConversation();
+    try {
+      const saved =
+        localStorage.getItem(STORAGE_KEY);
 
-    setConversations(
-      (currentConversations) => [
+      let storedConversations: Conversation[] =
+        [];
+
+      if (saved) {
+        storedConversations =
+          JSON.parse(saved);
+      }
+
+      // Flush the active conversation first so the empty
+      // reset cannot overwrite it in the autosave effect.
+      if (conversationId) {
+        const now =
+          new Date().toISOString();
+
+        const existingConversation =
+          storedConversations.find(
+            (conversation) =>
+              conversation.id ===
+              conversationId
+          );
+
+        const currentConversation: Conversation =
+          {
+            id: conversationId,
+            title: conversationTitle,
+            messages,
+            actions:
+              existingConversation?.actions ||
+              [],
+            canvas,
+            createdAt:
+              existingConversation?.createdAt ||
+              now,
+            updatedAt: now,
+          };
+
+        storedConversations =
+          storedConversations.filter(
+            (conversation) =>
+              conversation.id !==
+              conversationId
+          );
+
+        storedConversations = [
+          currentConversation,
+          ...storedConversations,
+        ];
+      }
+
+      const newConversation =
+        createConversation();
+
+      storedConversations = [
         newConversation,
-        ...currentConversations,
-      ]
-    );
+        ...storedConversations,
+      ];
 
-    setConversationId(
-      newConversation.id
-    );
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(
+          storedConversations
+        )
+      );
 
-    setConversationTitle(
-      newConversation.title
-    );
+      // Skip the next autosave so batched resets cannot
+      // write empty messages/canvas into the previous id.
+      skipAutosaveRef.current = true;
 
-    setMessages([]);
+      setConversations(
+        storedConversations
+      );
 
-    setActions([]);
+      setConversationId(
+        newConversation.id
+      );
 
-    setTranscript("");
+      setConversationTitle(
+        newConversation.title
+      );
+
+      setMessages([]);
+
+      setCanvas({
+        nodes: [],
+        edges: [],
+      });
+
+      setTranscript("");
+      setRenamingConversationId(null);
+    } catch (error) {
+      console.error(
+        "Failed to create new Echo conversation:",
+        error
+      );
+    }
   };
 
   // --------------------------------------------------
@@ -401,13 +912,206 @@ export default function Home() {
       selectedConversation.messages || []
     );
 
-    setActions(
-      selectedConversation.actions || []
+    setCanvas(
+      selectedConversation.canvas || {
+        nodes: [],
+        edges: [],
+      }
     );
 
     setTranscript("");
+    setRenamingConversationId(null);
   };
 
+  // --------------------------------------------------
+  // rename conversation
+  // --------------------------------------------------
+
+  const startRenamingConversation = (
+    conversation: Conversation
+  ) => {
+    setRenamingConversationId(conversation.id);
+    setRenameDraft(conversation.title);
+  };
+
+  const cancelRenamingConversation = () => {
+    skipRenameCommitRef.current = true;
+    setRenamingConversationId(null);
+    setRenameDraft("");
+  };
+
+  const commitRenamingConversation = (
+    targetId: string
+  ) => {
+    if (skipRenameCommitRef.current) {
+      skipRenameCommitRef.current = false;
+      return;
+    }
+
+    const nextTitle = renameDraft.trim();
+
+    setRenamingConversationId(null);
+    setRenameDraft("");
+
+    if (!nextTitle) {
+      return;
+    }
+
+    try {
+      const storedConversations =
+        readStoredConversations();
+
+      const updatedConversations =
+        storedConversations.map(
+          (conversation) =>
+            conversation.id === targetId
+              ? {
+                  ...conversation,
+                  title: nextTitle,
+                }
+              : conversation
+        );
+
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(updatedConversations)
+      );
+
+      setConversations(updatedConversations);
+
+      if (targetId === conversationId) {
+        setConversationTitle(nextTitle);
+      }
+    } catch (error) {
+      console.error(
+        "Failed to rename Echo conversation:",
+        error
+      );
+    }
+  };
+
+  // --------------------------------------------------
+  // delete conversation
+  // --------------------------------------------------
+
+  const deleteConversation = (
+    targetId: string
+  ) => {
+    const targetConversation =
+      conversations.find(
+        (conversation) =>
+          conversation.id === targetId
+      );
+
+    const confirmed = window.confirm(
+      `Delete "${targetConversation?.title || DEFAULT_CONVERSATION_TITLE}"? This cannot be undone.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      const storedConversations =
+        readStoredConversations();
+
+      const remainingConversations =
+        storedConversations.filter(
+          (conversation) =>
+            conversation.id !== targetId
+        );
+
+      if (targetId === conversationId) {
+        skipAutosaveRef.current = true;
+
+        if (remainingConversations.length > 0) {
+          const nextConversation =
+            remainingConversations[0];
+
+          localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify(
+              remainingConversations
+            )
+          );
+
+          setConversations(
+            remainingConversations
+          );
+
+          setConversationId(
+            nextConversation.id
+          );
+
+          setConversationTitle(
+            nextConversation.title
+          );
+
+          setMessages(
+            nextConversation.messages || []
+          );
+
+          setCanvas(
+            nextConversation.canvas || {
+              nodes: [],
+              edges: [],
+            }
+          );
+
+          setTranscript("");
+          setRenamingConversationId(null);
+          return;
+        }
+
+        const newConversation =
+          createConversation();
+
+        const nextConversations = [
+          newConversation,
+        ];
+
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify(nextConversations)
+        );
+
+        setConversations(nextConversations);
+
+        setConversationId(newConversation.id);
+
+        setConversationTitle(
+          newConversation.title
+        );
+
+        setMessages([]);
+
+        setCanvas({
+          nodes: [],
+          edges: [],
+        });
+
+        setTranscript("");
+        setRenamingConversationId(null);
+        return;
+      }
+
+      localStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify(remainingConversations)
+      );
+
+      setConversations(remainingConversations);
+
+      if (renamingConversationId === targetId) {
+        setRenamingConversationId(null);
+      }
+    } catch (error) {
+      console.error(
+        "Failed to delete Echo conversation:",
+        error
+      );
+    }
+  };
 
   // --------------------------------------------------
   // update node position on drag
@@ -420,17 +1124,18 @@ export default function Home() {
       y: number;
     }
   ) => {
-    setActions((currentActions) =>
-      currentActions.map((action) =>
-        action.type === "CREATE_NODE" &&
-          action.title === title
+    setCanvas((currentCanvas) => ({
+      ...currentCanvas,
+
+      nodes: currentCanvas.nodes.map((node) =>
+        node.title === title
           ? {
-            ...action,
-            position,
-          }
-          : action
-      )
-    );
+              ...node,
+              position,
+            }
+          : node
+      ),
+    }));
   };
 
 
@@ -439,58 +1144,71 @@ export default function Home() {
   // --------------------------------------------------
 
   const applyCanvasActions = (
-    currentActions: CanvasAction[],
+    currentCanvas: CanvasState,
     newActions: CanvasAction[]
-  ): CanvasAction[] => {
-    let nextActions = [...currentActions];
+  ): CanvasState => {
+    const existingNodeIds = new Set(
+      currentCanvas.nodes.map((node) => node.id)
+    );
+
+    let nextCanvas: CanvasState = {
+      nodes: [...currentCanvas.nodes],
+      edges: [...currentCanvas.edges],
+    };
 
     for (const action of newActions) {
-      // --------------------------------------------------
+      if (!action || typeof action !== "object") {
+        continue;
+      }
+
+      // ==================================================
       // CREATE_NODE
-      // --------------------------------------------------
+      // ==================================================
 
       if (
         action.type === "CREATE_NODE" &&
-        action.title
+        action.title &&
+        action.nodeType
       ) {
-        const exists = nextActions.some(
-          (existingAction) =>
-            existingAction.type === "CREATE_NODE" &&
-            existingAction.title === action.title
+        const exists = nextCanvas.nodes.some(
+          (node) => node.title === action.title
         );
 
         if (!exists) {
-          nextActions.push(action);
+          nextCanvas.nodes.push({
+            id: crypto.randomUUID(),
+            nodeType: action.nodeType,
+            title: action.title,
+            description: action.description,
+            position: { x: 0, y: 0 },
+          });
         }
 
         continue;
       }
 
-      // --------------------------------------------------
+      // ==================================================
       // CREATE_EDGE
-      // --------------------------------------------------
+      // ==================================================
 
       if (
         action.type === "CREATE_EDGE" &&
         action.sourceTitle &&
         action.targetTitle
       ) {
-        const sourceExists = nextActions.some(
-          (existingAction) =>
-            existingAction.type === "CREATE_NODE" &&
-            existingAction.title ===
-            action.sourceTitle
-        );
+        const sourceNode =
+          nextCanvas.nodes.find(
+            (node) =>
+              node.title === action.sourceTitle
+          );
 
-        const targetExists = nextActions.some(
-          (existingAction) =>
-            existingAction.type === "CREATE_NODE" &&
-            existingAction.title ===
-            action.targetTitle
-        );
+        const targetNode =
+          nextCanvas.nodes.find(
+            (node) =>
+              node.title === action.targetTitle
+          );
 
-        // Never allow an edge to a non-existent node
-        if (!sourceExists || !targetExists) {
+        if (!sourceNode || !targetNode) {
           console.warn(
             "Ignored CREATE_EDGE because node does not exist:",
             action
@@ -499,41 +1217,45 @@ export default function Home() {
           continue;
         }
 
-        const edgeExists = nextActions.some(
-          (existingAction) =>
-            existingAction.type === "CREATE_EDGE" &&
-            existingAction.sourceTitle ===
-            action.sourceTitle &&
-            existingAction.targetTitle ===
-            action.targetTitle &&
-            existingAction.relationship ===
-            action.relationship
-        );
+        const edgeExists =
+          nextCanvas.edges.some(
+            (edge) =>
+              edge.sourceId === sourceNode.id &&
+              edge.targetId === targetNode.id &&
+              edge.relationship ===
+                action.relationship
+          );
 
         if (!edgeExists) {
-          nextActions.push(action);
+          nextCanvas.edges.push({
+            id: crypto.randomUUID(),
+            sourceId: sourceNode.id,
+            targetId: targetNode.id,
+            relationship:
+              action.relationship,
+          });
         }
 
         continue;
       }
 
-      // --------------------------------------------------
+      // ==================================================
       // UPDATE_NODE
-      // --------------------------------------------------
+      // ==================================================
 
       if (
         action.type === "UPDATE_NODE" &&
         action.targetTitle &&
         action.updates
       ) {
-        const targetExists = nextActions.some(
-          (existingAction) =>
-            existingAction.type === "CREATE_NODE" &&
-            existingAction.title ===
-            action.targetTitle
-        );
+        const nodeIndex =
+          nextCanvas.nodes.findIndex(
+            (node) =>
+              node.title ===
+              action.targetTitle
+          );
 
-        if (!targetExists) {
+        if (nodeIndex === -1) {
           console.warn(
             "Ignored UPDATE_NODE because target does not exist:",
             action
@@ -542,78 +1264,60 @@ export default function Home() {
           continue;
         }
 
-        const oldTitle = action.targetTitle;
+        const oldNode =
+          nextCanvas.nodes[nodeIndex];
 
         const newTitle =
           action.updates.title ??
-          oldTitle;
+          oldNode.title;
 
-        nextActions = nextActions.map(
-          (existingAction) => {
-            // Update node
-            if (
-              existingAction.type === "CREATE_NODE" &&
-              existingAction.title === oldTitle
-            ) {
-              return {
-                ...existingAction,
+        if (
+          newTitle !== oldNode.title &&
+          nextCanvas.nodes.some(
+            (node) => node.title === newTitle
+          )
+        ) {
+          console.warn(
+            "Ignored UPDATE_NODE because new title already exists:",
+            action
+          );
 
-                title: newTitle,
+          continue;
+        }
 
-                description:
-                  action.updates.description ??
-                  existingAction.description,
+        nextCanvas.nodes[nodeIndex] = {
+          ...oldNode,
 
-                nodeType:
-                  action.updates.nodeType ??
-                  existingAction.nodeType,
-              };
-            }
+          title: newTitle,
 
-            // Update edge references when node is renamed
-            if (
-              existingAction.type === "CREATE_EDGE"
-            ) {
-              return {
-                ...existingAction,
+          description:
+            action.updates.description ??
+            oldNode.description,
 
-                sourceTitle:
-                  existingAction.sourceTitle ===
-                    oldTitle
-                    ? newTitle
-                    : existingAction.sourceTitle,
-
-                targetTitle:
-                  existingAction.targetTitle ===
-                    oldTitle
-                    ? newTitle
-                    : existingAction.targetTitle,
-              };
-            }
-
-            return existingAction;
-          }
-        );
+          nodeType:
+            action.updates.nodeType ??
+            oldNode.nodeType,
+        };
 
         continue;
       }
 
-      // --------------------------------------------------
+      // ==================================================
       // DELETE_NODE
-      // --------------------------------------------------
+      // ==================================================
 
       if (
         action.type === "DELETE_NODE" &&
         action.targetTitle
       ) {
-        const targetExists = nextActions.some(
-          (existingAction) =>
-            existingAction.type === "CREATE_NODE" &&
-            existingAction.title ===
-            action.targetTitle
-        );
+        const targetNode =
+          nextCanvas.nodes.find(
+            (node) =>
+              node.title ===
+              action.targetTitle
+          );
 
-        if (!targetExists) {
+        if (!targetNode) {
           console.warn(
             "Ignored DELETE_NODE because target does not exist:",
             action
@@ -622,101 +1326,85 @@ export default function Home() {
           continue;
         }
 
-        nextActions = nextActions.filter(
-          (existingAction) => {
-            // Remove node
-            if (
-              existingAction.type === "CREATE_NODE" &&
-              existingAction.title ===
-              action.targetTitle
-            ) {
-              return false;
-            }
+        // Remove node
+        nextCanvas.nodes =
+          nextCanvas.nodes.filter(
+            (node) =>
+              node.id !== targetNode.id
+          );
 
-            // Remove connected edges
-            if (
-              existingAction.type === "CREATE_EDGE" &&
-              (
-                existingAction.sourceTitle ===
-                action.targetTitle ||
-                existingAction.targetTitle ===
-                action.targetTitle
-              )
-            ) {
-              return false;
-            }
-
-            return true;
-          }
-        );
+        // Remove connected edges
+        nextCanvas.edges =
+          nextCanvas.edges.filter(
+            (edge) =>
+              edge.sourceId !==
+                targetNode.id &&
+              edge.targetId !==
+                targetNode.id
+          );
 
         continue;
       }
 
-      // --------------------------------------------------
+      // ==================================================
       // DELETE_EDGE
-      // --------------------------------------------------
+      // ==================================================
 
       if (
         action.type === "DELETE_EDGE" &&
         action.sourceTitle &&
         action.targetTitle
       ) {
-        const edgeExists = nextActions.some(
-          (existingAction) =>
-            existingAction.type === "CREATE_EDGE" &&
-            existingAction.sourceTitle ===
-            action.sourceTitle &&
-            existingAction.targetTitle ===
-            action.targetTitle &&
-            (
-              !action.relationship ||
-              existingAction.relationship ===
-              action.relationship
-            )
-        );
+        const sourceNode =
+          nextCanvas.nodes.find(
+            (node) =>
+              node.title ===
+              action.sourceTitle
+          );
 
-        if (!edgeExists) {
+        const targetNode =
+          nextCanvas.nodes.find(
+            (node) =>
+              node.title ===
+              action.targetTitle
+          );
+
+        if (!sourceNode || !targetNode) {
           console.warn(
-            "Ignored DELETE_EDGE because edge does not exist:",
+            "Ignored DELETE_EDGE because node does not exist:",
             action
           );
 
           continue;
         }
 
-        nextActions = nextActions.filter(
-          (existingAction) => {
-            if (
-              existingAction.type !== "CREATE_EDGE"
-            ) {
-              return true;
+        nextCanvas.edges =
+          nextCanvas.edges.filter(
+            (edge) => {
+              const sameConnection =
+                edge.sourceId ===
+                  sourceNode.id &&
+                edge.targetId ===
+                  targetNode.id;
+
+              const sameRelationship =
+                !action.relationship ||
+                edge.relationship ===
+                  action.relationship;
+
+              return !(
+                sameConnection &&
+                sameRelationship
+              );
             }
-
-            const sameConnection =
-              existingAction.sourceTitle ===
-              action.sourceTitle &&
-              existingAction.targetTitle ===
-              action.targetTitle;
-
-            const sameRelationship =
-              !action.relationship ||
-              existingAction.relationship ===
-              action.relationship;
-
-            return !(
-              sameConnection &&
-              sameRelationship
-            );
-          }
-        );
+          );
 
         continue;
       }
 
-      // --------------------------------------------------
+      // ==================================================
       // UNKNOWN ACTION
-      // --------------------------------------------------
+      // ==================================================
 
       console.warn(
         "Ignored unknown canvas action:",
@@ -724,7 +1412,11 @@ export default function Home() {
       );
     }
 
-    return nextActions;
+    const newNodeIds = nextCanvas.nodes
+      .filter((node) => !existingNodeIds.has(node.id))
+      .map((node) => node.id);
+
+    return calculateIncrementalLayout(nextCanvas, newNodeIds);
   };
 
   // --------------------------------------------------
@@ -750,26 +1442,37 @@ export default function Home() {
       newUserMessage,
     ]);
 
-    // Automatically create a title from
-    // the first user message
+    // Title only from the first meaningful user
+    // message; keep it once it is set.
+    const hasUserMessage = messages.some(
+      (message) => message.role === "user"
+    );
+
     if (
-      conversationTitle ===
-      "New Conversation" &&
-      messages.length === 0
+      isPlaceholderTitle(conversationTitle) &&
+      !hasUserMessage
     ) {
       const generatedTitle =
-        userMessage.length > 40
-          ? `${userMessage.slice(0, 40)}...`
-          : userMessage;
+        generateConversationTitle(userMessage);
 
-      setConversationTitle(
-        generatedTitle
-      );
+      if (!isPlaceholderTitle(generatedTitle)) {
+        setConversationTitle(generatedTitle);
+      }
     }
 
     setLoading(true);
 
     try {
+      const startTime = performance.now();
+
+      console.log("🚀 Sending request to Echo...");
+
+      const graphContext = buildGraphContext(
+        canvas.nodes,
+        canvas.edges
+      );
+      logGraphContext(graphContext);
+
       const response = await fetch(
         "/api/analyze",
         {
@@ -787,45 +1490,29 @@ export default function Home() {
               ...messages,
               newUserMessage,
             ]
-              .slice(-12)
+              .slice(-4)
               .map((message) => ({
                 role: message.role,
                 content: message.content,
               })),
 
-            currentCanvas: {
-              nodes: actions
-                .filter(
-                  (action) =>
-                    action.type === "CREATE_NODE"
-                )
-                .map((action) => ({
-                  title: action.title,
-                  nodeType: action.nodeType,
-                  description: action.description,
-                  position: action.position,
-                })),
-
-              edges: actions
-                .filter(
-                  (action) =>
-                    action.type === "CREATE_EDGE"
-                )
-                .map((action) => ({
-                  sourceTitle: action.sourceTitle,
-                  targetTitle: action.targetTitle,
-                  relationship: action.relationship,
-                })),
-            },
+            currentCanvas: canvas,
+            graphContext,
           }),
         }
+      );
+
+      console.log(
+        "⏱️ Fetch completed in:",
+        ((performance.now() - startTime) / 1000).toFixed(2),
+        "seconds"
       );
 
       const data =
         await response.json();
 
       if (!response.ok) {
-        console.error(data);
+        console.error("❌ ANALYZE ERROR:", data);
         return;
       }
 
@@ -840,9 +1527,9 @@ export default function Home() {
       );
 
       if (Array.isArray(data.actions)) {
-        setActions((currentActions) =>
+        setCanvas((currentCanvas) =>
           applyCanvasActions(
-            currentActions,
+            currentCanvas,
             data.actions
           )
         );
@@ -875,20 +1562,43 @@ export default function Home() {
     }
   };
 
+  const sortedConversations = [...conversations].sort(
+    (left, right) => {
+      const leftTime = Date.parse(left.updatedAt) || 0;
+      const rightTime = Date.parse(right.updatedAt) || 0;
+      return rightTime - leftTime;
+    }
+  );
+
+  const filteredConversations = sortedConversations.filter(
+    (conversation) =>
+      conversationMatchesSearch(
+        conversation,
+        conversationSearch
+      )
+  );
+
+  const isEmptyWorkspace =
+    messages.length === 0 &&
+    !hasMeaningfulCanvasContent(canvas);
+
   return (
-    <main className="h-screen bg-zinc-950 text-white">
-      <div className="flex h-full flex-col">
+    <main className="h-screen overflow-hidden bg-zinc-950 text-white">
+      <div className="flex h-full min-w-0 flex-col">
 
         {/* Header */}
 
-        <header className="flex h-16 items-center justify-between border-b border-zinc-800 px-6">
+        <header className="flex h-16 min-w-0 items-center justify-between border-b border-zinc-800 px-6">
 
-          <div>
+          <div className="min-w-0 pr-4">
             <h1 className="text-xl font-semibold">
               Echo
             </h1>
 
-            <p className="text-xs text-zinc-500">
+            <p
+              className="truncate text-xs text-zinc-500"
+              title={conversationTitle}
+            >
               {conversationTitle}
             </p>
           </div>
@@ -907,21 +1617,31 @@ export default function Home() {
 
         {/* Workspace */}
 
-        <div className="flex min-h-0 flex-1">
+        <div className="flex min-h-0 min-w-0 flex-1">
 
           {/* History Sidebar */}
 
-          <aside className="flex w-64 flex-col border-r border-zinc-800 bg-zinc-950">
-
-            {/* New Chat */}
+          <aside className="flex w-64 min-w-0 shrink-0 flex-col overflow-hidden border-r border-zinc-800 bg-zinc-950">
 
             <div className="border-b border-zinc-800 p-4">
+
+              <input
+                type="search"
+                value={conversationSearch}
+                onChange={(event) =>
+                  setConversationSearch(
+                    event.target.value
+                  )
+                }
+                placeholder="Search conversations..."
+                className="mb-3 w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 outline-none placeholder:text-zinc-600"
+              />
 
               <button
                 onClick={createNewConversation}
                 className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm font-medium transition hover:bg-zinc-800"
               >
-                + New Chat
+                New Conversation
               </button>
 
             </div>
@@ -935,38 +1655,136 @@ export default function Home() {
               </div>
 
               {conversations.length === 0 ? (
-                <div className="px-2 py-4 text-sm text-zinc-600">
+                <div className="px-2 py-8 text-center text-sm text-zinc-600">
                   No conversations yet.
+                </div>
+              ) : filteredConversations.length === 0 ? (
+                <div className="px-2 py-8 text-center text-sm text-zinc-600">
+                  No conversations found
                 </div>
               ) : (
                 <div className="space-y-1">
 
-                  {conversations.map(
-                    (conversation) => (
-                      <button
+                  {filteredConversations.map(
+                    (conversation) => {
+                      const preview =
+                        getConversationPreview(
+                          conversation
+                        );
+
+                      return (
+                      <div
                         key={conversation.id}
-                        onClick={() =>
-                          switchConversation(conversation)
-                        }
-                        className={`w-full rounded-lg px-3 py-3 text-left transition ${conversation.id ===
+                        className={`min-w-0 overflow-hidden rounded-lg border-l-2 px-3 py-3 transition ${conversation.id ===
                           conversationId
-                          ? "bg-zinc-800"
-                          : "hover:bg-zinc-900"
+                          ? "border-zinc-200 bg-zinc-800"
+                          : "border-transparent hover:bg-zinc-900"
                           }`}
                       >
 
-                        <div className="truncate text-sm font-medium text-zinc-200">
-                          {conversation.title}
+                        {renamingConversationId ===
+                        conversation.id ? (
+                          <input
+                            autoFocus
+                            value={renameDraft}
+                            onChange={(event) =>
+                              setRenameDraft(
+                                event.target.value
+                              )
+                            }
+                            onClick={(event) =>
+                              event.stopPropagation()
+                            }
+                            onKeyDown={(event) => {
+                              if (event.key === "Enter") {
+                                event.preventDefault();
+                                commitRenamingConversation(
+                                  conversation.id
+                                );
+                              }
+
+                              if (event.key === "Escape") {
+                                event.preventDefault();
+                                cancelRenamingConversation();
+                              }
+                            }}
+                            onBlur={() =>
+                              commitRenamingConversation(
+                                conversation.id
+                              )
+                            }
+                            className="w-full min-w-0 rounded-md border border-zinc-700 bg-zinc-950 px-2 py-1 text-sm text-zinc-200 outline-none"
+                          />
+                        ) : (
+                          <button
+                            type="button"
+                            title={conversation.title}
+                            aria-label={conversation.title}
+                            onClick={() =>
+                              switchConversation(
+                                conversation
+                              )
+                            }
+                            className="block w-full min-w-0 truncate text-left text-sm font-medium text-zinc-200"
+                          >
+                            {conversation.title}
+                          </button>
+                        )}
+
+                        {preview ? (
+                          <p
+                            className="mt-1 truncate text-xs text-zinc-500"
+                            title={preview}
+                          >
+                            {preview}
+                          </p>
+                        ) : null}
+
+                        <div className="mt-2 flex items-center justify-between gap-2">
+
+                          <div className="text-xs text-zinc-500">
+                            {formatRelativeTimestamp(
+                              conversation.updatedAt
+                            )}
+                          </div>
+
+                          <div className="flex items-center gap-2">
+
+                            <button
+                              type="button"
+                              title="Rename conversation"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                startRenamingConversation(
+                                  conversation
+                                );
+                              }}
+                              className="text-xs text-zinc-500 transition hover:text-zinc-200"
+                            >
+                              Rename
+                            </button>
+
+                            <button
+                              type="button"
+                              title="Delete conversation"
+                              onClick={(event) => {
+                                event.stopPropagation();
+                                deleteConversation(
+                                  conversation.id
+                                );
+                              }}
+                              className="text-xs text-zinc-500 transition hover:text-red-400"
+                            >
+                              Delete
+                            </button>
+
+                          </div>
+
                         </div>
 
-                        <div className="mt-1 text-xs text-zinc-600">
-                          {new Date(
-                            conversation.updatedAt
-                          ).toLocaleDateString()}
-                        </div>
-
-                      </button>
-                    )
+                      </div>
+                      );
+                    }
                   )}
 
                 </div>
@@ -977,20 +1795,34 @@ export default function Home() {
           </aside>
           {/* Canvas */}
 
-          <section className="flex-1">
+          <section className="relative min-h-0 min-w-0 flex-1">
 
             <EchoCanvas
-              actions={actions}
+              canvas={canvas}
               onNodePositionChange={
                 updateNodePosition
               }
             />
 
+            {isEmptyWorkspace ? (
+              <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-8">
+                <div className="max-w-sm text-center">
+                  <p className="text-lg font-medium text-zinc-200">
+                    Start thinking with Echo
+                  </p>
+                  <p className="mt-2 text-sm text-zinc-500">
+                    Describe a problem, idea, decision, or
+                    question.
+                  </p>
+                </div>
+              </div>
+            ) : null}
+
           </section>
 
           {/* Conversation */}
 
-          <aside className="flex w-96 flex-col border-l border-zinc-800">
+          <aside className="flex w-96 min-w-0 shrink-0 flex-col overflow-hidden border-l border-zinc-800">
 
             <div className="border-b border-zinc-800 p-5">
 
@@ -1017,18 +1849,13 @@ export default function Home() {
 
                     <div className="max-w-xs text-center">
 
-                      <div className="mb-3 text-3xl">
-                        ✨
-                      </div>
-
-                      <p className="text-sm text-zinc-400">
-                        Start a conversation with Echo.
+                      <p className="text-sm font-medium text-zinc-200">
+                        Start thinking with Echo
                       </p>
 
-                      <p className="mt-2 text-xs text-zinc-600">
-                        Tell Echo about your problem,
-                        idea, or goal and let AI build
-                        the canvas.
+                      <p className="mt-2 text-xs text-zinc-500">
+                        Describe a problem, idea, decision,
+                        or question.
                       </p>
 
                     </div>
@@ -1102,14 +1929,17 @@ export default function Home() {
                 <button
                   type="button"
                   onClick={toggleListening}
-                  className={`absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-full transition ${isListening
+                  disabled={loading}
+                  className={`absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-50 ${isListening
                     ? "bg-red-500 text-white animate-pulse"
                     : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
                     }`}
                   title={
-                    isListening
-                      ? "Stop listening"
-                      : "Start voice input"
+                    loading
+                      ? "Echo is thinking..."
+                      : isListening
+                        ? "Stop listening"
+                        : "Start voice input"
                   }
                 >
                   {isListening ? "⏹" : "🎙️"}
@@ -1117,7 +1947,7 @@ export default function Home() {
 
               </div>
 
-              <div className="mt-3 flex items-center justify-between">
+              <div className="mt-3 flex items-center justify-between gap-3">
 
                 <select
                   value={voiceLanguage}
@@ -1138,10 +1968,19 @@ export default function Home() {
                   </option>
                 </select>
 
-                <span className="text-xs text-zinc-600">
-                  {isListening
-                    ? "Listening..."
-                    : "Voice input available"}
+                <span
+                  className={`min-w-0 flex-1 text-right text-xs leading-snug ${
+                    voiceFeedback.kind === "error"
+                      ? "text-red-400"
+                      : "text-zinc-600"
+                  }`}
+                >
+                  {voiceFeedback.kind === "listening"
+                    ? "Listening…"
+                    : voiceFeedback.kind === "error" ||
+                        voiceFeedback.kind === "info"
+                      ? voiceFeedback.message
+                      : "Voice input available"}
                 </span>
 
               </div>

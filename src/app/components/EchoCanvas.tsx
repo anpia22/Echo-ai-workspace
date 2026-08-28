@@ -7,6 +7,9 @@ import {
   Background,
   Controls,
   MiniMap,
+  Handle,
+  Position,
+  MarkerType,
   addEdge,
   useNodesState,
   useEdgesState,
@@ -14,35 +17,38 @@ import {
   type Edge,
   type Connection,
   type NodeChange,
+  type NodeProps,
 } from "@xyflow/react";
 
 import "@xyflow/react/dist/style.css";
 
-type CanvasAction = {
-  type: string;
+import { NODE_HEIGHT, NODE_WIDTH } from "../lib/canvasLayout";
 
-  nodeType?: string;
-  title?: string;
+type CanvasNode = {
+  id: string;
+  nodeType: string;
+  title: string;
   description?: string;
-
-  sourceTitle?: string;
-  targetTitle?: string;
-  relationship?: string;
-
-  position?: {
+  position: {
     x: number;
     y: number;
   };
+};
 
-  updates?: {
-    title?: string;
-    description?: string;
-    nodeType?: string;
-  };
+type CanvasEdge = {
+  id: string;
+  sourceId: string;
+  targetId: string;
+  relationship?: string;
+};
+
+type CanvasState = {
+  nodes: CanvasNode[];
+  edges: CanvasEdge[];
 };
 
 type EchoCanvasProps = {
-  actions: CanvasAction[];
+  canvas: CanvasState;
 
   onNodePositionChange?: (
     title: string,
@@ -51,6 +57,19 @@ type EchoCanvasProps = {
       y: number;
     }
   ) => void;
+};
+
+type EchoNodeData = {
+  nodeType: string;
+  title: string;
+  description?: string;
+};
+
+const handleStyle = {
+  width: 8,
+  height: 8,
+  background: "#3f3f46",
+  border: "1px solid #71717a",
 };
 
 const getNodeStyle = (nodeType?: string) => {
@@ -99,459 +118,213 @@ const getNodeStyle = (nodeType?: string) => {
   }
 };
 
-const NODE_WIDTH = 250;
-const NODE_VERTICAL_GAP = 100;
-const NODE_HORIZONTAL_GAP = 100;
+function EchoNode({ data }: NodeProps<Node<EchoNodeData>>) {
+  return (
+    <div
+      className="relative"
+      style={{
+        ...getNodeStyle(data.nodeType),
+        borderRadius: "16px",
+        padding: "16px",
+        width: NODE_WIDTH,
+        minHeight: 120,
+        boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
+      }}
+    >
+      <Handle
+        type="target"
+        position={Position.Top}
+        id="t-top"
+        style={handleStyle}
+        isConnectable={false}
+      />
+      <Handle
+        type="source"
+        position={Position.Top}
+        id="s-top"
+        style={handleStyle}
+        isConnectable={false}
+      />
+      <Handle
+        type="target"
+        position={Position.Right}
+        id="t-right"
+        style={handleStyle}
+        isConnectable={false}
+      />
+      <Handle
+        type="source"
+        position={Position.Right}
+        id="s-right"
+        style={handleStyle}
+        isConnectable={false}
+      />
+      <Handle
+        type="target"
+        position={Position.Bottom}
+        id="t-bottom"
+        style={handleStyle}
+        isConnectable={false}
+      />
+      <Handle
+        type="source"
+        position={Position.Bottom}
+        id="s-bottom"
+        style={handleStyle}
+        isConnectable={false}
+      />
+      <Handle
+        type="target"
+        position={Position.Left}
+        id="t-left"
+        style={handleStyle}
+        isConnectable={false}
+      />
+      <Handle
+        type="source"
+        position={Position.Left}
+        id="s-left"
+        style={handleStyle}
+        isConnectable={false}
+      />
 
-function getSmartNodePosition(
-  action: CanvasAction,
-  index: number,
-  allActions: CanvasAction[]
-) {
-  /*
-   * Never overwrite a manually saved position.
-   */
-  if (action.position) {
-    return action.position;
-  }
+      <div className="mb-2 text-xs font-semibold uppercase tracking-wider opacity-60">
+        {data.nodeType}
+      </div>
 
-  /*
-   * Find connected edges.
-   */
+      <div className="text-base font-semibold">{data.title}</div>
 
-  const incomingEdges = allActions.filter(
-    (candidate) =>
-      candidate.type === "CREATE_EDGE" &&
-      candidate.targetTitle === action.title
+      {data.description ? (
+        <div className="mt-2 text-xs opacity-70">{data.description}</div>
+      ) : null}
+    </div>
   );
+}
 
-  const outgoingEdges = allActions.filter(
-    (candidate) =>
-      candidate.type === "CREATE_EDGE" &&
-      candidate.sourceTitle === action.title
-  );
+const nodeTypes = {
+  echo: EchoNode,
+};
 
-  const findNode = (title?: string) =>
-    allActions.find(
-      (candidate) =>
-        candidate.type === "CREATE_NODE" &&
-        candidate.title === title
-    );
+function pickHandles(
+  source: { x: number; y: number },
+  target: { x: number; y: number }
+): { sourceHandle: string; targetHandle: string } {
+  const dx =
+    target.x + NODE_WIDTH / 2 - (source.x + NODE_WIDTH / 2);
+  const dy =
+    target.y + NODE_HEIGHT / 2 - (source.y + NODE_HEIGHT / 2);
 
-  /*
-   * --------------------------------------------------
-   * CASE 1: SOLUTION
-   *
-   * Solutions should normally appear BELOW
-   * the problem they solve.
-   * --------------------------------------------------
-   */
-
-  if (action.nodeType === "solution") {
-    const solvesEdge =
-      outgoingEdges.find(
-        (edge) =>
-          edge.relationship === "solves"
-      );
-
-    if (solvesEdge) {
-      const targetNode =
-        findNode(
-          solvesEdge.targetTitle
-        );
-
-      if (targetNode?.position) {
-        return {
-          x: targetNode.position.x,
-          y:
-            targetNode.position.y +
-            300,
-        };
-      }
+  if (Math.abs(dy) >= Math.abs(dx)) {
+    if (dy >= 0) {
+      return { sourceHandle: "s-bottom", targetHandle: "t-top" };
     }
+
+    return { sourceHandle: "s-top", targetHandle: "t-bottom" };
   }
 
-  /*
-   * --------------------------------------------------
-   * CASE 2: PROBLEM
-   *
-   * If an idea/cause points to this problem,
-   * place the problem BELOW it.
-   * --------------------------------------------------
-   */
-
-  if (action.nodeType === "problem") {
-    const causeEdge =
-      incomingEdges.find(
-        (edge) =>
-          edge.relationship === "causes"
-      );
-
-    if (causeEdge) {
-      const causeNode =
-        findNode(
-          causeEdge.sourceTitle
-        );
-
-      if (causeNode?.position) {
-        return {
-          x: causeNode.position.x,
-          y:
-            causeNode.position.y +
-            300,
-        };
-      }
-    }
+  if (dx >= 0) {
+    return { sourceHandle: "s-right", targetHandle: "t-left" };
   }
 
-  /*
-   * --------------------------------------------------
-   * CASE 3: IDEA
-   *
-   * Ideas that cause a problem go ABOVE it.
-   * --------------------------------------------------
-   */
-
-  if (action.nodeType === "idea") {
-    const causeEdge =
-      outgoingEdges.find(
-        (edge) =>
-          edge.relationship === "causes"
-      );
-
-    if (causeEdge) {
-      const targetNode =
-        findNode(
-          causeEdge.targetTitle
-        );
-
-      if (targetNode?.position) {
-        return {
-          x: targetNode.position.x,
-          y:
-            targetNode.position.y -
-            300,
-        };
-      }
-    }
-  }
-
-  /*
-   * --------------------------------------------------
-   * CASE 4: DECISION
-   *
-   * Put decisions to the right of related nodes.
-   * --------------------------------------------------
-   */
-
-  if (
-    action.nodeType === "decision"
-  ) {
-    const relatedEdge =
-      incomingEdges[0] ||
-      outgoingEdges[0];
-
-    if (relatedEdge) {
-      const relatedTitle =
-        relatedEdge.sourceTitle ===
-          action.title
-          ? relatedEdge.targetTitle
-          : relatedEdge.sourceTitle;
-
-      const relatedNode =
-        findNode(relatedTitle);
-
-      if (relatedNode?.position) {
-        return {
-          x:
-            relatedNode.position.x +
-            NODE_WIDTH +
-            NODE_HORIZONTAL_GAP,
-
-          y:
-            relatedNode.position.y,
-        };
-      }
-    }
-  }
-
-  /*
-   * --------------------------------------------------
-   * CASE 5: TASK
-   *
-   * Tasks go below decisions/solutions.
-   * --------------------------------------------------
-   */
-
-  if (action.nodeType === "task") {
-    const relatedEdge =
-      incomingEdges[0] ||
-      outgoingEdges[0];
-
-    if (relatedEdge) {
-      const relatedTitle =
-        relatedEdge.sourceTitle ===
-          action.title
-          ? relatedEdge.targetTitle
-          : relatedEdge.sourceTitle;
-
-      const relatedNode =
-        findNode(relatedTitle);
-
-      if (relatedNode?.position) {
-        return {
-          x:
-            relatedNode.position.x +
-            NODE_WIDTH +
-            NODE_HORIZONTAL_GAP,
-
-          y:
-            relatedNode.position.y,
-        };
-      }
-    }
-  }
-
-  /*
-   * --------------------------------------------------
-   * FALLBACK
-   * --------------------------------------------------
-   */
-
-  return {
-    x:
-      100 +
-      (index % 3) *
-      (NODE_WIDTH +
-        NODE_HORIZONTAL_GAP),
-
-    y:
-      100 +
-      Math.floor(index / 3) *
-      300,
-  };
+  return { sourceHandle: "s-left", targetHandle: "t-right" };
 }
 
 export default function EchoCanvas({
-  actions,
+  canvas,
   onNodePositionChange,
 }: EchoCanvasProps) {
-  /*
-   * --------------------------------------------------
-   * Generate nodes
-   * --------------------------------------------------
-   */
-
-  const generatedNodes: Node[] = useMemo(() => {
-    return actions
-      .filter(
-        (action) =>
-          action.type === "CREATE_NODE" &&
-          action.title
-      )
-      .map((action, index) => ({
-        id: `echo-node-${action.title}`,
-
-        position: getSmartNodePosition(
-          action,
-          index,
-          actions
-        ),
-
-        data: {
-          nodeType: action.nodeType,
-          title: action.title,
-
-          label: (
-            <div className="min-w-[220px]">
-              <div className="mb-2 text-xs font-semibold uppercase tracking-wider opacity-60">
-                {action.nodeType}
-              </div>
-
-              <div className="text-base font-semibold">
-                {action.title}
-              </div>
-
-              {action.description && (
-                <div className="mt-2 text-xs opacity-70">
-                  {action.description}
-                </div>
-              )}
-            </div>
-          ),
-        },
-
-        style: {
-          ...getNodeStyle(action.nodeType),
-
-          borderRadius: "16px",
-
-          padding: "16px",
-
-          width: 250,
-
-          boxShadow:
-            "0 10px 30px rgba(0,0,0,0.25)",
-        },
-      }));
-  }, [actions]);
-
-  /*
-   * --------------------------------------------------
-   * Generate edges
-   * --------------------------------------------------
-   */
+  const generatedNodes: Node<EchoNodeData>[] = useMemo(() => {
+    return canvas.nodes.map((node) => ({
+      id: node.id,
+      type: "echo",
+      position: node.position,
+      data: {
+        nodeType: node.nodeType,
+        title: node.title,
+        description: node.description,
+      },
+    }));
+  }, [canvas.nodes]);
 
   const generatedEdges: Edge[] = useMemo(() => {
-    return actions
-      .filter(
-        (action) =>
-          action.type === "CREATE_EDGE" &&
-          action.sourceTitle &&
-          action.targetTitle
-      )
-      .map((action, index) => {
-        const sourceNode =
-          generatedNodes.find(
-            (node) =>
-              node.data?.title ===
-              action.sourceTitle
-          );
+    const nodesById = new Map(
+      canvas.nodes.map((node) => [node.id, node])
+    );
 
-        const targetNode =
-          generatedNodes.find(
-            (node) =>
-              node.data?.title ===
-              action.targetTitle
-          );
+    return canvas.edges.map((edge) => {
+      const relationship =
+        edge.relationship?.toLowerCase().trim() || "related to";
 
-        if (
-          !sourceNode ||
-          !targetNode
-        ) {
-          return null;
-        }
+      let strokeWidth = 1.75;
 
-        /*
-         * --------------------------------------------------
-         * Relationship
-         * --------------------------------------------------
-         */
+      switch (relationship) {
+        case "causes":
+          strokeWidth = 2;
+          break;
 
-        const relationship =
-          action.relationship
-            ?.toLowerCase()
-            .trim() || "related to";
+        case "solves":
+          strokeWidth = 2.25;
+          break;
 
-        /*
-         * --------------------------------------------------
-         * Relationship-specific styling
-         * --------------------------------------------------
-         */
+        case "supports":
+          strokeWidth = 1.75;
+          break;
 
-        let strokeWidth = 2;
-        let animated = false;
+        case "depends on":
+          strokeWidth = 2;
+          break;
 
-        switch (relationship) {
-          case "causes":
-            strokeWidth = 2;
-            animated = true;
-            break;
+        case "decided by":
+          strokeWidth = 1.75;
+          break;
 
-          case "solves":
-            strokeWidth = 2.5;
-            animated = true;
-            break;
+        case "related to":
+        default:
+          strokeWidth = 1.5;
+          break;
+      }
 
-          case "supports":
-            strokeWidth = 2;
-            animated = false;
-            break;
+      const sourceNode = nodesById.get(edge.sourceId);
+      const targetNode = nodesById.get(edge.targetId);
 
-          case "depends on":
-            strokeWidth = 2;
-            animated = true;
-            break;
+      const handles =
+        sourceNode && targetNode
+          ? pickHandles(sourceNode.position, targetNode.position)
+          : { sourceHandle: "s-bottom", targetHandle: "t-top" };
 
-          case "decided by":
-            strokeWidth = 2;
-            animated = false;
-            break;
-
-          case "related to":
-          default:
-            strokeWidth = 1.5;
-            animated = false;
-            break;
-        }
-
-        return {
-          id: `echo-edge-${index}`,
-
-          source: sourceNode.id,
-
-          target: targetNode.id,
-
-          /*
-           * Arrow direction
-           */
-          markerEnd: {
-            type: "arrowclosed",
-          },
-
-          /*
-           * Relationship label
-           */
-          label: relationship,
-
-          /*
-           * Animation
-           */
-          animated,
-
-          /*
-           * Line thickness
-           */
-          style: {
-            strokeWidth,
-          },
-
-          /*
-           * Label text
-           */
-          labelStyle: {
-            fill: "#a1a1aa",
-            fontSize: 11,
-            fontWeight: 500,
-          },
-
-          /*
-           * Label background
-           */
-          labelBgStyle: {
-            fill: "#18181b",
-            fillOpacity: 0.95,
-          },
-
-          /*
-           * Makes the label easier to read.
-           */
-          labelBgPadding: [
-            6,
-            3,
-          ],
-
-          labelBgBorderRadius: 6,
-        };
-      })
-      .filter(Boolean) as Edge[];
-  }, [actions, generatedNodes]);
-
-  /*
-   * --------------------------------------------------
-   * React Flow state
-   * --------------------------------------------------
-   */
+      return {
+        id: edge.id,
+        source: edge.sourceId,
+        target: edge.targetId,
+        sourceHandle: handles.sourceHandle,
+        targetHandle: handles.targetHandle,
+        type: "smoothstep",
+        markerEnd: {
+          type: MarkerType.ArrowClosed,
+          width: 16,
+          height: 16,
+          color: "#a1a1aa",
+        },
+        label: relationship,
+        animated: false,
+        style: {
+          strokeWidth,
+          stroke: "#a1a1aa",
+        },
+        labelStyle: {
+          fill: "#d4d4d8",
+          fontSize: 11,
+          fontWeight: 500,
+        },
+        labelBgStyle: {
+          fill: "#09090b",
+          fillOpacity: 0.92,
+        },
+        labelBgPadding: [8, 4] as [number, number],
+        labelBgBorderRadius: 6,
+      };
+    });
+  }, [canvas.edges, canvas.nodes]);
 
   const [
     nodes,
@@ -563,32 +336,14 @@ export default function EchoCanvas({
     edges,
     setEdges,
     onEdgesChange,
-  ] = useEdgesState<Edge>(
-    generatedEdges
-  );
-
-  /*
-   * --------------------------------------------------
-   * Sync AI changes
-   * --------------------------------------------------
-   *
-   * Important:
-   * We only sync when the actual action data changes.
-   *
-   * During dragging, React Flow owns the node state.
-   * We do NOT update actions on every mouse movement.
-   *
-   * --------------------------------------------------
-   */
+  ] = useEdgesState<Edge>(generatedEdges);
 
   useEffect(() => {
     setNodes((currentNodes) => {
       return generatedNodes.map((newNode) => {
-        const existingNode =
-          currentNodes.find(
-            (node) =>
-              node.id === newNode.id
-          );
+        const existingNode = currentNodes.find(
+          (node) => node.id === newNode.id
+        );
 
         if (!existingNode) {
           return newNode;
@@ -596,172 +351,112 @@ export default function EchoCanvas({
 
         return {
           ...newNode,
-
-          position:
-            existingNode.position,
-
-          selected:
-            existingNode.selected,
-
-          dragging:
-            existingNode.dragging,
+          position: existingNode.position,
+          selected: existingNode.selected,
+          dragging: existingNode.dragging,
         };
       });
     });
+  }, [generatedNodes, setNodes]);
 
-    setEdges(generatedEdges);
-  }, [
-    generatedNodes,
-    generatedEdges,
-    setNodes,
-    setEdges,
-  ]);
+  useEffect(() => {
+    const positionById = new Map(
+      nodes.map((node) => [node.id, node.position])
+    );
 
-  /*
-   * --------------------------------------------------
-   * Handle node changes
-   * --------------------------------------------------
-   */
+    setEdges(
+      generatedEdges.map((edge) => {
+        const sourcePosition = positionById.get(edge.source);
+        const targetPosition = positionById.get(edge.target);
 
-  const handleNodesChange = useCallback(
-    (changes: NodeChange[]) => {
-      /*
-       * Let React Flow handle ALL changes
-       * immediately.
-       *
-       * This keeps dragging smooth.
-       */
-
-      onNodesChange(changes);
-
-      /*
-       * Only save position when dragging
-       * has finished.
-       */
-
-      changes.forEach((change) => {
-        if (
-          change.type !== "position" ||
-          !change.position
-        ) {
-          return;
+        if (!sourcePosition || !targetPosition) {
+          return edge;
         }
 
-        /*
-         * React Flow sends dragging=true
-         * while the user is moving the node.
-         *
-         * We wait until dragging=false.
-         */
+        const handles = pickHandles(sourcePosition, targetPosition);
+
+        return {
+          ...edge,
+          sourceHandle: handles.sourceHandle,
+          targetHandle: handles.targetHandle,
+        };
+      })
+    );
+  }, [generatedEdges, nodes, setEdges]);
+
+  const handleNodesChange = useCallback(
+    (changes: NodeChange<Node<EchoNodeData>>[]) => {
+      onNodesChange(changes);
+
+      changes.forEach((change) => {
+        if (change.type !== "position" || !change.position) {
+          return;
+        }
 
         if (change.dragging) {
           return;
         }
 
-        const movedNode =
-          nodes.find(
-            (node) =>
-              node.id === change.id
-          );
+        const movedNode = nodes.find((node) => node.id === change.id);
 
-        if (
-          !movedNode ||
-          typeof movedNode.data?.title !==
-          "string"
-        ) {
+        if (!movedNode || typeof movedNode.data?.title !== "string") {
           return;
         }
 
-        /*
-         * Save only the FINAL position.
-         */
-
-        onNodePositionChange?.(
-          movedNode.data.title,
-          change.position
-        );
+        onNodePositionChange?.(movedNode.data.title, change.position);
       });
     },
-    [
-      nodes,
-      onNodesChange,
-      onNodePositionChange,
-    ]
+    [nodes, onNodesChange, onNodePositionChange]
   );
-
-  /*
-   * --------------------------------------------------
-   * Manual edge connection
-   * --------------------------------------------------
-   */
 
   const onConnect = useCallback(
     (connection: Connection) => {
-      setEdges((currentEdges) =>
-        addEdge(
-          connection,
-          currentEdges
-        )
-      );
+      setEdges((currentEdges) => addEdge(connection, currentEdges));
     },
     [setEdges]
   );
-
-  /*
-   * --------------------------------------------------
-   * Render
-   * --------------------------------------------------
-   */
 
   return (
     <div className="h-full w-full bg-zinc-950">
       <ReactFlow
         nodes={nodes}
         edges={edges}
+        nodeTypes={nodeTypes}
         onNodesChange={handleNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         fitView
+        fitViewOptions={{ padding: 0.24 }}
+        minZoom={0.2}
+        maxZoom={2}
+        nodesConnectable={false}
+        elementsSelectable
       >
-        <Background
-          color="#27272a"
-          gap={20}
-        />
+        <Background color="#27272a" gap={20} />
 
         <Controls />
 
         <MiniMap
           nodeColor={(node) => {
-            const nodeType =
-              node.data?.nodeType;
+            const nodeType = node.data?.nodeType;
 
-            if (
-              nodeType === "problem"
-            ) {
+            if (nodeType === "problem") {
               return "#ef4444";
             }
 
-            if (
-              nodeType === "solution"
-            ) {
+            if (nodeType === "solution") {
               return "#22c55e";
             }
 
-            if (
-              nodeType === "decision"
-            ) {
+            if (nodeType === "decision") {
               return "#eab308";
             }
 
-            if (
-              nodeType === "task"
-            ) {
+            if (nodeType === "task") {
               return "#3b82f6";
             }
 
-            if (
-              nodeType === "question"
-            ) {
+            if (nodeType === "question") {
               return "#a855f7";
             }
 
