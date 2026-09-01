@@ -42,9 +42,16 @@ type CanvasEdge = {
   relationship?: string;
 };
 
+type CanvasGroup = {
+  id: string;
+  title: string;
+  memberIds: string[];
+};
+
 type CanvasState = {
   nodes: CanvasNode[];
   edges: CanvasEdge[];
+  groups?: CanvasGroup[];
 };
 
 type EchoCanvasProps = {
@@ -63,7 +70,18 @@ type EchoNodeData = {
   nodeType: string;
   title: string;
   description?: string;
+  parentPosition?: { x: number; y: number };
+  kind?: "node";
 };
+
+type EchoGroupData = {
+  title: string;
+  kind: "group";
+};
+
+const GROUP_PAD_X = 28;
+const GROUP_PAD_Y_TOP = 44;
+const GROUP_PAD_Y_BOTTOM = 28;
 
 const handleStyle = {
   width: 8,
@@ -201,8 +219,22 @@ function EchoNode({ data }: NodeProps<Node<EchoNodeData>>) {
   );
 }
 
+function EchoGroup({ data }: NodeProps<Node<EchoGroupData>>) {
+  return (
+    <div
+      className="h-full w-full rounded-[20px] border border-dashed border-zinc-600 bg-zinc-900/40"
+      style={{ pointerEvents: "none" }}
+    >
+      <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+        {data.title}
+      </div>
+    </div>
+  );
+}
+
 const nodeTypes = {
   echo: EchoNode,
+  echoGroup: EchoGroup,
 };
 
 function pickHandles(
@@ -233,18 +265,66 @@ export default function EchoCanvas({
   canvas,
   onNodePositionChange,
 }: EchoCanvasProps) {
-  const generatedNodes: Node<EchoNodeData>[] = useMemo(() => {
-    return canvas.nodes.map((node) => ({
+  const generatedNodes: Node<EchoNodeData | EchoGroupData>[] = useMemo(() => {
+    const nodesById = new Map(canvas.nodes.map((node) => [node.id, node]));
+    const groupNodes: Node<EchoGroupData>[] = [];
+
+    for (const group of canvas.groups ?? []) {
+      const members = group.memberIds
+        .map((memberId) => nodesById.get(memberId))
+        .filter((node): node is CanvasNode => Boolean(node));
+
+      if (members.length === 0) {
+        continue;
+      }
+
+      const minX = Math.min(...members.map((node) => node.position.x));
+      const minY = Math.min(...members.map((node) => node.position.y));
+      const maxX = Math.max(
+        ...members.map((node) => node.position.x + NODE_WIDTH)
+      );
+      const maxY = Math.max(
+        ...members.map((node) => node.position.y + NODE_HEIGHT)
+      );
+
+      groupNodes.push({
+        id: `echo-group:${group.id}`,
+        type: "echoGroup",
+        position: {
+          x: minX - GROUP_PAD_X,
+          y: minY - GROUP_PAD_Y_TOP,
+        },
+        data: {
+          kind: "group",
+          title: group.title,
+        },
+        draggable: false,
+        selectable: false,
+        connectable: false,
+        zIndex: -1,
+        style: {
+          width: maxX - minX + GROUP_PAD_X * 2,
+          height: maxY - minY + GROUP_PAD_Y_TOP + GROUP_PAD_Y_BOTTOM,
+        },
+      });
+    }
+
+    const echoNodes: Node<EchoNodeData>[] = canvas.nodes.map((node) => ({
       id: node.id,
       type: "echo",
       position: node.position,
+      zIndex: 1,
       data: {
+        kind: "node",
         nodeType: node.nodeType,
         title: node.title,
         description: node.description,
+        parentPosition: node.position,
       },
     }));
-  }, [canvas.nodes]);
+
+    return [...groupNodes, ...echoNodes];
+  }, [canvas.groups, canvas.nodes]);
 
   const generatedEdges: Edge[] = useMemo(() => {
     const nodesById = new Map(
@@ -349,9 +429,20 @@ export default function EchoCanvas({
           return newNode;
         }
 
+        if (newNode.type === "echoGroup") {
+          return newNode;
+        }
+
+        const existingData = existingNode.data as EchoNodeData;
+        const newData = newNode.data as EchoNodeData;
+
+        const parentPositionChanged =
+          existingData.parentPosition?.x !== newData.parentPosition?.x ||
+          existingData.parentPosition?.y !== newData.parentPosition?.y;
+
         return {
           ...newNode,
-          position: existingNode.position,
+          position: parentPositionChanged ? newNode.position : existingNode.position,
           selected: existingNode.selected,
           dragging: existingNode.dragging,
         };
@@ -385,7 +476,7 @@ export default function EchoCanvas({
   }, [generatedEdges, nodes, setEdges]);
 
   const handleNodesChange = useCallback(
-    (changes: NodeChange<Node<EchoNodeData>>[]) => {
+    (changes: NodeChange<Node<EchoNodeData | EchoGroupData>>[]) => {
       onNodesChange(changes);
 
       changes.forEach((change) => {
@@ -399,7 +490,12 @@ export default function EchoCanvas({
 
         const movedNode = nodes.find((node) => node.id === change.id);
 
-        if (!movedNode || typeof movedNode.data?.title !== "string") {
+        if (
+          !movedNode ||
+          movedNode.type === "echoGroup" ||
+          movedNode.data?.kind === "group" ||
+          typeof movedNode.data?.title !== "string"
+        ) {
           return;
         }
 
@@ -438,7 +534,11 @@ export default function EchoCanvas({
 
         <MiniMap
           nodeColor={(node) => {
-            const nodeType = node.data?.nodeType;
+            if (node.type === "echoGroup") {
+              return "#3f3f46";
+            }
+
+            const nodeType = (node.data as EchoNodeData | undefined)?.nodeType;
 
             if (nodeType === "problem") {
               return "#ef4444";

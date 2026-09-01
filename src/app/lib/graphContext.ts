@@ -3,6 +3,10 @@ export type GraphContextNode = {
   nodeType?: string;
   title: string;
   description?: string;
+  position?: {
+    x: number;
+    y: number;
+  };
 };
 
 export type GraphContextEdge = {
@@ -28,6 +32,12 @@ export function logGraphContext(context: GraphContext) {
   console.log("Edges:", context.edges.length);
   console.log(JSON.stringify(context, null, 2));
   console.log("==========================");
+
+  const graphMultiHopFacts = buildGraphMultiHopFacts(context);
+  console.log(
+    "MULTI-HOP FACTS:",
+    JSON.stringify(graphMultiHopFacts, null, 2)
+  );
 }
 
 export type ExplicitGraphEvidence = {
@@ -346,6 +356,132 @@ RANKING ATTRIBUTES (priority / severity / impact / importance):
 ${facts.rankingAttributesPresent ? "- present" : "- none"}`;
 }
 
+export type GraphCausalPath = {
+  nodes: string[];
+  hops: number;
+};
+
+export type GraphMultiHopFacts = {
+  causalPaths: GraphCausalPath[];
+  maxCausalDepth: number;
+};
+
+export function buildGraphMultiHopFacts(
+  context: GraphContext
+): GraphMultiHopFacts {
+  const titleById = new Map(
+    context.nodes.map((node) => [node.id, node.title])
+  );
+
+  const adjacency = new Map<string, string[]>();
+
+  for (const edge of context.edges) {
+    if (edge.relationship !== "causes") {
+      continue;
+    }
+
+    if (!titleById.has(edge.source) || !titleById.has(edge.target)) {
+      continue;
+    }
+
+    const targets = adjacency.get(edge.source) ?? [];
+
+    if (!targets.includes(edge.target)) {
+      targets.push(edge.target);
+    }
+
+    adjacency.set(edge.source, targets);
+  }
+
+  const causalPaths: GraphCausalPath[] = [];
+  const seenPaths = new Set<string>();
+
+  function walk(
+    startId: string,
+    currentId: string,
+    path: string[]
+  ) {
+    const nextIds = adjacency.get(currentId) ?? [];
+
+    for (const nextId of nextIds) {
+      if (path.includes(nextId)) {
+        continue;
+      }
+
+      const nextPath = [...path, nextId];
+
+      if (nextPath.length >= 3) {
+        const titles = nextPath
+          .map((id) => titleById.get(id))
+          .filter(
+            (title): title is string =>
+              typeof title === "string"
+          );
+
+        if (titles.length !== nextPath.length) {
+          continue;
+        }
+
+        const key = titles.join(" → ");
+
+        if (!seenPaths.has(key)) {
+          seenPaths.add(key);
+
+          causalPaths.push({
+            nodes: titles,
+            hops: titles.length - 1,
+          });
+        }
+      }
+
+      walk(
+        startId,
+        nextId,
+        nextPath
+      );
+    }
+  }
+
+  for (const node of context.nodes) {
+    walk(node.id, node.id, [node.id]);
+  }
+
+  const maxCausalDepth =
+    causalPaths.length > 0
+      ? Math.max(
+          ...causalPaths.map(
+            (path) => path.hops
+          )
+        )
+      : 0;
+
+  return {
+    causalPaths,
+    maxCausalDepth,
+  };
+}
+
+export function formatGraphMultiHopFacts(
+  facts: GraphMultiHopFacts
+): string {
+  const pathLines =
+    facts.causalPaths.length > 0
+      ? facts.causalPaths
+          .map(
+            (path) =>
+              `- ${path.nodes.join(" --causes--> ")} (${path.hops} hops)`
+          )
+          .join("\n")
+      : "- none";
+
+  return `GRAPH MULTI-HOP CAUSAL FACTS (explicit causes edges only):
+CAUSAL PATHS:
+${pathLines}
+
+MAX CAUSAL DEPTH:
+- ${facts.maxCausalDepth}`;
+}
+
 export type GraphRecommendationFacts = {
   topLevelProblems: string[];
   standaloneProblems: string[];
@@ -549,7 +685,7 @@ export function isRecommendationIntent(intent: GraphInsightIntent): boolean {
 }
 
 function hasCanvasModificationIntent(transcript: string): boolean {
-  return /\b(add|create|connect|delete|remove|rename|update|capture|insert|draw)\b/.test(
+  return /\b(add|create|connect|delete|remove|rename|update|capture|insert|draw|group)\b/.test(
     transcript
   );
 }
@@ -743,6 +879,10 @@ type GraphSourceNode = {
   nodeType?: string;
   title?: string;
   description?: string;
+  position?: {
+    x: number;
+    y: number;
+  };
 };
 
 type GraphSourceEdge = {
@@ -782,6 +922,10 @@ export function buildGraphContext(
       node.description.length > 0
     ) {
       graphNode.description = node.description;
+    }
+
+    if (node.position) {
+      graphNode.position = node.position;
     }
 
     graphNodes.push(graphNode);

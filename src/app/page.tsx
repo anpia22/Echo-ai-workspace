@@ -6,7 +6,7 @@ import {
   useState,
 } from "react";
 import EchoCanvas from "./components/EchoCanvas";
-import { calculateIncrementalLayout } from "./lib/canvasLayout";
+import { applyCanvasActions } from "./lib/applyCanvasActions";
 import {
   buildGraphContext,
   logGraphContext,
@@ -23,6 +23,8 @@ type CanvasAction = {
   targetTitle?: string;
   relationship?: string;
 
+  nodeTitles?: string[];
+  groupTitle?: string;
   position?: {
     x: number;
     y: number;
@@ -53,9 +55,16 @@ type CanvasEdge = {
   relationship?: string;
 };
 
+type CanvasGroup = {
+  id: string;
+  title: string;
+  memberIds: string[];
+};
+
 type CanvasState = {
   nodes: CanvasNode[];
   edges: CanvasEdge[];
+  groups: CanvasGroup[];
 };
 
 type Message = {
@@ -76,6 +85,24 @@ type Conversation = {
 };
 
 const STORAGE_KEY = "echo-conversations";
+
+function emptyCanvas(): CanvasState {
+  return {
+    nodes: [],
+    edges: [],
+    groups: [],
+  };
+}
+
+function normalizeLoadedCanvas(
+  canvas?: CanvasState | null
+): CanvasState {
+  return {
+    nodes: Array.isArray(canvas?.nodes) ? canvas.nodes : [],
+    edges: Array.isArray(canvas?.edges) ? canvas.edges : [],
+    groups: Array.isArray(canvas?.groups) ? canvas.groups : [],
+  };
+}
 
 const DEFAULT_CONVERSATION_TITLE = "New Conversation";
 
@@ -237,10 +264,7 @@ function createConversation(): Conversation {
     title: DEFAULT_CONVERSATION_TITLE,
     messages: [],
     actions: [],
-    canvas: {
-      nodes: [],
-      edges: [],
-    },
+    canvas: emptyCanvas(),
     createdAt: now,
     updatedAt: now,
   };
@@ -313,10 +337,7 @@ function getVoiceErrorMessage(code: string): string {
 export default function Home() {
   const [transcript, setTranscript] = useState("");
 
-  const [canvas, setCanvas] = useState<CanvasState>({
-    nodes: [],
-    edges: [],
-  });
+  const [canvas, setCanvas] = useState<CanvasState>(emptyCanvas);
 
   useEffect(() => {
     console.log(
@@ -419,10 +440,7 @@ export default function Home() {
           );
 
           setCanvas(
-            latestConversation.canvas || {
-              nodes: [],
-              edges: [],
-            }
+            normalizeLoadedCanvas(latestConversation.canvas)
           );
 
           setIsLoaded(true);
@@ -443,10 +461,7 @@ export default function Home() {
 
       setMessages([]);
 
-      setCanvas({
-        nodes: [],
-        edges: [],
-      });
+      setCanvas(emptyCanvas());
 
       setIsLoaded(true);
     } catch (error) {
@@ -878,10 +893,7 @@ export default function Home() {
 
       setMessages([]);
 
-      setCanvas({
-        nodes: [],
-        edges: [],
-      });
+      setCanvas(emptyCanvas());
 
       setTranscript("");
       setRenamingConversationId(null);
@@ -913,10 +925,7 @@ export default function Home() {
     );
 
     setCanvas(
-      selectedConversation.canvas || {
-        nodes: [],
-        edges: [],
-      }
+      normalizeLoadedCanvas(selectedConversation.canvas)
     );
 
     setTranscript("");
@@ -1052,10 +1061,7 @@ export default function Home() {
           );
 
           setCanvas(
-            nextConversation.canvas || {
-              nodes: [],
-              edges: [],
-            }
+            normalizeLoadedCanvas(nextConversation.canvas)
           );
 
           setTranscript("");
@@ -1085,10 +1091,7 @@ export default function Home() {
 
         setMessages([]);
 
-        setCanvas({
-          nodes: [],
-          edges: [],
-        });
+        setCanvas(emptyCanvas());
 
         setTranscript("");
         setRenamingConversationId(null);
@@ -1138,286 +1141,6 @@ export default function Home() {
     }));
   };
 
-
-  // --------------------------------------------------
-  // apply canvas actions
-  // --------------------------------------------------
-
-  const applyCanvasActions = (
-    currentCanvas: CanvasState,
-    newActions: CanvasAction[]
-  ): CanvasState => {
-    const existingNodeIds = new Set(
-      currentCanvas.nodes.map((node) => node.id)
-    );
-
-    let nextCanvas: CanvasState = {
-      nodes: [...currentCanvas.nodes],
-      edges: [...currentCanvas.edges],
-    };
-
-    for (const action of newActions) {
-      if (!action || typeof action !== "object") {
-        continue;
-      }
-
-      // ==================================================
-      // CREATE_NODE
-      // ==================================================
-
-      if (
-        action.type === "CREATE_NODE" &&
-        action.title &&
-        action.nodeType
-      ) {
-        const exists = nextCanvas.nodes.some(
-          (node) => node.title === action.title
-        );
-
-        if (!exists) {
-          nextCanvas.nodes.push({
-            id: crypto.randomUUID(),
-            nodeType: action.nodeType,
-            title: action.title,
-            description: action.description,
-            position: { x: 0, y: 0 },
-          });
-        }
-
-        continue;
-      }
-
-      // ==================================================
-      // CREATE_EDGE
-      // ==================================================
-
-      if (
-        action.type === "CREATE_EDGE" &&
-        action.sourceTitle &&
-        action.targetTitle
-      ) {
-        const sourceNode =
-          nextCanvas.nodes.find(
-            (node) =>
-              node.title === action.sourceTitle
-          );
-
-        const targetNode =
-          nextCanvas.nodes.find(
-            (node) =>
-              node.title === action.targetTitle
-          );
-
-        if (!sourceNode || !targetNode) {
-          console.warn(
-            "Ignored CREATE_EDGE because node does not exist:",
-            action
-          );
-
-          continue;
-        }
-
-        const edgeExists =
-          nextCanvas.edges.some(
-            (edge) =>
-              edge.sourceId === sourceNode.id &&
-              edge.targetId === targetNode.id &&
-              edge.relationship ===
-                action.relationship
-          );
-
-        if (!edgeExists) {
-          nextCanvas.edges.push({
-            id: crypto.randomUUID(),
-            sourceId: sourceNode.id,
-            targetId: targetNode.id,
-            relationship:
-              action.relationship,
-          });
-        }
-
-        continue;
-      }
-
-      // ==================================================
-      // UPDATE_NODE
-      // ==================================================
-
-      if (
-        action.type === "UPDATE_NODE" &&
-        action.targetTitle &&
-        action.updates
-      ) {
-        const nodeIndex =
-          nextCanvas.nodes.findIndex(
-            (node) =>
-              node.title ===
-              action.targetTitle
-          );
-
-        if (nodeIndex === -1) {
-          console.warn(
-            "Ignored UPDATE_NODE because target does not exist:",
-            action
-          );
-
-          continue;
-        }
-
-        const oldNode =
-          nextCanvas.nodes[nodeIndex];
-
-        const newTitle =
-          action.updates.title ??
-          oldNode.title;
-
-        if (
-          newTitle !== oldNode.title &&
-          nextCanvas.nodes.some(
-            (node) => node.title === newTitle
-          )
-        ) {
-          console.warn(
-            "Ignored UPDATE_NODE because new title already exists:",
-            action
-          );
-
-          continue;
-        }
-
-        nextCanvas.nodes[nodeIndex] = {
-          ...oldNode,
-
-          title: newTitle,
-
-          description:
-            action.updates.description ??
-            oldNode.description,
-
-          nodeType:
-            action.updates.nodeType ??
-            oldNode.nodeType,
-        };
-
-        continue;
-      }
-
-      // ==================================================
-      // DELETE_NODE
-      // ==================================================
-
-      if (
-        action.type === "DELETE_NODE" &&
-        action.targetTitle
-      ) {
-        const targetNode =
-          nextCanvas.nodes.find(
-            (node) =>
-              node.title ===
-              action.targetTitle
-          );
-
-        if (!targetNode) {
-          console.warn(
-            "Ignored DELETE_NODE because target does not exist:",
-            action
-          );
-
-          continue;
-        }
-
-        // Remove node
-        nextCanvas.nodes =
-          nextCanvas.nodes.filter(
-            (node) =>
-              node.id !== targetNode.id
-          );
-
-        // Remove connected edges
-        nextCanvas.edges =
-          nextCanvas.edges.filter(
-            (edge) =>
-              edge.sourceId !==
-                targetNode.id &&
-              edge.targetId !==
-                targetNode.id
-          );
-
-        continue;
-      }
-
-      // ==================================================
-      // DELETE_EDGE
-      // ==================================================
-
-      if (
-        action.type === "DELETE_EDGE" &&
-        action.sourceTitle &&
-        action.targetTitle
-      ) {
-        const sourceNode =
-          nextCanvas.nodes.find(
-            (node) =>
-              node.title ===
-              action.sourceTitle
-          );
-
-        const targetNode =
-          nextCanvas.nodes.find(
-            (node) =>
-              node.title ===
-              action.targetTitle
-          );
-
-        if (!sourceNode || !targetNode) {
-          console.warn(
-            "Ignored DELETE_EDGE because node does not exist:",
-            action
-          );
-
-          continue;
-        }
-
-        nextCanvas.edges =
-          nextCanvas.edges.filter(
-            (edge) => {
-              const sameConnection =
-                edge.sourceId ===
-                  sourceNode.id &&
-                edge.targetId ===
-                  targetNode.id;
-
-              const sameRelationship =
-                !action.relationship ||
-                edge.relationship ===
-                  action.relationship;
-
-              return !(
-                sameConnection &&
-                sameRelationship
-              );
-            }
-          );
-
-        continue;
-      }
-
-      // ==================================================
-      // UNKNOWN ACTION
-      // ==================================================
-
-      console.warn(
-        "Ignored unknown canvas action:",
-        action
-      );
-    }
-
-    const newNodeIds = nextCanvas.nodes
-      .filter((node) => !existingNodeIds.has(node.id))
-      .map((node) => node.id);
-
-    return calculateIncrementalLayout(nextCanvas, newNodeIds);
-  };
 
   // --------------------------------------------------
   // Analyze transcript
@@ -1508,8 +1231,13 @@ export default function Home() {
         "seconds"
       );
 
+      const responseReceivedAt = performance.now();
+
       const data =
         await response.json();
+
+      const responseJsonMs =
+        performance.now() - responseReceivedAt;
 
       if (!response.ok) {
         console.error("❌ ANALYZE ERROR:", data);
@@ -1526,13 +1254,49 @@ export default function Home() {
         JSON.stringify(data.actions, null, 2)
       );
 
+      if (process.env.NODE_ENV !== "production") {
+        console.log(
+          "[ECHO LATENCY] frontend_response_received:",
+          `${Math.round((responseReceivedAt - startTime) * 100) / 100} ms`
+        );
+        console.log(
+          "[ECHO LATENCY] response_json_parse:",
+          `${Math.round(responseJsonMs * 100) / 100} ms`
+        );
+        if (data._echoLatency) {
+          console.log(
+            "[ECHO LATENCY] server breakdown:",
+            data._echoLatency
+          );
+        }
+      }
+
       if (Array.isArray(data.actions)) {
-        setCanvas((currentCanvas) =>
-          applyCanvasActions(
+        setCanvas((currentCanvas) => {
+          const applyStart = performance.now();
+          const nextCanvas = applyCanvasActions(
             currentCanvas,
             data.actions
-          )
-        );
+          );
+          if (process.env.NODE_ENV !== "production") {
+            console.log(
+              "[ECHO LATENCY] applyCanvasActions:",
+              `${Math.round((performance.now() - applyStart) * 100) / 100} ms`
+            );
+          }
+          return nextCanvas;
+        });
+        if (process.env.NODE_ENV !== "production") {
+          const paintStart = performance.now();
+          requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+              console.log(
+                "[ECHO LATENCY] canvas_state_update:",
+                `${Math.round((performance.now() - paintStart) * 100) / 100} ms (2 rAF after setCanvas)`
+              );
+            });
+          });
+        }
       }
 
       // Save AI response in conversation
