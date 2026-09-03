@@ -1,12 +1,34 @@
 "use client";
 
 import {
+  Suspense,
   useEffect,
   useRef,
   useState,
 } from "react";
+import { useSearchParams } from "next/navigation";
 import EchoCanvas from "./components/EchoCanvas";
+import RoomControls from "./components/RoomControls";
 import { applyCanvasActions } from "./lib/applyCanvasActions";
+import { createCanvasSnapshot } from "./lib/collaboration/canvasSnapshot";
+import {
+  applyRemoteNodeEvent,
+  diffLocalNodeMutations,
+  moveSemanticNode,
+  publishLocalNodeMutations,
+} from "./lib/collaboration/nodeEvents";
+import {
+  applyRemoteEdgeEvent,
+  diffLocalEdgeMutations,
+  publishLocalEdgeMutations,
+} from "./lib/collaboration/edgeEvents";
+import {
+  applyRemoteGroupEvent,
+  diffLocalGroupMutations,
+  publishLocalGroupMutations,
+} from "./lib/collaboration/groupEvents";
+import { getRoomIdFromUrl } from "./lib/collaboration/room";
+import { useRoomChannel } from "./lib/collaboration/useRoomChannel";
 import {
   buildGraphContext,
   logGraphContext,
@@ -334,10 +356,38 @@ function getVoiceErrorMessage(code: string): string {
   }
 }
 
-export default function Home() {
+function Home() {
+  const searchParams = useSearchParams();
+  const roomId = getRoomIdFromUrl(searchParams);
+
   const [transcript, setTranscript] = useState("");
 
   const [canvas, setCanvas] = useState<CanvasState>(emptyCanvas);
+  const canvasRef = useRef(canvas);
+
+  const [isLoaded, setIsLoaded] = useState(false);
+  const remoteSnapshotAppliedRef = useRef(false);
+
+  const roomConnection = useRoomChannel(isLoaded ? roomId : null, {
+    getSnapshot: () => createCanvasSnapshot(canvasRef.current),
+    onRemoteSnapshot: (snapshot) => {
+      remoteSnapshotAppliedRef.current = true;
+      setCanvas(snapshot);
+    },
+    onRemoteNodeEvent: (event) => {
+      setCanvas((currentCanvas) => applyRemoteNodeEvent(currentCanvas, event));
+    },
+    onRemoteEdgeEvent: (event) => {
+      setCanvas((currentCanvas) => applyRemoteEdgeEvent(currentCanvas, event));
+    },
+    onRemoteGroupEvent: (event) => {
+      setCanvas((currentCanvas) => applyRemoteGroupEvent(currentCanvas, event));
+    },
+  });
+
+  useEffect(() => {
+    canvasRef.current = canvas;
+  }, [canvas]);
 
   useEffect(() => {
     console.log(
@@ -357,9 +407,12 @@ export default function Home() {
   const [conversationTitle, setConversationTitle] =
     useState("New Conversation");
 
+  const SLOW_RESPONSE_MS = 8000;
+
   const [loading, setLoading] = useState(false);
 
-  const [isLoaded, setIsLoaded] = useState(false);
+  const [slowThinking, setSlowThinking] =
+    useState(false);
 
   const [isListening, setIsListening] =
     useState(false);
@@ -395,6 +448,14 @@ export default function Home() {
   const skipRenameCommitRef =
     useRef(false);
 
+  const analyzeInFlightRef =
+    useRef(false);
+
+  const slowResponseTimerRef =
+    useRef<ReturnType<typeof setTimeout> | null>(
+      null
+    );
+
   const [voiceLanguage, setVoiceLanguage] =
     useState("en-US");
 
@@ -419,6 +480,8 @@ export default function Home() {
         const savedConversations: Conversation[] =
           JSON.parse(saved);
 
+        // Existing localStorage hydrate (Phase 9); keep this path unchanged.
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- client storage restore
         setConversations(
           savedConversations
         );
@@ -439,9 +502,11 @@ export default function Home() {
             latestConversation.messages || []
           );
 
-          setCanvas(
-            normalizeLoadedCanvas(latestConversation.canvas)
-          );
+          if (!remoteSnapshotAppliedRef.current) {
+            setCanvas(
+              normalizeLoadedCanvas(latestConversation.canvas)
+            );
+          }
 
           setIsLoaded(true);
 
@@ -535,6 +600,8 @@ export default function Home() {
         ...remainingConversations,
       ];
 
+      // Existing localStorage autosave (Phase 9); keep this path unchanged.
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- persist conversation list
       setConversations(
         updatedConversations
       );
@@ -558,6 +625,22 @@ export default function Home() {
     conversationTitle,
     isLoaded,
   ]);
+
+  const clearSlowResponseTimer = () => {
+    if (slowResponseTimerRef.current !== null) {
+      clearTimeout(slowResponseTimerRef.current);
+      slowResponseTimerRef.current = null;
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      if (slowResponseTimerRef.current !== null) {
+        clearTimeout(slowResponseTimerRef.current);
+        slowResponseTimerRef.current = null;
+      }
+    };
+  }, []);
 
   // --------------------------------------------------
   // Voice / speech-to-text (composer input only)
@@ -1121,24 +1204,23 @@ export default function Home() {
   // --------------------------------------------------
 
   const updateNodePosition = (
-    title: string,
+    nodeId: string,
     position: {
       x: number;
       y: number;
     }
   ) => {
-    setCanvas((currentCanvas) => ({
-      ...currentCanvas,
+    let didMove = false;
 
-      nodes: currentCanvas.nodes.map((node) =>
-        node.title === title
-          ? {
-              ...node,
-              position,
-            }
-          : node
-      ),
-    }));
+    setCanvas((currentCanvas) => {
+      const nextCanvas = moveSemanticNode(currentCanvas, nodeId, position);
+      didMove = nextCanvas !== currentCanvas;
+      return nextCanvas;
+    });
+
+    if (didMove) {
+      roomConnection.broadcastNodeMoved(nodeId, position);
+    }
   };
 
 
@@ -1148,6 +1230,12 @@ export default function Home() {
 
   const analyzeTranscript = async () => {
     if (!transcript.trim()) return;
+
+    if (analyzeInFlightRef.current || loading) {
+      return;
+    }
+
+    analyzeInFlightRef.current = true;
 
     const userMessage = transcript.trim();
 
@@ -1183,7 +1271,21 @@ export default function Home() {
       }
     }
 
+    setSlowThinking(false);
     setLoading(true);
+    clearSlowResponseTimer();
+    slowResponseTimerRef.current = setTimeout(() => {
+      slowResponseTimerRef.current = null;
+
+      if (
+        !isMountedRef.current ||
+        !analyzeInFlightRef.current
+      ) {
+        return;
+      }
+
+      setSlowThinking(true);
+    }, SLOW_RESPONSE_MS);
 
     try {
       const startTime = performance.now();
@@ -1272,11 +1374,27 @@ export default function Home() {
       }
 
       if (Array.isArray(data.actions)) {
+        let nodeMutations: ReturnType<typeof diffLocalNodeMutations> = [];
+        let edgeMutations: ReturnType<typeof diffLocalEdgeMutations> = [];
+        let groupMutations: ReturnType<typeof diffLocalGroupMutations> = [];
+
         setCanvas((currentCanvas) => {
           const applyStart = performance.now();
           const nextCanvas = applyCanvasActions(
             currentCanvas,
             data.actions
+          );
+          nodeMutations = diffLocalNodeMutations(
+            currentCanvas,
+            nextCanvas
+          );
+          edgeMutations = diffLocalEdgeMutations(
+            currentCanvas,
+            nextCanvas
+          );
+          groupMutations = diffLocalGroupMutations(
+            currentCanvas,
+            nextCanvas
           );
           if (process.env.NODE_ENV !== "production") {
             console.log(
@@ -1286,6 +1404,11 @@ export default function Home() {
           }
           return nextCanvas;
         });
+
+        publishLocalNodeMutations(nodeMutations, roomConnection);
+        publishLocalEdgeMutations(edgeMutations, roomConnection);
+        publishLocalGroupMutations(groupMutations, roomConnection);
+
         if (process.env.NODE_ENV !== "production") {
           const paintStart = performance.now();
           requestAnimationFrame(() => {
@@ -1322,7 +1445,13 @@ export default function Home() {
     } catch (error) {
       console.error(error);
     } finally {
-      setLoading(false);
+      analyzeInFlightRef.current = false;
+      clearSlowResponseTimer();
+
+      if (isMountedRef.current) {
+        setSlowThinking(false);
+        setLoading(false);
+      }
     }
   };
 
@@ -1367,7 +1496,9 @@ export default function Home() {
             </p>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex min-w-0 items-center gap-3">
+
+            <RoomControls connection={roomConnection} />
 
             <span className="h-2 w-2 rounded-full bg-green-500" />
 
@@ -1566,6 +1697,11 @@ export default function Home() {
               onNodePositionChange={
                 updateNodePosition
               }
+              remoteCursors={roomConnection.remoteCursors}
+              participants={roomConnection.participants}
+              onCursorMove={
+                roomId ? roomConnection.broadcastCursorMove : undefined
+              }
             />
 
             {isEmptyWorkspace ? (
@@ -1665,6 +1801,21 @@ export default function Home() {
 
                 )}
 
+                {loading ? (
+                  <div
+                    role="status"
+                    aria-live="polite"
+                    aria-busy="true"
+                    className="flex justify-start"
+                  >
+                    <div className="max-w-[85%] rounded-2xl rounded-bl-md border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-zinc-400">
+                      {slowThinking
+                        ? "Echo is still thinking…"
+                        : "Echo is thinking..."}
+                    </div>
+                  </div>
+                ) : null}
+
               </div>
 
               {/* Composer */}
@@ -1678,6 +1829,27 @@ export default function Home() {
                       event.target.value
                     )
                   }
+                  onKeyDown={(event) => {
+                    if (event.key !== "Enter") {
+                      return;
+                    }
+
+                    if (event.shiftKey) {
+                      return;
+                    }
+
+                    event.preventDefault();
+
+                    if (
+                      loading ||
+                      isListening ||
+                      !transcript.trim()
+                    ) {
+                      return;
+                    }
+
+                    void analyzeTranscript();
+                  }}
                   placeholder={
                     isListening
                       ? "Listening..."
@@ -1700,7 +1872,9 @@ export default function Home() {
                     }`}
                   title={
                     loading
-                      ? "Echo is thinking..."
+                      ? slowThinking
+                        ? "Echo is still thinking…"
+                        : "Echo is thinking..."
                       : isListening
                         ? "Stop listening"
                         : "Start voice input"
@@ -1763,7 +1937,9 @@ export default function Home() {
                 className="w-full rounded-xl bg-white px-4 py-3 font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 {loading
-                  ? "Echo is thinking..."
+                  ? slowThinking
+                    ? "Echo is still thinking…"
+                    : "Echo is thinking..."
                   : "🧠 Analyze with Echo"}
               </button>
 
@@ -1775,5 +1951,13 @@ export default function Home() {
 
       </div>
     </main>
+  );
+}
+
+export default function Page() {
+  return (
+    <Suspense fallback={null}>
+      <Home />
+    </Suspense>
   );
 }

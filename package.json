@@ -9,6 +9,7 @@
     "lint": "eslint"
   },
   "dependencies": {
+    "@supabase/supabase-js": "^2.112.4",
     "@xyflow/react": "^12.11.3",
     "next": "16.3.2",
     "openai": "^7.5.0",

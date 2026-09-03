@@ -1,0 +1,1073 @@
+{
+  "generatedAt": "2026-08-31T19:53:25.091Z",
+  "note": "TEMPORARY forensic audit. Production route not modified. Direct NVIDIA calls.",
+  "systemPromptChars": 3836,
+  "productionHasStreamFlag": false,
+  "streaming": {
+    "attempts": 21,
+    "successes": 15,
+    "failures": 6,
+    "rate503": 6,
+    "rate400": 0,
+    "timeout": 0,
+    "malformedJson": 0,
+    "other": 0,
+    "successRate": 71.4,
+    "ttft": {
+      "n": 15,
+      "min": 537,
+      "max": 34661,
+      "mean": 5358.47,
+      "p50": 1803,
+      "p75": 6208,
+      "p90": 18850
+    },
+    "complete": {
+      "n": 15,
+      "min": 895,
+      "max": 56215,
+      "mean": 11054.87,
+      "p50": 3300,
+      "p75": 10285,
+      "p90": 37096
+    },
+    "jsonReady": {
+      "n": 15,
+      "min": 895,
+      "max": 56215,
+      "mean": 11054.93,
+      "p50": 3300,
+      "p75": 10285,
+      "p90": 37096
+    },
+    "actionReady": {
+      "n": 15,
+      "min": 895,
+      "max": 56215,
+      "mean": 11054.93,
+      "p50": 3300,
+      "p75": 10285,
+      "p90": 37096
+    },
+    "completionTokens": {
+      "n": 15,
+      "min": 52,
+      "max": 119,
+      "mean": 82.8,
+      "p50": 76,
+      "p75": 119,
+      "p90": 119
+    },
+    "promptTokens": {
+      "n": 15,
+      "min": 1979,
+      "max": 2297,
+      "mean": 2085.4,
+      "p50": 2026,
+      "p75": 2095,
+      "p90": 2297
+    },
+    "finishReasons": {
+      "stop": 15
+    },
+    "markdownFences": 0,
+    "moveNodeDropped": 3,
+    "byScenario": {
+      "E1": {
+        "n": 4,
+        "rawTypes": [
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ]
+        ],
+        "validatedTypes": [
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ]
+        ]
+      },
+      "E2": {
+        "n": 4,
+        "rawTypes": [
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ],
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ],
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ],
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ]
+        ],
+        "validatedTypes": [
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ],
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ],
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ],
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ]
+        ]
+      },
+      "E4": {
+        "n": 3,
+        "rawTypes": [
+          [
+            "MOVE_NODE"
+          ],
+          [
+            "MOVE_NODE"
+          ],
+          [
+            "MOVE_NODE"
+          ]
+        ],
+        "validatedTypes": [
+          [],
+          [],
+          []
+        ]
+      },
+      "E5": {
+        "n": 2,
+        "rawTypes": [
+          [
+            "UPDATE_NODE"
+          ],
+          [
+            "UPDATE_NODE"
+          ]
+        ],
+        "validatedTypes": [
+          [
+            "UPDATE_NODE"
+          ],
+          [
+            "UPDATE_NODE"
+          ]
+        ]
+      },
+      "E8": {
+        "n": 2,
+        "rawTypes": [
+          [],
+          []
+        ],
+        "validatedTypes": [
+          [],
+          []
+        ]
+      }
+    }
+  },
+  "nonStreaming": {
+    "attempts": 16,
+    "successes": 15,
+    "failures": 1,
+    "rate503": 1,
+    "rate400": 0,
+    "timeout": 0,
+    "malformedJson": 0,
+    "other": 0,
+    "successRate": 93.8,
+    "ttft": {
+      "n": 15,
+      "min": 1399,
+      "max": 25592,
+      "mean": 7156.33,
+      "p50": 4277,
+      "p75": 10509,
+      "p90": 16233
+    },
+    "complete": {
+      "n": 15,
+      "min": 1399,
+      "max": 25592,
+      "mean": 7156.33,
+      "p50": 4277,
+      "p75": 10509,
+      "p90": 16233
+    },
+    "jsonReady": {
+      "n": 15,
+      "min": 1399,
+      "max": 25592,
+      "mean": 7156.33,
+      "p50": 4277,
+      "p75": 10509,
+      "p90": 16233
+    },
+    "actionReady": {
+      "n": 15,
+      "min": 1399,
+      "max": 25592,
+      "mean": 7156.47,
+      "p50": 4277,
+      "p75": 10509,
+      "p90": 16233
+    },
+    "completionTokens": {
+      "n": 15,
+      "min": 44,
+      "max": 119,
+      "mean": 77.93,
+      "p50": 73,
+      "p75": 78,
+      "p90": 119
+    },
+    "promptTokens": {
+      "n": 15,
+      "min": 1979,
+      "max": 2297,
+      "mean": 2080.47,
+      "p50": 2026,
+      "p75": 2095,
+      "p90": 2297
+    },
+    "finishReasons": {
+      "stop": 15
+    },
+    "markdownFences": 0,
+    "moveNodeDropped": 3,
+    "byScenario": {
+      "E1": {
+        "n": 4,
+        "rawTypes": [
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ]
+        ],
+        "validatedTypes": [
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ]
+        ]
+      },
+      "E2": {
+        "n": 3,
+        "rawTypes": [
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ],
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ],
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ]
+        ],
+        "validatedTypes": [
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ],
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ],
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ]
+        ]
+      },
+      "E4": {
+        "n": 3,
+        "rawTypes": [
+          [
+            "MOVE_NODE"
+          ],
+          [
+            "MOVE_NODE"
+          ],
+          [
+            "MOVE_NODE"
+          ]
+        ],
+        "validatedTypes": [
+          [],
+          [],
+          []
+        ]
+      },
+      "E5": {
+        "n": 2,
+        "rawTypes": [
+          [
+            "UPDATE_NODE"
+          ],
+          [
+            "UPDATE_NODE"
+          ]
+        ],
+        "validatedTypes": [
+          [
+            "UPDATE_NODE"
+          ],
+          [
+            "UPDATE_NODE"
+          ]
+        ]
+      },
+      "E8": {
+        "n": 3,
+        "rawTypes": [
+          [],
+          [],
+          []
+        ],
+        "validatedTypes": [
+          [],
+          [],
+          []
+        ]
+      }
+    }
+  },
+  "maxTokens400": {
+    "attempts": 10,
+    "successes": 10,
+    "failures": 0,
+    "rate503": 0,
+    "rate400": 0,
+    "timeout": 0,
+    "malformedJson": 0,
+    "other": 0,
+    "successRate": 100,
+    "ttft": {
+      "n": 10,
+      "min": 1174,
+      "max": 31180,
+      "mean": 7246.5,
+      "p50": 3261,
+      "p75": 7342,
+      "p90": 13416
+    },
+    "complete": {
+      "n": 10,
+      "min": 1174,
+      "max": 31180,
+      "mean": 7246.5,
+      "p50": 3261,
+      "p75": 7342,
+      "p90": 13416
+    },
+    "jsonReady": {
+      "n": 10,
+      "min": 1174,
+      "max": 31180,
+      "mean": 7246.5,
+      "p50": 3261,
+      "p75": 7342,
+      "p90": 13416
+    },
+    "actionReady": {
+      "n": 10,
+      "min": 1174,
+      "max": 31180,
+      "mean": 7246.5,
+      "p50": 3261,
+      "p75": 7342,
+      "p90": 13416
+    },
+    "completionTokens": {
+      "n": 10,
+      "min": 49,
+      "max": 119,
+      "mean": 77.4,
+      "p50": 73,
+      "p75": 78,
+      "p90": 119
+    },
+    "promptTokens": {
+      "n": 10,
+      "min": 1979,
+      "max": 2297,
+      "mean": 2083.6,
+      "p50": 2026,
+      "p75": 2095,
+      "p90": 2297
+    },
+    "finishReasons": {
+      "stop": 10
+    },
+    "markdownFences": 0,
+    "moveNodeDropped": 2,
+    "byScenario": {
+      "E1": {
+        "n": 2,
+        "rawTypes": [
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ]
+        ],
+        "validatedTypes": [
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ]
+        ]
+      },
+      "E2": {
+        "n": 2,
+        "rawTypes": [
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ],
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ]
+        ],
+        "validatedTypes": [
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ],
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ]
+        ]
+      },
+      "E4": {
+        "n": 2,
+        "rawTypes": [
+          [
+            "MOVE_NODE"
+          ],
+          [
+            "MOVE_NODE"
+          ]
+        ],
+        "validatedTypes": [
+          [],
+          []
+        ]
+      },
+      "E5": {
+        "n": 2,
+        "rawTypes": [
+          [
+            "UPDATE_NODE"
+          ],
+          [
+            "UPDATE_NODE"
+          ]
+        ],
+        "validatedTypes": [
+          [
+            "UPDATE_NODE"
+          ],
+          [
+            "UPDATE_NODE"
+          ]
+        ]
+      },
+      "E8": {
+        "n": 2,
+        "rawTypes": [
+          [],
+          []
+        ],
+        "validatedTypes": [
+          [],
+          []
+        ]
+      }
+    }
+  },
+  "maxTokens900": {
+    "attempts": 10,
+    "successes": 10,
+    "failures": 0,
+    "rate503": 0,
+    "rate400": 0,
+    "timeout": 0,
+    "malformedJson": 0,
+    "other": 0,
+    "successRate": 100,
+    "ttft": {
+      "n": 10,
+      "min": 907,
+      "max": 54099,
+      "mean": 10187.6,
+      "p50": 2509,
+      "p75": 12181,
+      "p90": 15196
+    },
+    "complete": {
+      "n": 10,
+      "min": 907,
+      "max": 54099,
+      "mean": 10187.6,
+      "p50": 2509,
+      "p75": 12181,
+      "p90": 15196
+    },
+    "jsonReady": {
+      "n": 10,
+      "min": 907,
+      "max": 54099,
+      "mean": 10187.6,
+      "p50": 2509,
+      "p75": 12181,
+      "p90": 15196
+    },
+    "actionReady": {
+      "n": 10,
+      "min": 907,
+      "max": 54099,
+      "mean": 10187.6,
+      "p50": 2509,
+      "p75": 12181,
+      "p90": 15196
+    },
+    "completionTokens": {
+      "n": 10,
+      "min": 52,
+      "max": 119,
+      "mean": 78,
+      "p50": 73,
+      "p75": 77,
+      "p90": 119
+    },
+    "promptTokens": {
+      "n": 10,
+      "min": 1979,
+      "max": 2297,
+      "mean": 2083.6,
+      "p50": 2026,
+      "p75": 2095,
+      "p90": 2297
+    },
+    "finishReasons": {
+      "stop": 10
+    },
+    "markdownFences": 0,
+    "moveNodeDropped": 2,
+    "byScenario": {
+      "E1": {
+        "n": 2,
+        "rawTypes": [
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ]
+        ],
+        "validatedTypes": [
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ]
+        ]
+      },
+      "E2": {
+        "n": 2,
+        "rawTypes": [
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ],
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ]
+        ],
+        "validatedTypes": [
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ],
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ]
+        ]
+      },
+      "E4": {
+        "n": 2,
+        "rawTypes": [
+          [
+            "MOVE_NODE"
+          ],
+          [
+            "MOVE_NODE"
+          ]
+        ],
+        "validatedTypes": [
+          [],
+          []
+        ]
+      },
+      "E5": {
+        "n": 2,
+        "rawTypes": [
+          [
+            "UPDATE_NODE"
+          ],
+          [
+            "UPDATE_NODE"
+          ]
+        ],
+        "validatedTypes": [
+          [
+            "UPDATE_NODE"
+          ],
+          [
+            "UPDATE_NODE"
+          ]
+        ]
+      },
+      "E8": {
+        "n": 2,
+        "rawTypes": [
+          [],
+          []
+        ],
+        "validatedTypes": [
+          [],
+          []
+        ]
+      }
+    }
+  },
+  "overallFailures": {
+    "attempts": 57,
+    "successes": 50,
+    "failures": 7,
+    "rate503": 7,
+    "rate400": 0,
+    "timeout": 0,
+    "malformedJson": 0,
+    "other": 0,
+    "successRate": 87.7,
+    "ttft": {
+      "n": 50,
+      "min": 537,
+      "max": 54099,
+      "mean": 7241.26,
+      "p50": 2768,
+      "p75": 7779,
+      "p90": 16233
+    },
+    "complete": {
+      "n": 50,
+      "min": 895,
+      "max": 56215,
+      "mean": 8950.18,
+      "p50": 3517,
+      "p75": 10285,
+      "p90": 25592
+    },
+    "jsonReady": {
+      "n": 50,
+      "min": 895,
+      "max": 56215,
+      "mean": 8950.2,
+      "p50": 3517,
+      "p75": 10285,
+      "p90": 25592
+    },
+    "actionReady": {
+      "n": 50,
+      "min": 895,
+      "max": 56215,
+      "mean": 8950.24,
+      "p50": 3517,
+      "p75": 10285,
+      "p90": 25592
+    },
+    "completionTokens": {
+      "n": 50,
+      "min": 44,
+      "max": 119,
+      "mean": 79.3,
+      "p50": 73,
+      "p75": 78,
+      "p90": 119
+    },
+    "promptTokens": {
+      "n": 50,
+      "min": 1979,
+      "max": 2297,
+      "mean": 2083.2,
+      "p50": 2026,
+      "p75": 2095,
+      "p90": 2297
+    },
+    "finishReasons": {
+      "stop": 50
+    },
+    "markdownFences": 0,
+    "moveNodeDropped": 10,
+    "byScenario": {
+      "E1": {
+        "n": 12,
+        "rawTypes": [
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ]
+        ],
+        "validatedTypes": [
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ],
+          [
+            "CREATE_NODE"
+          ]
+        ]
+      },
+      "E2": {
+        "n": 11,
+        "rawTypes": [
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ],
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ],
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ],
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ],
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ],
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ],
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ],
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ],
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ],
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ],
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ]
+        ],
+        "validatedTypes": [
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ],
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ],
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ],
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ],
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ],
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ],
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ],
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ],
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ],
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ],
+          [
+            "CREATE_NODE",
+            "CREATE_EDGE"
+          ]
+        ]
+      },
+      "E4": {
+        "n": 10,
+        "rawTypes": [
+          [
+            "MOVE_NODE"
+          ],
+          [
+            "MOVE_NODE"
+          ],
+          [
+            "MOVE_NODE"
+          ],
+          [
+            "MOVE_NODE"
+          ],
+          [
+            "MOVE_NODE"
+          ],
+          [
+            "MOVE_NODE"
+          ],
+          [
+            "MOVE_NODE"
+          ],
+          [
+            "MOVE_NODE"
+          ],
+          [
+            "MOVE_NODE"
+          ],
+          [
+            "MOVE_NODE"
+          ]
+        ],
+        "validatedTypes": [
+          [],
+          [],
+          [],
+          [],
+          [],
+          [],
+          [],
+          [],
+          [],
+          []
+        ]
+      },
+      "E5": {
+        "n": 8,
+        "rawTypes": [
+          [
+            "UPDATE_NODE"
+          ],
+          [
+            "UPDATE_NODE"
+          ],
+          [
+            "UPDATE_NODE"
+          ],
+          [
+            "UPDATE_NODE"
+          ],
+          [
+            "UPDATE_NODE"
+          ],
+          [
+            "UPDATE_NODE"
+          ],
+          [
+            "UPDATE_NODE"
+          ],
+          [
+            "UPDATE_NODE"
+          ]
+        ],
+        "validatedTypes": [
+          [
+            "UPDATE_NODE"
+          ],
+          [
+            "UPDATE_NODE"
+          ],
+          [
+            "UPDATE_NODE"
+          ],
+          [
+            "UPDATE_NODE"
+          ],
+          [
+            "UPDATE_NODE"
+          ],
+          [
+            "UPDATE_NODE"
+          ],
+          [
+            "UPDATE_NODE"
+          ],
+          [
+            "UPDATE_NODE"
+          ]
+        ]
+      },
+      "E8": {
+        "n": 9,
+        "rawTypes": [
+          [],
+          [],
+          [],
+          [],
+          [],
+          [],
+          [],
+          [],
+          []
+        ],
+        "validatedTypes": [
+          [],
+          [],
+          [],
+          [],
+          [],
+          [],
+          [],
+          [],
+          []
+        ]
+      }
+    }
+  }
+}

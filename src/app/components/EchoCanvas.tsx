@@ -1,9 +1,11 @@
 "use client";
 
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 
 import {
   ReactFlow,
+  ReactFlowProvider,
+  useReactFlow,
   Background,
   Controls,
   MiniMap,
@@ -23,6 +25,9 @@ import {
 import "@xyflow/react/dist/style.css";
 
 import { NODE_HEIGHT, NODE_WIDTH } from "../lib/canvasLayout";
+import type { RemoteCursor } from "../lib/collaboration/cursorEvents";
+import type { Participant } from "../lib/collaboration/participant";
+import RemoteCursors from "./RemoteCursors";
 
 type CanvasNode = {
   id: string;
@@ -58,12 +63,16 @@ type EchoCanvasProps = {
   canvas: CanvasState;
 
   onNodePositionChange?: (
-    title: string,
+    nodeId: string,
     position: {
       x: number;
       y: number;
     }
   ) => void;
+
+  remoteCursors?: RemoteCursor[];
+  participants?: Participant[];
+  onCursorMove?: (x: number, y: number) => void;
 };
 
 type EchoNodeData = {
@@ -261,10 +270,66 @@ function pickHandles(
   return { sourceHandle: "s-left", targetHandle: "t-right" };
 }
 
-export default function EchoCanvas({
+function EchoCanvasInner({
   canvas,
   onNodePositionChange,
+  remoteCursors,
+  participants,
+  onCursorMove,
 }: EchoCanvasProps) {
+  const { screenToFlowPosition } = useReactFlow();
+
+  const lastFlowPosRef = useRef<{ x: number; y: number } | null>(null);
+  const lastBroadcastTimeRef = useRef<number>(0);
+  const throttleTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const THROTTLE_MS = 35; // ~28.5 updates/sec
+
+  const handlePointerMove = useCallback(
+    (event: React.PointerEvent<HTMLDivElement>) => {
+      if (!onCursorMove) {
+        return;
+      }
+
+      const flowPosition = screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+
+      lastFlowPosRef.current = flowPosition;
+
+      const now = Date.now();
+      const elapsed = now - lastBroadcastTimeRef.current;
+
+      if (elapsed >= THROTTLE_MS) {
+        lastBroadcastTimeRef.current = now;
+        if (throttleTimerRef.current !== null) {
+          clearTimeout(throttleTimerRef.current);
+          throttleTimerRef.current = null;
+        }
+        onCursorMove(flowPosition.x, flowPosition.y);
+      } else if (throttleTimerRef.current === null) {
+        throttleTimerRef.current = setTimeout(() => {
+          throttleTimerRef.current = null;
+          lastBroadcastTimeRef.current = Date.now();
+          const latest = lastFlowPosRef.current;
+          if (latest) {
+            onCursorMove(latest.x, latest.y);
+          }
+        }, THROTTLE_MS - elapsed);
+      }
+    },
+    [onCursorMove, screenToFlowPosition]
+  );
+
+  useEffect(() => {
+    return () => {
+      if (throttleTimerRef.current !== null) {
+        clearTimeout(throttleTimerRef.current);
+      }
+    };
+  }, []);
+
   const generatedNodes: Node<EchoNodeData | EchoGroupData>[] = useMemo(() => {
     const nodesById = new Map(canvas.nodes.map((node) => [node.id, node]));
     const groupNodes: Node<EchoGroupData>[] = [];
@@ -493,13 +558,12 @@ export default function EchoCanvas({
         if (
           !movedNode ||
           movedNode.type === "echoGroup" ||
-          movedNode.data?.kind === "group" ||
-          typeof movedNode.data?.title !== "string"
+          movedNode.data?.kind === "group"
         ) {
           return;
         }
 
-        onNodePositionChange?.(movedNode.data.title, change.position);
+        onNodePositionChange?.(movedNode.id, change.position);
       });
     },
     [nodes, onNodesChange, onNodePositionChange]
@@ -513,7 +577,10 @@ export default function EchoCanvas({
   );
 
   return (
-    <div className="h-full w-full bg-zinc-950">
+    <div
+      className="h-full w-full bg-zinc-950"
+      onPointerMove={handlePointerMove}
+    >
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -563,7 +630,17 @@ export default function EchoCanvas({
             return "#71717a";
           }}
         />
+
+        <RemoteCursors cursors={remoteCursors} participants={participants} />
       </ReactFlow>
     </div>
+  );
+}
+
+export default function EchoCanvas(props: EchoCanvasProps) {
+  return (
+    <ReactFlowProvider>
+      <EchoCanvasInner {...props} />
+    </ReactFlowProvider>
   );
 }

@@ -1,0 +1,350 @@
+{
+  "verdict": {
+    "checks": {
+      "aiGeneratedMoveNode": true,
+      "notEmptyActions": true,
+      "onlyMoveOrIncludesMove": true,
+      "noUnknownDrop": true,
+      "idSame": true,
+      "titleSame": true,
+      "descriptionSame": true,
+      "nodeTypeSame": true,
+      "positionChanged": true,
+      "salesUnmoved": true,
+      "verifyUnmoved": true,
+      "edgesUnchangedAfterMove": true,
+      "edgesUnchangedAfterRefresh": true,
+      "persistPosition": true,
+      "persistId": true,
+      "visibleMove": true,
+      "createNode": true,
+      "movedPosition": {
+        "x": 360,
+        "y": 400
+      },
+      "moveAction": {
+        "type": "MOVE_NODE",
+        "targetTitle": "Poor lead quality",
+        "position": {
+          "x": 360,
+          "y": 400
+        }
+      },
+      "rawRejected": false
+    },
+    "pass": {
+      "ai": true,
+      "validation": true,
+      "execution": true,
+      "identity": true,
+      "edges": true,
+      "unrelated": true,
+      "persist": true,
+      "create": true,
+      "visible": true
+    }
+  },
+  "report": {
+    "baseUrl": "http://localhost:3000",
+    "before": {
+      "nodes": [
+        {
+          "id": "sales",
+          "nodeType": "problem",
+          "title": "Sales performance is getting worse",
+          "description": "Overall sales results",
+          "position": {
+            "x": 360,
+            "y": 320
+          }
+        },
+        {
+          "id": "lead",
+          "nodeType": "problem",
+          "title": "Poor lead quality",
+          "description": "Leads are not qualified",
+          "position": {
+            "x": 360,
+            "y": 40
+          }
+        },
+        {
+          "id": "verify",
+          "nodeType": "problem",
+          "title": "Weak lead verification",
+          "description": "Verification is incomplete",
+          "position": {
+            "x": 360,
+            "y": -240
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e1",
+          "sourceId": "lead",
+          "targetId": "sales",
+          "relationship": "causes"
+        },
+        {
+          "id": "e2",
+          "sourceId": "verify",
+          "targetId": "lead",
+          "relationship": "causes"
+        }
+      ],
+      "groups": []
+    },
+    "beforeBoxes": {
+      "lead": {
+        "x": 613.5362548828125,
+        "y": 419.31884765625,
+        "width": 244.92755126953125,
+        "height": 117.56524658203125
+      },
+      "sales": {
+        "x": 613.5362548828125,
+        "y": 693.6376953125,
+        "width": 244.92755126953125,
+        "height": 126.9459228515625
+      },
+      "verify": {
+        "x": 613.5362548828125,
+        "y": 145,
+        "width": 244.92755126953125,
+        "height": 117.56524658203125
+      }
+    },
+    "moveResponse": {
+      "message": "Moved Poor lead quality below Sales performance.",
+      "actions": [
+        {
+          "type": "MOVE_NODE",
+          "targetTitle": "Poor lead quality",
+          "position": {
+            "x": 360,
+            "y": 400
+          }
+        }
+      ]
+    },
+    "afterMove": {
+      "nodes": [
+        {
+          "id": "sales",
+          "nodeType": "problem",
+          "title": "Sales performance is getting worse",
+          "description": "Overall sales results",
+          "position": {
+            "x": 360,
+            "y": 320
+          }
+        },
+        {
+          "id": "lead",
+          "nodeType": "problem",
+          "title": "Poor lead quality",
+          "description": "Leads are not qualified",
+          "position": {
+            "x": 360,
+            "y": 400
+          }
+        },
+        {
+          "id": "verify",
+          "nodeType": "problem",
+          "title": "Weak lead verification",
+          "description": "Verification is incomplete",
+          "position": {
+            "x": 360,
+            "y": -240
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e1",
+          "sourceId": "lead",
+          "targetId": "sales",
+          "relationship": "causes"
+        },
+        {
+          "id": "e2",
+          "sourceId": "verify",
+          "targetId": "lead",
+          "relationship": "causes"
+        }
+      ],
+      "groups": []
+    },
+    "afterBoxes": {
+      "lead": {
+        "x": 613.5362548828125,
+        "y": 772.0145263671875,
+        "width": 244.92755126953125,
+        "height": 117.565185546875
+      },
+      "sales": {
+        "x": 613.5362548828125,
+        "y": 693.6376953125,
+        "width": 244.92755126953125,
+        "height": 126.9459228515625
+      },
+      "verify": {
+        "x": 613.5362548828125,
+        "y": 145,
+        "width": 244.92755126953125,
+        "height": 117.56524658203125
+      }
+    },
+    "afterRefresh": {
+      "nodes": [
+        {
+          "id": "sales",
+          "nodeType": "problem",
+          "title": "Sales performance is getting worse",
+          "description": "Overall sales results",
+          "position": {
+            "x": 360,
+            "y": 320
+          }
+        },
+        {
+          "id": "lead",
+          "nodeType": "problem",
+          "title": "Poor lead quality",
+          "description": "Leads are not qualified",
+          "position": {
+            "x": 360,
+            "y": 400
+          }
+        },
+        {
+          "id": "verify",
+          "nodeType": "problem",
+          "title": "Weak lead verification",
+          "description": "Verification is incomplete",
+          "position": {
+            "x": 360,
+            "y": -240
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e1",
+          "sourceId": "lead",
+          "targetId": "sales",
+          "relationship": "causes"
+        },
+        {
+          "id": "e2",
+          "sourceId": "verify",
+          "targetId": "lead",
+          "relationship": "causes"
+        }
+      ],
+      "groups": []
+    },
+    "afterRefreshBoxes": {
+      "lead": {
+        "x": 624.8158569335938,
+        "y": 713.26318359375,
+        "width": 222.36834716796875,
+        "height": 106.73681640625
+      }
+    },
+    "createResponse": {
+      "message": "Added the solution \"Improve lead verification\" and connected it to solve \"Weak lead verification\".",
+      "actions": [
+        {
+          "type": "CREATE_NODE",
+          "nodeType": "solution",
+          "title": "Improve lead verification",
+          "description": "Strengthen the lead verification process to ensure higher quality leads"
+        },
+        {
+          "type": "CREATE_EDGE",
+          "sourceTitle": "Improve lead verification",
+          "targetTitle": "Weak lead verification",
+          "relationship": "solves"
+        }
+      ]
+    },
+    "afterCreate": {
+      "nodes": [
+        {
+          "id": "sales",
+          "nodeType": "problem",
+          "title": "Sales performance is getting worse",
+          "description": "Overall sales results",
+          "position": {
+            "x": 360,
+            "y": 320
+          }
+        },
+        {
+          "id": "lead",
+          "nodeType": "problem",
+          "title": "Poor lead quality",
+          "description": "Leads are not qualified",
+          "position": {
+            "x": 360,
+            "y": 400
+          }
+        },
+        {
+          "id": "verify",
+          "nodeType": "problem",
+          "title": "Weak lead verification",
+          "description": "Verification is incomplete",
+          "position": {
+            "x": 360,
+            "y": -240
+          }
+        },
+        {
+          "id": "02a21210-c005-4bcc-a02e-8ccdaac27c92",
+          "nodeType": "solution",
+          "title": "Improve lead verification",
+          "description": "Strengthen the lead verification process to ensure higher quality leads",
+          "position": {
+            "x": 690,
+            "y": -240
+          }
+        }
+      ],
+      "edges": [
+        {
+          "id": "e1",
+          "sourceId": "lead",
+          "targetId": "sales",
+          "relationship": "causes"
+        },
+        {
+          "id": "e2",
+          "sourceId": "verify",
+          "targetId": "lead",
+          "relationship": "causes"
+        },
+        {
+          "id": "58df876a-f7e6-437d-a45a-e4994c2c9c00",
+          "sourceId": "02a21210-c005-4bcc-a02e-8ccdaac27c92",
+          "targetId": "verify",
+          "relationship": "solves"
+        }
+      ],
+      "groups": []
+    }
+  },
+  "consoleLogs": [
+    {
+      "type": "log",
+      "text": "AI ACTIONS: [\n  {\n    \"type\": \"MOVE_NODE\",\n    \"targetTitle\": \"Poor lead quality\",\n    \"position\": {\n      \"x\": 360,\n      \"y\": 400\n    }\n  }\n]"
+    },
+    {
+      "type": "log",
+      "text": "AI ACTIONS: [\n  {\n    \"type\": \"CREATE_NODE\",\n    \"nodeType\": \"solution\",\n    \"title\": \"Improve lead verification\",\n    \"description\": \"Strengthen the lead verification process to ensure higher quality leads\"\n  },\n  {\n    \"type\": \"CREATE_EDGE\",\n    \"sourceTitle\": \"Improve lead verification\",\n    \"targetTitle\": \"Weak lead verification\",\n    \"relationship\": \"solves\"\n  }\n]"
+    }
+  ]
+}

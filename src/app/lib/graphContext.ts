@@ -819,7 +819,7 @@ export function classifyGraphInsightIntent(
     return "main_problems";
   }
 
-  if (isQuestionLike(text) && /\b(graph|canvas|workspace|node|cause|solution)\b/.test(text)) {
+  if (isQuestionLike(text)) {
     return "other_insight";
   }
 

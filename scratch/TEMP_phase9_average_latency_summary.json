@@ -1,0 +1,231 @@
+{
+  "generatedAt": "2026-09-01T18:30:30.545Z",
+  "url": "http://localhost:3000/api/analyze",
+  "note": "Production POST /api/analyze. Sequential. Independent canvas payloads. Client totalMs from fetch. NVIDIA ms correlated after the run from .next/dev/logs/next-development.log 'NVIDIA response time'. Local = client totalMs minus NVIDIA wait. Two successful rows include one 503 retry inside the NVIDIA timer.",
+  "rounds": 2,
+  "requests": 20,
+  "successful": 19,
+  "timeout": 0,
+  "unavailable_503": 1,
+  "provider_503_events": 3,
+  "unusable_json": 0,
+  "http_error": 0,
+  "network_error": 0,
+  "retries": 3,
+  "failedUnusable": 1,
+  "totalMs_success": {
+    "n": 19,
+    "min": 6347,
+    "max": 38196,
+    "mean": 15785.47,
+    "p50": 11953,
+    "p75": 26753,
+    "p90": 30001,
+    "p95": 38196
+  },
+  "nvidiaMs_success": {
+    "n": 19,
+    "min": 6320,
+    "max": 38160,
+    "mean": 15754.21,
+    "p50": 11930,
+    "p75": 26720,
+    "p90": 29980,
+    "p95": 38160
+  },
+  "localMs_success": {
+    "n": 19,
+    "min": 18,
+    "max": 106,
+    "mean": 31.26,
+    "p50": 28,
+    "p75": 32,
+    "p90": 36,
+    "p95": 106
+  },
+    "p75": null,
+    "p90": null,
+    "p95": null
+  },
+  "handlerMs_success": {
+    "n": 0,
+    "min": null,
+    "max": null,
+    "mean": null,
+    "p50": null,
+    "p75": null,
+    "p90": null,
+    "p95": null
+  },
+  "byScenario": {
+    "create_node": {
+      "n": 2,
+      "success": 2,
+      "kinds": [
+        "success",
+        "success"
+      ],
+      "totalMs": [
+        17976,
+        7239
+      ],
+      "nvidiaMs": [
+        null,
+        null
+      ]
+    },
+    "create_edge": {
+      "n": 2,
+      "success": 2,
+      "kinds": [
+        "success",
+        "success"
+      ],
+      "totalMs": [
+        26753,
+        7158
+      ],
+      "nvidiaMs": [
+        null,
+        null
+      ]
+    },
+    "update_node": {
+      "n": 2,
+      "success": 2,
+      "kinds": [
+        "success",
+        "success"
+      ],
+      "totalMs": [
+        11953,
+        7285
+      ],
+      "nvidiaMs": [
+        null,
+        null
+      ]
+    },
+    "delete_node": {
+      "n": 2,
+      "success": 1,
+      "kinds": [
+        "unavailable_503",
+        "success"
+      ],
+      "totalMs": [
+        7388
+      ],
+      "nvidiaMs": [
+        null
+      ]
+    },
+    "move_node": {
+      "n": 2,
+      "success": 2,
+      "kinds": [
+        "success",
+        "success"
+      ],
+      "totalMs": [
+        8485,
+        38196
+      ],
+      "nvidiaMs": [
+        null,
+        null
+      ]
+    },
+    "group_nodes": {
+      "n": 2,
+      "success": 2,
+      "kinds": [
+        "success",
+        "success"
+      ],
+      "totalMs": [
+        17850,
+        29434
+      ],
+      "nvidiaMs": [
+        null,
+        null
+      ]
+    },
+    "multi_action": {
+      "n": 2,
+      "success": 2,
+      "kinds": [
+        "success",
+        "success"
+      ],
+      "totalMs": [
+        30001,
+        6347
+      ],
+      "nvidiaMs": [
+        null,
+        null
+      ]
+    },
+    "insight_main_problems": {
+      "n": 2,
+      "success": 2,
+      "kinds": [
+        "success",
+        "success"
+      ],
+      "totalMs": [
+        15741,
+        8798
+      ],
+      "nvidiaMs": [
+        null,
+        null
+      ]
+    },
+    "insight_unresolved": {
+      "n": 2,
+      "success": 2,
+      "kinds": [
+        "success",
+        "success"
+      ],
+      "totalMs": [
+        12255,
+        8362
+      ],
+      "nvidiaMs": [
+        null,
+        null
+      ]
+    },
+    "recommendation_focus": {
+      "n": 2,
+      "success": 2,
+      "kinds": [
+        "success",
+        "success"
+      ],
+      "totalMs": [
+        9982,
+        28721
+      ],
+      "nvidiaMs": [
+        null,
+        null
+      ]
+    }
+  },
+  "priorDirectNvidiaNonStream": {
+    "source": "scratch/TEMP_phase95_summary.json nonStreaming.complete",
+    "n": 20,
+    "mean": 8609.4,
+    "p50": 5028,
+    "p75": 6879,
+    "p90": 15502,
+    "p95": 34401,
+    "min": 1579,
+    "max": 45035
+  }
+}

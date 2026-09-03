@@ -1,4 +1,7 @@
-import OpenAI from "openai";
+import OpenAI, {
+  APIConnectionTimeoutError,
+  APIError,
+} from "openai";
 import { NextResponse } from "next/server";
 import {
   buildExplicitGraphEvidence,
@@ -15,8 +18,12 @@ import {
   logGraphInsight,
   logGraphRecommendation,
 } from "../../lib/graphContext";
+import { deduplicateActions } from "../../lib/deduplicateActions";
 import { parseGroupNodesAction, resolveGroupMemberIds } from "../../lib/groupNodesAction";
 import { parseMoveNodeAction } from "../../lib/moveNodeAction";
+
+const NVIDIA_REQUEST_TIMEOUT_MS = 60_000;
+const NVIDIA_503_RETRY_DELAY_MS = 750;
 
 const client = new OpenAI({
   baseURL: "https://integrate.api.nvidia.com/v1",
@@ -167,6 +174,9 @@ export function validateActions(
   canvas: CanvasState,
   actions: any[]
 ): CanvasAction[] {
+  const uniqueActions = deduplicateActions(
+    Array.isArray(actions) ? actions : []
+  );
   const validActions: CanvasAction[] = [];
 
   // We maintain a temporary representation of the
@@ -184,7 +194,7 @@ export function validateActions(
   const tempEdges = [...canvas.edges];
   const tempGroups = [...(canvas.groups ?? [])];
 
-  for (const action of actions) {
+  for (const action of uniqueActions) {
     if (!action || typeof action !== "object") {
       continue;
     }
@@ -703,6 +713,193 @@ function stripPrivateReasoningFields(parsed: Record<string, unknown>) {
   delete parsed.private_reasoning;
 }
 
+function tryParseJson(text: string): unknown {
+  return JSON.parse(text);
+}
+
+function stripMarkdownCodeFences(text: string): string {
+  let next = text.trim();
+
+  if (!next.startsWith("```")) {
+    return next;
+  }
+
+  next = next.replace(/^```(?:json)?\s*/i, "");
+  next = next.replace(/\s*```$/i, "");
+  return next.trim();
+}
+
+function extractOutermostJsonObject(text: string): string | null {
+  const start = text.indexOf("{");
+
+  if (start === -1) {
+    return null;
+  }
+
+  let depth = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (let i = start; i < text.length; i++) {
+    const ch = text[i];
+
+    if (inString) {
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+
+      if (ch === "\\") {
+        escaped = true;
+        continue;
+      }
+
+      if (ch === '"') {
+        inString = false;
+      }
+
+      continue;
+    }
+
+    if (ch === '"') {
+      inString = true;
+      continue;
+    }
+
+    if (ch === "{") {
+      depth += 1;
+      continue;
+    }
+
+    if (ch === "}") {
+      depth -= 1;
+
+      if (depth === 0) {
+        return text.slice(start, i + 1);
+      }
+    }
+  }
+
+  return null;
+}
+
+function recoverAiJson(content: string): unknown | undefined {
+  const trimmed = content.trim();
+  const unfenced = stripMarkdownCodeFences(trimmed);
+  const candidates = [trimmed, unfenced];
+
+  const extractedFromTrimmed =
+    extractOutermostJsonObject(trimmed);
+  const extractedFromUnfenced =
+    extractOutermostJsonObject(unfenced);
+
+  if (extractedFromTrimmed) {
+    candidates.push(extractedFromTrimmed);
+  }
+
+  if (extractedFromUnfenced) {
+    candidates.push(extractedFromUnfenced);
+  }
+
+  const seen = new Set<string>();
+
+  for (const candidate of candidates) {
+    if (seen.has(candidate)) {
+      continue;
+    }
+
+    seen.add(candidate);
+
+    try {
+      return tryParseJson(candidate);
+    } catch {
+      continue;
+    }
+  }
+
+  return undefined;
+}
+
+function isNvidiaTimeoutError(error: unknown): boolean {
+  return error instanceof APIConnectionTimeoutError;
+}
+
+function isNvidiaProviderUnavailableError(
+  error: unknown
+): boolean {
+  return (
+    error instanceof APIError &&
+    error.status === 503
+  );
+}
+
+function wait(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+async function withSingle503Retry<T>(
+  attempt: () => Promise<T>
+): Promise<T> {
+  try {
+    return await attempt();
+  } catch (error) {
+    if (isNvidiaTimeoutError(error)) {
+      throw error;
+    }
+
+    if (!isNvidiaProviderUnavailableError(error)) {
+      throw error;
+    }
+
+    console.error(
+      "NVIDIA provider unavailable (503); retrying once"
+    );
+
+    await wait(NVIDIA_503_RETRY_DELAY_MS);
+
+    return await attempt();
+  }
+}
+
+function parseAiResponseContent(
+  content: string
+): { ok: true; value: unknown } | { ok: false } {
+  try {
+    return {
+      ok: true,
+      value: tryParseJson(content),
+    };
+  } catch {
+    console.error(
+      "NVIDIA JSON parse failed"
+    );
+    console.error(
+      "NVIDIA JSON recovery attempted"
+    );
+
+    const recovered = recoverAiJson(content);
+
+    if (recovered !== undefined) {
+      console.error(
+        "NVIDIA JSON recovery succeeded"
+      );
+
+      return {
+        ok: true,
+        value: recovered,
+      };
+    }
+
+    console.error(
+      "NVIDIA JSON recovery failed"
+    );
+
+    return { ok: false };
+  }
+}
+
 // ==================================================
 // POST
 // ==================================================
@@ -781,10 +978,11 @@ export async function POST(
     console.log("🚀 Sending request to NVIDIA...");
 
     const completion =
-      await client.chat.completions.create(
-        {
-          model:
-            "nvidia/nemotron-3-ultra-550b-a55b",
+      await withSingle503Retry(() => {
+        return client.chat.completions.create(
+          {
+            model:
+              "nvidia/nemotron-3-ultra-550b-a55b",
 
           messages: [
             {
@@ -941,8 +1139,13 @@ Return ONLY valid JSON.`,
           top_p: 0.7,
           max_tokens: 900,
           reasoning_effort: "none",
+        },
+        {
+          timeout: NVIDIA_REQUEST_TIMEOUT_MS,
+          maxRetries: 0,
         }
-      );
+        );
+      });
 
     console.log(
       "⏱️ NVIDIA response time:",
@@ -969,28 +1172,33 @@ Return ONLY valid JSON.`,
       content
     );
 
-    let parsed: any;
-
-    try {
-      parsed = JSON.parse(
-        content
-      );
-    } catch {
-      console.error(
-        "Invalid AI JSON:",
+    const parsedResult =
+      parseAiResponseContent(
         content
       );
 
+    if (!parsedResult.ok) {
       return NextResponse.json(
         {
-          error:
-            "AI returned invalid JSON",
-          raw: content,
-        },
-        {
-          status: 500,
+          message:
+            "I couldn't reliably interpret that response. Please try again.",
+          actions: [],
         }
       );
+    }
+
+    const parsed: any = parsedResult.value;
+
+    if (
+      parsed === null ||
+      typeof parsed !== "object" ||
+      Array.isArray(parsed)
+    ) {
+      return NextResponse.json({
+        message:
+          "I couldn't reliably interpret that response. Please try again.",
+        actions: [],
+      });
     }
 
     // ==================================================
@@ -1095,6 +1303,32 @@ Return ONLY valid JSON.`,
       parsed
     );
   } catch (error: any) {
+    if (isNvidiaTimeoutError(error)) {
+      console.error(
+        "NVIDIA request timed out after",
+        NVIDIA_REQUEST_TIMEOUT_MS,
+        "ms"
+      );
+
+      return NextResponse.json({
+        message:
+          "Echo is taking longer than expected. Please try again.",
+        actions: [],
+      });
+    }
+
+    if (isNvidiaProviderUnavailableError(error)) {
+      console.error(
+        "NVIDIA provider unavailable (503)"
+      );
+
+      return NextResponse.json({
+        message:
+          "Echo is temporarily unavailable. Please try again in a moment.",
+        actions: [],
+      });
+    }
+
     console.error("❌ AI analysis error:", error);
 
     return NextResponse.json(

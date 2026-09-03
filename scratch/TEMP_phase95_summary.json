@@ -1,0 +1,465 @@
+{
+  "generatedAt": "2026-08-31T20:15:15.160Z",
+  "note": "TEMPORARY Phase 9.5. Production route not modified. Direct NVIDIA calls. TTFB=first SDK stream/HTTP body event, not internal NVIDIA queue.",
+  "stoppedEarly": null,
+  "systemPromptChars": 3836,
+  "interleave": "per scenario: non-stream then stream; repeat rounds",
+  "streaming": {
+    "attempts": 27,
+    "successes": 20,
+    "failures": 7,
+    "successRate": 74.1,
+    "rate503": 25.9,
+    "errors": {
+      "400": 0,
+      "401": 0,
+      "429": 0,
+      "500": 0,
+      "502": 0,
+      "503": 7,
+      "504": 0,
+      "timeout": 0,
+      "connection": 0,
+      "malformed_json": 0,
+      "other": 0
+    },
+    "ttfb": {
+      "n": 20,
+      "min": 262,
+      "max": 671,
+      "mean": 376.85,
+      "p50": 340,
+      "p75": 437,
+      "p90": 489,
+      "p95": 580
+    },
+    "ttft": {
+      "n": 20,
+      "min": 600,
+      "max": 11613,
+      "mean": 3696.5,
+      "p50": 1568,
+      "p75": 5506,
+      "p90": 9049,
+      "p95": 9616
+    },
+    "streamDuration": {
+      "n": 20,
+      "min": 360,
+      "max": 23633,
+      "mean": 3722.1,
+      "p50": 1225,
+      "p75": 3100,
+      "p90": 4712,
+      "p95": 17814
+    },
+    "complete": {
+      "n": 20,
+      "min": 996,
+      "max": 33249,
+      "mean": 7418.6,
+      "p50": 3369,
+      "p75": 9087,
+      "p90": 16119,
+      "p95": 26794
+    },
+    "jsonReady": {
+      "n": 20,
+      "min": 997,
+      "max": 33249,
+      "mean": 7419.3,
+      "p50": 3370,
+      "p75": 9088,
+      "p90": 16121,
+      "p95": 26794
+    },
+    "actionReady": {
+      "n": 20,
+      "min": 997,
+      "max": 33249,
+      "mean": 7419.3,
+      "p50": 3370,
+      "p75": 9088,
+      "p90": 16121,
+      "p95": 26794
+    },
+    "postTtft": {
+      "n": 20,
+      "min": 360,
+      "max": 23633,
+      "mean": 3722.8,
+      "p50": 1226,
+      "p75": 3100,
+      "p90": 4713,
+      "p95": 17814
+    },
+    "ttftShareOfActionReadyPct": {
+      "n": 20,
+      "min": 17.3,
+      "max": 89,
+      "mean": 55.05,
+      "p50": 54.1,
+      "p75": 70.1,
+      "p90": 72.2,
+      "p95": 83
+    },
+    "promptTokens": {
+      "n": 20,
+      "min": 1979,
+      "max": 2297,
+      "mean": 2080.15,
+      "p50": 2026,
+      "p75": 2095,
+      "p90": 2297,
+      "p95": 2297
+    },
+    "completionTokens": {
+      "n": 20,
+      "min": 52,
+      "max": 119,
+      "mean": 75.35,
+      "p50": 73,
+      "p75": 76,
+      "p90": 119,
+      "p95": 119
+    },
+    "totalTokens": {
+      "n": 20,
+      "min": 2055,
+      "max": 2370,
+      "mean": 2155.5,
+      "p50": 2094,
+      "p75": 2214,
+      "p90": 2370,
+      "p95": 2370
+    },
+    "jsonParseLocalMs": {
+      "n": 20,
+      "min": 0,
+      "max": 0,
+      "mean": 0,
+      "p50": 0,
+      "p75": 0,
+      "p90": 0,
+      "p95": 0
+    },
+    "moveNodeDropped": 4,
+    "finishReasons": {
+      "stop": 20
+    }
+  },
+  "nonStreaming": {
+    "attempts": 20,
+    "successes": 20,
+    "failures": 0,
+    "successRate": 100,
+    "rate503": 0,
+    "errors": {
+      "400": 0,
+      "401": 0,
+      "429": 0,
+      "500": 0,
+      "502": 0,
+      "503": 0,
+      "504": 0,
+      "timeout": 0,
+      "connection": 0,
+      "malformed_json": 0,
+      "other": 0
+    },
+    "ttfb": {
+      "n": 20,
+      "min": 1579,
+      "max": 45035,
+      "mean": 8609.4,
+      "p50": 5028,
+      "p75": 6879,
+      "p90": 15502,
+      "p95": 34401
+    },
+    "ttft": {
+      "n": 0,
+      "min": null,
+      "max": null,
+      "mean": null,
+      "p50": null,
+      "p75": null,
+      "p90": null,
+      "p95": null
+    },
+    "streamDuration": {
+      "n": 0,
+      "min": null,
+      "max": null,
+      "mean": null,
+      "p50": null,
+      "p75": null,
+      "p90": null,
+      "p95": null
+    },
+    "complete": {
+      "n": 20,
+      "min": 1579,
+      "max": 45035,
+      "mean": 8609.4,
+      "p50": 5028,
+      "p75": 6879,
+      "p90": 15502,
+      "p95": 34401
+    },
+    "jsonReady": {
+      "n": 20,
+      "min": 1579,
+      "max": 45035,
+      "mean": 8609.4,
+      "p50": 5028,
+      "p75": 6879,
+      "p90": 15502,
+      "p95": 34401
+    },
+    "actionReady": {
+      "n": 20,
+      "min": 1579,
+      "max": 45035,
+      "mean": 8609.5,
+      "p50": 5028,
+      "p75": 6879,
+      "p90": 15502,
+      "p95": 34402
+    },
+    "postTtft": {
+      "n": 0,
+      "min": null,
+      "max": null,
+      "mean": null,
+      "p50": null,
+      "p75": null,
+      "p90": null,
+      "p95": null
+    },
+    "ttftShareOfActionReadyPct": {
+      "n": 0,
+      "min": null,
+      "max": null,
+      "mean": null,
+      "p50": null,
+      "p75": null,
+      "p90": null,
+      "p95": null
+    },
+    "promptTokens": {
+      "n": 20,
+      "min": 1979,
+      "max": 2297,
+      "mean": 2083.6,
+      "p50": 2026,
+      "p75": 2095,
+      "p90": 2297,
+      "p95": 2297
+    },
+    "completionTokens": {
+      "n": 20,
+      "min": 50,
+      "max": 119,
+      "mean": 77.7,
+      "p50": 73,
+      "p75": 77,
+      "p90": 119,
+      "p95": 119
+    },
+    "totalTokens": {
+      "n": 20,
+      "min": 2056,
+      "max": 2370,
+      "mean": 2161.3,
+      "p50": 2094,
+      "p75": 2214,
+      "p90": 2370,
+      "p95": 2370
+    },
+    "jsonParseLocalMs": {
+      "n": 20,
+      "min": 0,
+      "max": 0,
+      "mean": 0,
+      "p50": 0,
+      "p75": 0,
+      "p90": 0,
+      "p95": 0
+    },
+    "moveNodeDropped": 4,
+    "finishReasons": {
+      "stop": 20
+    }
+  },
+  "correlations": {
+    "ttft_vs_actionReady": 0.833,
+    "completionTokens_vs_actionReady_stream": -0.058,
+    "completionTokens_vs_actionReady_nonstream": -0.14,
+    "promptTokens_vs_actionReady_stream": -0.314,
+    "promptTokens_vs_actionReady_nonstream": -0.285
+  },
+  "outliers": [
+    {
+      "scenario": "E1",
+      "stream": false,
+      "timestamp": "2026-08-31T20:08:27.955Z",
+      "ttftMs": null,
+      "completeMs": 45035,
+      "actionReadyMs": 45035,
+      "postTtftMs": null,
+      "completion_tokens": 77,
+      "prompt_tokens": 1979,
+      "httpStatus": 200
+    },
+    {
+      "scenario": "E5",
+      "stream": false,
+      "timestamp": "2026-08-31T20:13:39.141Z",
+      "ttftMs": null,
+      "completeMs": 34401,
+      "actionReadyMs": 34402,
+      "postTtftMs": null,
+      "completion_tokens": 68,
+      "prompt_tokens": 2026,
+      "httpStatus": 200
+    },
+    {
+      "scenario": "E1",
+      "stream": true,
+      "timestamp": "2026-08-31T20:12:43.705Z",
+      "ttftMs": 9616,
+      "completeMs": 33249,
+      "actionReadyMs": 33249,
+      "postTtftMs": 23633,
+      "completion_tokens": 77,
+      "prompt_tokens": 1979,
+      "httpStatus": 200
+    },
+    {
+      "scenario": "E5",
+      "stream": true,
+      "timestamp": "2026-08-31T20:10:42.731Z",
+      "ttftMs": 8980,
+      "completeMs": 26794,
+      "actionReadyMs": 26794,
+      "postTtftMs": 17814,
+      "completion_tokens": 67,
+      "prompt_tokens": 2026,
+      "httpStatus": 200
+    },
+    {
+      "scenario": "E8",
+      "stream": true,
+      "timestamp": "2026-08-31T20:14:51.260Z",
+      "ttftMs": 11613,
+      "completeMs": 16119,
+      "actionReadyMs": 16121,
+      "postTtftMs": 4508,
+      "completion_tokens": 54,
+      "prompt_tokens": 2021,
+      "httpStatus": 200
+    },
+    {
+      "scenario": "E8",
+      "stream": false,
+      "timestamp": "2026-08-31T20:11:11.329Z",
+      "ttftMs": null,
+      "completeMs": 15502,
+      "actionReadyMs": 15502,
+      "postTtftMs": null,
+      "completion_tokens": 54,
+      "prompt_tokens": 2021,
+      "httpStatus": 200
+    },
+    {
+      "scenario": "E1",
+      "stream": false,
+      "timestamp": "2026-08-31T20:12:30.387Z",
+      "ttftMs": null,
+      "completeMs": 11504,
+      "actionReadyMs": 11504,
+      "postTtftMs": null,
+      "completion_tokens": 77,
+      "prompt_tokens": 1979,
+      "httpStatus": 200
+    },
+    {
+      "scenario": "E1",
+      "stream": true,
+      "timestamp": "2026-08-31T20:14:31.557Z",
+      "ttftMs": 7659,
+      "completeMs": 10677,
+      "actionReadyMs": 10677,
+      "postTtftMs": 3018,
+      "completion_tokens": 76,
+      "prompt_tokens": 1979,
+      "httpStatus": 200
+    }
+  ],
+  "failures": [
+    {
+      "scenario": "E1",
+      "stream": true,
+      "timestamp": "2026-08-31T20:10:17.163Z",
+      "errorClass": "503",
+      "httpStatus": null,
+      "completeMs": 547,
+      "message": "Service temporarily overloaded"
+    },
+    {
+      "scenario": "E2",
+      "stream": true,
+      "timestamp": "2026-08-31T20:10:27.435Z",
+      "errorClass": "503",
+      "httpStatus": null,
+      "completeMs": 808,
+      "message": "Service temporarily overloaded"
+    },
+    {
+      "scenario": "E8",
+      "stream": true,
+      "timestamp": "2026-08-31T20:11:28.633Z",
+      "errorClass": "503",
+      "httpStatus": null,
+      "completeMs": 646,
+      "message": "Service temporarily overloaded"
+    },
+    {
+      "scenario": "E2",
+      "stream": true,
+      "timestamp": "2026-08-31T20:13:22.744Z",
+      "errorClass": "503",
+      "httpStatus": null,
+      "completeMs": 301,
+      "message": "Service temporarily overloaded"
+    },
+    {
+      "scenario": "E2",
+      "stream": true,
+      "timestamp": "2026-08-31T20:14:44.050Z",
+      "errorClass": "503",
+      "httpStatus": null,
+      "completeMs": 341,
+      "message": "Service temporarily overloaded"
+    },
+    {
+      "scenario": "E4",
+      "stream": true,
+      "timestamp": "2026-08-31T20:14:46.208Z",
+      "errorClass": "503",
+      "httpStatus": null,
+      "completeMs": 437,
+      "message": "Service temporarily overloaded"
+    },
+    {
+      "scenario": "E1",
+      "stream": true,
+      "timestamp": "2026-08-31T20:15:09.185Z",
+      "errorClass": "503",
+      "httpStatus": null,
+      "completeMs": 387,
+      "message": "Service temporarily overloaded"
+    }
+  ]
+}

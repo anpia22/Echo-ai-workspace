@@ -1,4 +1,5 @@
 import { calculateIncrementalLayout } from "./canvasLayout";
+import { deduplicateActions } from "./deduplicateActions";
 import {
   parseGroupNodesAction,
   resolveGroupMemberIds,
@@ -71,7 +72,7 @@ export function applyCanvasActions(
     groups: [...(currentCanvas.groups ?? [])],
   };
 
-  for (const action of newActions) {
+  for (const action of deduplicateActions(newActions)) {
     if (!action || typeof action !== "object") {
       continue;
     }
