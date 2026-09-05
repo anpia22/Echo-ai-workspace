@@ -67,3 +67,99 @@ export function parsePresenceState(
 
   return Array.from(participantsMap.values());
 }
+
+export type FollowStateItem = {
+  userId: string;
+  displayName: string;
+  color: string;
+  isYou: boolean;
+  isFollowing: boolean;
+  isFollower: boolean;
+  canFollow: boolean;
+};
+
+export function resolveParticipantDisplayName(
+  userId: string,
+  participants: Participant[],
+  currentParticipant?: Participant | null
+): string {
+  if (currentParticipant) {
+    const currentId =
+      currentParticipant.userId ??
+      (currentParticipant as unknown as { id?: string })?.id;
+    if (currentId === userId) {
+      return `${currentParticipant.displayName} (You)`;
+    }
+  }
+
+  const found = participants.find(
+    (p) => (p.userId ?? (p as unknown as { id?: string })?.id) === userId
+  );
+
+  if (found && found.displayName) {
+    return found.displayName;
+  }
+
+  // Fallback to concise user identifier
+  return userId.length > 8 ? `User ${userId.slice(0, 4)}` : userId;
+}
+
+export function formatFollowerCountLabel(count: number): string {
+  if (count <= 0) {
+    return "";
+  }
+  return count === 1 ? "1 following you" : `${count} following you`;
+}
+
+export function formatFollowingLabel(leaderName: string): string {
+  return `Following ${leaderName}`;
+}
+
+export function computeFollowStateList(
+  participants: Participant[],
+  currentParticipant: Participant | null,
+  followingUserId?: string | null,
+  followerUserIds?: Set<string> | null
+): FollowStateItem[] {
+  const displayParticipants: Participant[] = [...participants];
+  const currentUserId =
+    currentParticipant?.userId ??
+    (currentParticipant as unknown as { id?: string })?.id;
+
+  if (
+    currentParticipant &&
+    !displayParticipants.some(
+      (p) =>
+        (p.userId ?? (p as unknown as { id?: string })?.id) === currentUserId
+    )
+  ) {
+    displayParticipants.unshift(currentParticipant);
+  }
+
+  // Sort so current user is first, followed by others alphabetically
+  displayParticipants.sort((a, b) => {
+    const aId = a.userId ?? (a as unknown as { id?: string })?.id;
+    const bId = b.userId ?? (b as unknown as { id?: string })?.id;
+    if (aId === currentUserId) return -1;
+    if (bId === currentUserId) return 1;
+    return a.displayName.localeCompare(b.displayName);
+  });
+
+  return displayParticipants.map((p) => {
+    const pId = p.userId ?? (p as unknown as { id?: string })?.id ?? "";
+    const isYou = Boolean(currentUserId && pId === currentUserId);
+    const isFollowing = Boolean(!isYou && followingUserId && followingUserId === pId);
+    const isFollower = Boolean(!isYou && followerUserIds && followerUserIds.has(pId));
+    const canFollow = !isYou;
+
+    return {
+      userId: pId,
+      displayName: p.displayName,
+      color: p.color,
+      isYou,
+      isFollowing,
+      isFollower,
+      canFollow,
+    };
+  });
+}

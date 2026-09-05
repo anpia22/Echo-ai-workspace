@@ -6,6 +6,7 @@ import {
   ReactFlow,
   ReactFlowProvider,
   useReactFlow,
+  useOnViewportChange,
   Background,
   Controls,
   MiniMap,
@@ -20,6 +21,7 @@ import {
   type Connection,
   type NodeChange,
   type NodeProps,
+  type Viewport,
 } from "@xyflow/react";
 
 import "@xyflow/react/dist/style.css";
@@ -27,6 +29,14 @@ import "@xyflow/react/dist/style.css";
 import { NODE_HEIGHT, NODE_WIDTH } from "../lib/canvasLayout";
 import type { RemoteCursor } from "../lib/collaboration/cursorEvents";
 import type { Participant } from "../lib/collaboration/participant";
+import {
+  createRemoteViewportApplyGuard,
+  createViewportBroadcaster,
+  isCloseViewport,
+  isSameViewport,
+  isValidViewport,
+  type ViewportState,
+} from "../lib/collaboration/viewportEvents";
 import RemoteCursors from "./RemoteCursors";
 
 type CanvasNode = {
@@ -59,7 +69,16 @@ type CanvasState = {
   groups?: CanvasGroup[];
 };
 
-type EchoCanvasProps = {
+export type ViewportApi = {
+  getViewport: () => ViewportState;
+  setViewport: (
+    viewport: ViewportState,
+    options?: { duration?: number }
+  ) => void;
+  applyRemoteViewport: (viewport: ViewportState) => void;
+};
+
+export type EchoCanvasProps = {
   canvas: CanvasState;
 
   onNodePositionChange?: (
@@ -73,6 +92,13 @@ type EchoCanvasProps = {
   remoteCursors?: RemoteCursor[];
   participants?: Participant[];
   onCursorMove?: (x: number, y: number) => void;
+
+  onViewportChange?: (viewport: ViewportState) => void;
+  onViewportInit?: (api: ViewportApi) => void;
+  onViewportBroadcast?: (viewport: ViewportState) => void;
+  onManualViewportChange?: (viewport: ViewportState) => void;
+  isLeader?: boolean;
+  roomId?: string | null;
 };
 
 type EchoNodeData = {
@@ -276,8 +302,160 @@ function EchoCanvasInner({
   remoteCursors,
   participants,
   onCursorMove,
+  onViewportChange,
+  onViewportInit,
+  onViewportBroadcast,
+  onManualViewportChange,
+  isLeader,
+  roomId,
 }: EchoCanvasProps) {
-  const { screenToFlowPosition } = useReactFlow();
+  const {
+    screenToFlowPosition,
+    getViewport,
+    setViewport: rfSetViewport,
+  } = useReactFlow();
+
+  const localViewportRef = useRef<ViewportState>({ x: 0, y: 0, zoom: 1 });
+  const isLeaderRef = useRef(Boolean(isLeader));
+  useEffect(() => {
+    isLeaderRef.current = Boolean(isLeader);
+  }, [isLeader]);
+
+  const onViewportBroadcastRef = useRef(onViewportBroadcast);
+  useEffect(() => {
+    onViewportBroadcastRef.current = onViewportBroadcast;
+  }, [onViewportBroadcast]);
+
+  const onManualViewportChangeRef = useRef(onManualViewportChange);
+  useEffect(() => {
+    onManualViewportChangeRef.current = onManualViewportChange;
+  }, [onManualViewportChange]);
+
+  const isInitialMountRef = useRef(true);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      isInitialMountRef.current = false;
+    }, 150);
+    return () => clearTimeout(timer);
+  }, []);
+
+  const broadcasterRef = useRef<ReturnType<typeof createViewportBroadcaster> | null>(null);
+
+  useEffect(() => {
+    const broadcaster = createViewportBroadcaster({
+      throttleMs: 50,
+      isLeader: () => !isInitialMountRef.current && isLeaderRef.current,
+      publish: (vp) => {
+        onViewportBroadcastRef.current?.(vp);
+      },
+    });
+    broadcasterRef.current = broadcaster;
+
+    return () => {
+      broadcaster.destroy();
+      broadcasterRef.current = null;
+    };
+  }, []);
+
+  const remoteGuardRef = useRef<ReturnType<
+    typeof createRemoteViewportApplyGuard
+  > | null>(null);
+
+  useEffect(() => {
+    const guard = createRemoteViewportApplyGuard(120);
+    remoteGuardRef.current = guard;
+    return () => {
+      guard.destroy();
+      remoteGuardRef.current = null;
+    };
+  }, []);
+
+  // Room switch isolation: clear remote apply guard & destroy any pending throttled broadcast
+  useEffect(() => {
+    remoteGuardRef.current?.clear();
+  }, [roomId]);
+
+  const applyRemoteViewport = useCallback(
+    (viewport: ViewportState) => {
+      if (!isValidViewport(viewport)) {
+        return;
+      }
+
+      if (
+        localViewportRef.current &&
+        (isSameViewport(localViewportRef.current, viewport) ||
+          isCloseViewport(localViewportRef.current, viewport))
+      ) {
+        return;
+      }
+
+      remoteGuardRef.current?.markApplying(viewport);
+      void rfSetViewport(viewport);
+    },
+    [rfSetViewport]
+  );
+
+  useOnViewportChange({
+    onChange: useCallback(
+      (vp: Viewport) => {
+        const next: ViewportState = { x: vp.x, y: vp.y, zoom: vp.zoom };
+        localViewportRef.current = next;
+        onViewportChange?.(next);
+
+        // Feedback loop prevention: suppress broadcast if this change is from remote viewport
+        if (remoteGuardRef.current?.shouldSuppressBroadcast(next)) {
+          return;
+        }
+
+        if (!isInitialMountRef.current) {
+          onManualViewportChangeRef.current?.(next);
+        }
+
+        broadcasterRef.current?.onViewportMove(next);
+      },
+      [onViewportChange]
+    ),
+    onEnd: useCallback(
+      (vp: Viewport) => {
+        const next: ViewportState = { x: vp.x, y: vp.y, zoom: vp.zoom };
+        if (remoteGuardRef.current?.isApplying()) {
+          remoteGuardRef.current.clear();
+          return;
+        }
+        broadcasterRef.current?.onViewportMoveEnd(next);
+      },
+      []
+    ),
+  });
+
+  useEffect(() => {
+    const vp = getViewport();
+    if (vp) {
+      const initial: ViewportState = { x: vp.x, y: vp.y, zoom: vp.zoom };
+      localViewportRef.current = initial;
+      onViewportChange?.(initial);
+    }
+  }, [getViewport, onViewportChange]);
+
+  useEffect(() => {
+    if (!onViewportInit) {
+      return;
+    }
+
+    onViewportInit({
+      getViewport: () => {
+        const vp = getViewport();
+        return { x: vp.x, y: vp.y, zoom: vp.zoom };
+      },
+      setViewport: (
+        viewport: ViewportState,
+        options?: { duration?: number }
+      ) => {
+        void rfSetViewport(viewport, options);
+      },
+      applyRemoteViewport,
+    });
+  }, [getViewport, rfSetViewport, onViewportInit, applyRemoteViewport]);
 
   const lastFlowPosRef = useRef<{ x: number; y: number } | null>(null);
   const lastBroadcastTimeRef = useRef<number>(0);

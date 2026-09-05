@@ -92,6 +92,7 @@ type CanvasAction = {
 // ==================================================
 
 function normalizeCanvas(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   canvas: any
 ): CanvasState {
   const nodes: CanvasNode[] = Array.isArray(
@@ -172,6 +173,7 @@ function edgeExists(
 
 export function validateActions(
   canvas: CanvasState,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   actions: any[]
 ): CanvasAction[] {
   const uniqueActions = deduplicateActions(
@@ -1187,6 +1189,7 @@ Return ONLY valid JSON.`,
       );
     }
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const parsed: any = parsedResult.value;
 
     if (
@@ -1302,6 +1305,7 @@ Return ONLY valid JSON.`,
     return NextResponse.json(
       parsed
     );
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
     if (isNvidiaTimeoutError(error)) {
       console.error(

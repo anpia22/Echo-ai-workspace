@@ -2,15 +2,17 @@
 
 import {
   Suspense,
+  useCallback,
   useEffect,
   useRef,
   useState,
 } from "react";
 import { useSearchParams } from "next/navigation";
-import EchoCanvas from "./components/EchoCanvas";
+import EchoCanvas, { type ViewportApi } from "./components/EchoCanvas";
 import RoomControls from "./components/RoomControls";
 import { applyCanvasActions } from "./lib/applyCanvasActions";
 import { createCanvasSnapshot } from "./lib/collaboration/canvasSnapshot";
+import type { ViewportState } from "./lib/collaboration/viewportEvents";
 import {
   applyRemoteNodeEvent,
   diffLocalNodeMutations,
@@ -364,26 +366,92 @@ function Home() {
 
   const [canvas, setCanvas] = useState<CanvasState>(emptyCanvas);
   const canvasRef = useRef(canvas);
+  const viewportRef = useRef<ViewportState>({ x: 0, y: 0, zoom: 1 });
+  const viewportApiRef = useRef<ViewportApi | null>(null);
+
+  const handleViewportChange = useCallback((viewport: ViewportState) => {
+    viewportRef.current = viewport;
+  }, []);
+
+  const handleViewportInit = useCallback((api: ViewportApi) => {
+    viewportApiRef.current = api;
+  }, []);
 
   const [isLoaded, setIsLoaded] = useState(false);
   const remoteSnapshotAppliedRef = useRef(false);
+
+  const followingUserIdRef = useRef<string | null>(null);
 
   const roomConnection = useRoomChannel(isLoaded ? roomId : null, {
     getSnapshot: () => createCanvasSnapshot(canvasRef.current),
     onRemoteSnapshot: (snapshot) => {
       remoteSnapshotAppliedRef.current = true;
+      canvasRef.current = snapshot;
       setCanvas(snapshot);
     },
     onRemoteNodeEvent: (event) => {
-      setCanvas((currentCanvas) => applyRemoteNodeEvent(currentCanvas, event));
+      const next = applyRemoteNodeEvent(canvasRef.current, event);
+      canvasRef.current = next;
+      setCanvas(next);
     },
     onRemoteEdgeEvent: (event) => {
-      setCanvas((currentCanvas) => applyRemoteEdgeEvent(currentCanvas, event));
+      const next = applyRemoteEdgeEvent(canvasRef.current, event);
+      canvasRef.current = next;
+      setCanvas(next);
     },
     onRemoteGroupEvent: (event) => {
-      setCanvas((currentCanvas) => applyRemoteGroupEvent(currentCanvas, event));
+      const next = applyRemoteGroupEvent(canvasRef.current, event);
+      canvasRef.current = next;
+      setCanvas(next);
+    },
+    onRemoteViewportUpdate: (event) => {
+      // Unfollow / leader safety check at application time
+      if (followingUserIdRef.current !== event.senderId) {
+        return;
+      }
+      viewportApiRef.current?.applyRemoteViewport(event.viewport);
     },
   });
+
+  useEffect(() => {
+    followingUserIdRef.current = roomConnection.followingUserId;
+  }, [roomConnection.followingUserId]);
+
+  const isLeader = Boolean(
+    roomId &&
+    roomConnection.state === "connected" &&
+    roomConnection.followerUserIds.size > 0
+  );
+
+  const [followInterruptedNotice, setFollowInterruptedNotice] = useState<
+    string | null
+  >(null);
+  const followInterruptedTimerRef = useRef<ReturnType<
+    typeof setTimeout
+  > | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (followInterruptedTimerRef.current) {
+        clearTimeout(followInterruptedTimerRef.current);
+      }
+    };
+  }, []);
+
+  const handleManualViewportChange = useCallback(() => {
+    if (followingUserIdRef.current !== null) {
+        roomConnection.unfollowUser();
+        setFollowInterruptedNotice("Follow mode stopped");
+        if (followInterruptedTimerRef.current) {
+          clearTimeout(followInterruptedTimerRef.current);
+        }
+        followInterruptedTimerRef.current = setTimeout(() => {
+          setFollowInterruptedNotice(null);
+        }, 3000);
+      }
+    },
+    [roomConnection]
+  );
 
   useEffect(() => {
     canvasRef.current = canvas;
@@ -503,9 +571,9 @@ function Home() {
           );
 
           if (!remoteSnapshotAppliedRef.current) {
-            setCanvas(
-              normalizeLoadedCanvas(latestConversation.canvas)
-            );
+            const next = normalizeLoadedCanvas(latestConversation.canvas);
+            canvasRef.current = next;
+            setCanvas(next);
           }
 
           setIsLoaded(true);
@@ -526,7 +594,9 @@ function Home() {
 
       setMessages([]);
 
-      setCanvas(emptyCanvas());
+      const initialEmpty = emptyCanvas();
+      canvasRef.current = initialEmpty;
+      setCanvas(initialEmpty);
 
       setIsLoaded(true);
     } catch (error) {
@@ -1007,9 +1077,9 @@ function Home() {
       selectedConversation.messages || []
     );
 
-    setCanvas(
-      normalizeLoadedCanvas(selectedConversation.canvas)
-    );
+    const next = normalizeLoadedCanvas(selectedConversation.canvas);
+    canvasRef.current = next;
+    setCanvas(next);
 
     setTranscript("");
     setRenamingConversationId(null);
@@ -1143,9 +1213,9 @@ function Home() {
             nextConversation.messages || []
           );
 
-          setCanvas(
-            normalizeLoadedCanvas(nextConversation.canvas)
-          );
+          const next = normalizeLoadedCanvas(nextConversation.canvas);
+          canvasRef.current = next;
+          setCanvas(next);
 
           setTranscript("");
           setRenamingConversationId(null);
@@ -1174,7 +1244,9 @@ function Home() {
 
         setMessages([]);
 
-        setCanvas(emptyCanvas());
+        const nextEmpty = emptyCanvas();
+        canvasRef.current = nextEmpty;
+        setCanvas(nextEmpty);
 
         setTranscript("");
         setRenamingConversationId(null);
@@ -1210,15 +1282,11 @@ function Home() {
       y: number;
     }
   ) => {
-    let didMove = false;
-
-    setCanvas((currentCanvas) => {
-      const nextCanvas = moveSemanticNode(currentCanvas, nodeId, position);
-      didMove = nextCanvas !== currentCanvas;
-      return nextCanvas;
-    });
-
-    if (didMove) {
+    const currentCanvas = canvasRef.current;
+    const nextCanvas = moveSemanticNode(currentCanvas, nodeId, position);
+    if (nextCanvas !== currentCanvas) {
+      canvasRef.current = nextCanvas;
+      setCanvas(nextCanvas);
       roomConnection.broadcastNodeMoved(nodeId, position);
     }
   };
@@ -1374,36 +1442,34 @@ function Home() {
       }
 
       if (Array.isArray(data.actions)) {
-        let nodeMutations: ReturnType<typeof diffLocalNodeMutations> = [];
-        let edgeMutations: ReturnType<typeof diffLocalEdgeMutations> = [];
-        let groupMutations: ReturnType<typeof diffLocalGroupMutations> = [];
+        const currentCanvas = canvasRef.current;
+        const applyStart = performance.now();
+        const nextCanvas = applyCanvasActions(
+          currentCanvas,
+          data.actions
+        );
+        const nodeMutations = diffLocalNodeMutations(
+          currentCanvas,
+          nextCanvas
+        );
+        const edgeMutations = diffLocalEdgeMutations(
+          currentCanvas,
+          nextCanvas
+        );
+        const groupMutations = diffLocalGroupMutations(
+          currentCanvas,
+          nextCanvas
+        );
 
-        setCanvas((currentCanvas) => {
-          const applyStart = performance.now();
-          const nextCanvas = applyCanvasActions(
-            currentCanvas,
-            data.actions
+        if (process.env.NODE_ENV !== "production") {
+          console.log(
+            "[ECHO LATENCY] applyCanvasActions:",
+            `${Math.round((performance.now() - applyStart) * 100) / 100} ms`
           );
-          nodeMutations = diffLocalNodeMutations(
-            currentCanvas,
-            nextCanvas
-          );
-          edgeMutations = diffLocalEdgeMutations(
-            currentCanvas,
-            nextCanvas
-          );
-          groupMutations = diffLocalGroupMutations(
-            currentCanvas,
-            nextCanvas
-          );
-          if (process.env.NODE_ENV !== "production") {
-            console.log(
-              "[ECHO LATENCY] applyCanvasActions:",
-              `${Math.round((performance.now() - applyStart) * 100) / 100} ms`
-            );
-          }
-          return nextCanvas;
-        });
+        }
+
+        canvasRef.current = nextCanvas;
+        setCanvas(nextCanvas);
 
         publishLocalNodeMutations(nodeMutations, roomConnection);
         publishLocalEdgeMutations(edgeMutations, roomConnection);
@@ -1498,7 +1564,10 @@ function Home() {
 
           <div className="flex min-w-0 items-center gap-3">
 
-            <RoomControls connection={roomConnection} />
+            <RoomControls
+              connection={roomConnection}
+              followInterruptedNotice={followInterruptedNotice}
+            />
 
             <span className="h-2 w-2 rounded-full bg-green-500" />
 
@@ -1693,6 +1762,7 @@ function Home() {
           <section className="relative min-h-0 min-w-0 flex-1">
 
             <EchoCanvas
+              roomId={roomId}
               canvas={canvas}
               onNodePositionChange={
                 updateNodePosition
@@ -1702,6 +1772,13 @@ function Home() {
               onCursorMove={
                 roomId ? roomConnection.broadcastCursorMove : undefined
               }
+              onViewportChange={handleViewportChange}
+              onViewportInit={handleViewportInit}
+              isLeader={isLeader}
+              onViewportBroadcast={
+                roomId ? roomConnection.publishViewportUpdate : undefined
+              }
+              onManualViewportChange={handleManualViewportChange}
             />
 
             {isEmptyWorkspace ? (

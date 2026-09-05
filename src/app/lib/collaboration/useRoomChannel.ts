@@ -46,6 +46,22 @@ import {
   type RemoteCursor,
 } from "./cursorEvents";
 import {
+  FOLLOW_USER_EVENT,
+  UNFOLLOW_USER_EVENT,
+  VIEWPORT_UPDATE_EVENT,
+  applyFollowUser,
+  applyUnfollowUser,
+  cloneViewport,
+  isValidViewport,
+  parseFollowUserPayload,
+  parseUnfollowUserPayload,
+  parseViewportUpdatePayload,
+  type FollowUserPayload,
+  type UnfollowUserPayload,
+  type ViewportState,
+  type ViewportUpdatePayload,
+} from "./viewportEvents";
+import {
   getOrCreateParticipant,
   type Participant,
 } from "./participant";
@@ -74,6 +90,8 @@ export type RoomConnection = {
   participants: Participant[];
   currentParticipant: Participant | null;
   remoteCursors: RemoteCursor[];
+  followingUserId: string | null;
+  followerUserIds: Set<string>;
 };
 
 export type RoomChannelSyncHandlers = {
@@ -83,6 +101,9 @@ export type RoomChannelSyncHandlers = {
   onRemoteEdgeEvent?: (event: EdgeCollaborationEvent) => void;
   onRemoteGroupEvent?: (event: GroupCollaborationEvent) => void;
   onRemoteCursorMove?: (event: CursorMovePayload) => void;
+  onRemoteFollowUser?: (event: FollowUserPayload) => void;
+  onRemoteUnfollowUser?: (event: UnfollowUserPayload) => void;
+  onRemoteViewportUpdate?: (event: ViewportUpdatePayload) => void;
 };
 
 export type RoomNodeBroadcast = {
@@ -105,10 +126,17 @@ export type RoomCursorBroadcast = {
   broadcastCursorMove: (x: number, y: number, timestamp?: number) => void;
 };
 
+export type RoomViewportBroadcast = {
+  followUser: (leaderId: string) => void;
+  unfollowUser: (leaderId?: string) => void;
+  publishViewportUpdate: (viewport: ViewportState) => void;
+};
+
 export type RoomBroadcast = RoomNodeBroadcast &
   RoomEdgeBroadcast &
   RoomGroupBroadcast &
-  RoomCursorBroadcast;
+  RoomCursorBroadcast &
+  RoomViewportBroadcast;
 
 type ActiveSubscription = {
   roomId: RoomId;
@@ -126,6 +154,8 @@ const IDLE_CONNECTION: RoomConnection = {
   participants: [],
   currentParticipant: null,
   remoteCursors: [],
+  followingUserId: null,
+  followerUserIds: new Set(),
 };
 
 const REQUEST_SYNC_EVENT = "REQUEST_SYNC";
@@ -193,6 +223,9 @@ const NOOP_BROADCAST: RoomBroadcast = {
   broadcastGroupUpsert: () => {},
   broadcastGroupDeleted: () => {},
   broadcastCursorMove: () => {},
+  followUser: () => {},
+  unfollowUser: () => {},
+  publishViewportUpdate: () => {},
 };
 
 export function useRoomChannel(
@@ -207,6 +240,15 @@ export function useRoomChannel(
   const [remoteCursorsMap, setRemoteCursorsMap] = useState<
     Map<string, RemoteCursor>
   >(new Map());
+  const [followingUserId, setFollowingUserId] = useState<string | null>(null);
+  const followingUserIdRef = useRef<string | null>(null);
+
+  const [followerUserIds, setFollowerUserIds] = useState<Set<string>>(new Set());
+  const followerUserIdsRef = useRef<Set<string>>(new Set());
+
+  const lastAcceptedViewportTimestampRef = useRef<number>(0);
+  const latestRemoteViewportRef = useRef<ViewportState | null>(null);
+
   const currentParticipant = roomId ? getOrCreateParticipant() : null;
 
   const remoteCursors = useMemo(
@@ -220,9 +262,20 @@ export function useRoomChannel(
   const onRemoteEdgeEventRef = useRef(syncHandlers?.onRemoteEdgeEvent);
   const onRemoteGroupEventRef = useRef(syncHandlers?.onRemoteGroupEvent);
   const onRemoteCursorMoveRef = useRef(syncHandlers?.onRemoteCursorMove);
+  const onRemoteFollowUserRef = useRef(syncHandlers?.onRemoteFollowUser);
+  const onRemoteUnfollowUserRef = useRef(syncHandlers?.onRemoteUnfollowUser);
+  const onRemoteViewportUpdateRef = useRef(syncHandlers?.onRemoteViewportUpdate);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const publishContextRef = useRef<PublishContext | null>(null);
   const subscribedRef = useRef(false);
+
+  useEffect(() => {
+    followingUserIdRef.current = followingUserId;
+  }, [followingUserId]);
+
+  useEffect(() => {
+    followerUserIdsRef.current = followerUserIds;
+  }, [followerUserIds]);
 
   useEffect(() => {
     getSnapshotRef.current = syncHandlers?.getSnapshot;
@@ -231,14 +284,29 @@ export function useRoomChannel(
     onRemoteEdgeEventRef.current = syncHandlers?.onRemoteEdgeEvent;
     onRemoteGroupEventRef.current = syncHandlers?.onRemoteGroupEvent;
     onRemoteCursorMoveRef.current = syncHandlers?.onRemoteCursorMove;
+    onRemoteFollowUserRef.current = syncHandlers?.onRemoteFollowUser;
+    onRemoteUnfollowUserRef.current = syncHandlers?.onRemoteUnfollowUser;
+    onRemoteViewportUpdateRef.current = syncHandlers?.onRemoteViewportUpdate;
   });
+
+  const sessionGenerationRef = useRef<number>(0);
 
   if (trackedRoomId !== roomId) {
     setTrackedRoomId(roomId);
     setSubscription(null);
     setParticipants([]);
     setRemoteCursorsMap(new Map());
+    setFollowingUserId(null);
+    setFollowerUserIds(new Set());
   }
+
+  useEffect(() => {
+    sessionGenerationRef.current += 1;
+    followingUserIdRef.current = null;
+    followerUserIdsRef.current = new Set();
+    lastAcceptedViewportTimestampRef.current = 0;
+    latestRemoteViewportRef.current = null;
+  }, [roomId]);
 
   useEffect(() => {
     if (!roomId) {
@@ -258,10 +326,18 @@ export function useRoomChannel(
     let syncWaitTimer: ReturnType<typeof setTimeout> | null = null;
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
 
+    sessionGenerationRef.current += 1;
+    const currentSessionGeneration = sessionGenerationRef.current;
+
     publishContextRef.current = {
       roomId,
       senderId: participant.userId,
     };
+
+    followingUserIdRef.current = null;
+    followerUserIdsRef.current = new Set();
+    lastAcceptedViewportTimestampRef.current = 0;
+    latestRemoteViewportRef.current = null;
 
     const channel = supabase.channel(channelName, {
       config: {
@@ -441,6 +517,37 @@ export function useRoomChannel(
       setRemoteCursorsMap((currentMap) =>
         pruneDisconnectedCursors(currentMap, activeIds)
       );
+
+      // Prune followers who left
+      setFollowerUserIds((currentFollowers) => {
+        let changed = false;
+        for (const followerId of currentFollowers) {
+          if (!activeIds.has(followerId)) {
+            changed = true;
+            break;
+          }
+        }
+        if (!changed) {
+          return currentFollowers;
+        }
+        const next = new Set<string>();
+        for (const followerId of currentFollowers) {
+          if (activeIds.has(followerId)) {
+            next.add(followerId);
+          }
+        }
+        followerUserIdsRef.current = next;
+        return next;
+      });
+
+      // If leader being followed left the room, stop following
+      if (
+        followingUserIdRef.current &&
+        !activeIds.has(followingUserIdRef.current)
+      ) {
+        followingUserIdRef.current = null;
+        setFollowingUserId(null);
+      }
     };
 
     channel.on("presence", { event: "sync" }, handlePresenceChange);
@@ -471,6 +578,100 @@ export function useRoomChannel(
 
     channel.on("broadcast", { event: CURSOR_MOVE_EVENT }, handleCursorEvent);
 
+    // Follow / Unfollow listeners
+    const handleFollowUser = ({ payload }: { payload: unknown }) => {
+      if (cancelled || sessionGenerationRef.current !== currentSessionGeneration) {
+        return;
+      }
+
+      const event = parseFollowUserPayload(payload);
+      if (!event) {
+        return;
+      }
+
+      // Room isolation & self-filtering
+      if (event.roomId !== roomId || event.followerId === participant.userId) {
+        return;
+      }
+
+      // If this participant is the leader being followed
+      if (event.leaderId === participant.userId) {
+        setFollowerUserIds((current) => {
+          const next = applyFollowUser(current, event.followerId);
+          followerUserIdsRef.current = next;
+          return next;
+        });
+        onRemoteFollowUserRef.current?.(event);
+      }
+    };
+
+    const handleUnfollowUser = ({ payload }: { payload: unknown }) => {
+      if (cancelled || sessionGenerationRef.current !== currentSessionGeneration) {
+        return;
+      }
+
+      const event = parseUnfollowUserPayload(payload);
+      if (!event) {
+        return;
+      }
+
+      // Room isolation & self-filtering
+      if (event.roomId !== roomId || event.followerId === participant.userId) {
+        return;
+      }
+
+      // If this participant was the leader
+      if (event.leaderId === participant.userId) {
+        setFollowerUserIds((current) => {
+          const next = applyUnfollowUser(current, event.followerId);
+          followerUserIdsRef.current = next;
+          return next;
+        });
+        onRemoteUnfollowUserRef.current?.(event);
+      }
+    };
+
+    // Viewport update listener (Phase 11.3: protocol validation & delivery only, no setViewport)
+    const handleViewportUpdate = ({ payload }: { payload: unknown }) => {
+      if (cancelled || sessionGenerationRef.current !== currentSessionGeneration) {
+        return;
+      }
+
+      const event = parseViewportUpdatePayload(payload);
+      if (!event) {
+        return;
+      }
+
+      // Room isolation & self-filtering
+      if (event.roomId !== roomId || event.senderId === participant.userId) {
+        return;
+      }
+
+      // Only accept if sender is the participant currently being followed
+      if (event.senderId !== followingUserIdRef.current) {
+        return;
+      }
+
+      // Stale viewport protection
+      if (event.timestamp < lastAcceptedViewportTimestampRef.current) {
+        return;
+      }
+
+      lastAcceptedViewportTimestampRef.current = event.timestamp;
+      latestRemoteViewportRef.current = event.viewport;
+
+      // Deliver to handler without calling ReactFlow setViewport!
+      onRemoteViewportUpdateRef.current?.(event);
+    };
+
+    channel.on("broadcast", { event: FOLLOW_USER_EVENT }, handleFollowUser);
+    channel.on("broadcast", { event: UNFOLLOW_USER_EVENT }, handleUnfollowUser);
+    channel.on(
+      "broadcast",
+      { event: VIEWPORT_UPDATE_EVENT },
+      handleViewportUpdate
+    );
+
     let hasConnectedOnce = false;
 
     const handleOnline = () => {
@@ -490,6 +691,12 @@ export function useRoomChannel(
       if (cancelled) return;
       subscribedRef.current = false;
       setRemoteCursorsMap(new Map());
+      setFollowingUserId(null);
+      followingUserIdRef.current = null;
+      setFollowerUserIds(new Set());
+      followerUserIdsRef.current = new Set();
+      lastAcceptedViewportTimestampRef.current = 0;
+      latestRemoteViewportRef.current = null;
       setSubscription({
         roomId,
         state: "disconnected",
@@ -566,6 +773,12 @@ export function useRoomChannel(
       ) {
         subscribedRef.current = false;
         setRemoteCursorsMap(new Map());
+        setFollowingUserId(null);
+        followingUserIdRef.current = null;
+        setFollowerUserIds(new Set());
+        followerUserIdsRef.current = new Set();
+        lastAcceptedViewportTimestampRef.current = 0;
+        latestRemoteViewportRef.current = null;
 
         if (syncWaitTimer !== null) {
           clearTimeout(syncWaitTimer);
@@ -603,6 +816,12 @@ export function useRoomChannel(
       channelRef.current = null;
       publishContextRef.current = null;
       setRemoteCursorsMap(new Map());
+      setFollowingUserId(null);
+      followingUserIdRef.current = null;
+      setFollowerUserIds(new Set());
+      followerUserIdsRef.current = new Set();
+      lastAcceptedViewportTimestampRef.current = 0;
+      latestRemoteViewportRef.current = null;
 
       window.removeEventListener("online", handleOnline);
       window.removeEventListener("offline", handleOffline);
@@ -806,6 +1025,106 @@ export function useRoomChannel(
     []
   );
 
+  const followUser = useCallback((leaderId: string) => {
+    const channel = channelRef.current;
+    const meta = publishContextRef.current;
+
+    if (!leaderId || typeof leaderId !== "string" || !leaderId.trim()) {
+      return;
+    }
+
+    const trimmedLeaderId = leaderId.trim();
+
+    if (meta && trimmedLeaderId === meta.senderId) {
+      return;
+    }
+
+    setFollowingUserId(trimmedLeaderId);
+    followingUserIdRef.current = trimmedLeaderId;
+
+    if (!channel || !meta || !subscribedRef.current) {
+      return;
+    }
+
+    void channel.send({
+      type: "broadcast",
+      event: FOLLOW_USER_EVENT,
+      payload: {
+        type: FOLLOW_USER_EVENT,
+        roomId: meta.roomId,
+        leaderId: trimmedLeaderId,
+        followerId: meta.senderId,
+      },
+    });
+  }, []);
+
+  const unfollowUser = useCallback((leaderId?: string) => {
+    const channel = channelRef.current;
+    const meta = publishContextRef.current;
+
+    const targetLeaderId = leaderId?.trim() || followingUserIdRef.current;
+
+    setFollowingUserId(null);
+    followingUserIdRef.current = null;
+
+    if (!targetLeaderId) {
+      return;
+    }
+
+    if (!channel || !meta || !subscribedRef.current) {
+      return;
+    }
+
+    void channel.send({
+      type: "broadcast",
+      event: UNFOLLOW_USER_EVENT,
+      payload: {
+        type: UNFOLLOW_USER_EVENT,
+        roomId: meta.roomId,
+        leaderId: targetLeaderId,
+        followerId: meta.senderId,
+      },
+    });
+  }, []);
+
+  const publishViewportUpdate = useCallback((viewport: ViewportState) => {
+    const channel = channelRef.current;
+    const meta = publishContextRef.current;
+
+    if (!channel || !meta || !subscribedRef.current) {
+      return;
+    }
+
+    // Followers with no followers of their own must never broadcast viewport
+    if (
+      followingUserIdRef.current !== null &&
+      followerUserIdsRef.current.size === 0
+    ) {
+      return;
+    }
+
+    // Leader check: only participants with at least one active follower broadcast
+    if (followerUserIdsRef.current.size === 0) {
+      return;
+    }
+
+    if (!isValidViewport(viewport)) {
+      return;
+    }
+
+    void channel.send({
+      type: "broadcast",
+      event: VIEWPORT_UPDATE_EVENT,
+      payload: {
+        type: VIEWPORT_UPDATE_EVENT,
+        roomId: meta.roomId,
+        senderId: meta.senderId,
+        viewport: cloneViewport(viewport),
+        timestamp: Date.now(),
+      },
+    });
+  }, []);
+
   if (!roomId) {
     return {
       ...IDLE_CONNECTION,
@@ -824,6 +1143,8 @@ export function useRoomChannel(
       participants: [],
       currentParticipant: null,
       remoteCursors: [],
+      followingUserId: null,
+      followerUserIds: new Set(),
       ...NOOP_BROADCAST,
     };
   }
@@ -837,6 +1158,8 @@ export function useRoomChannel(
       participants,
       currentParticipant,
       remoteCursors,
+      followingUserId,
+      followerUserIds,
       broadcastNodeUpsert,
       broadcastNodeDeleted,
       broadcastNodeMoved,
@@ -845,6 +1168,9 @@ export function useRoomChannel(
       broadcastGroupUpsert,
       broadcastGroupDeleted,
       broadcastCursorMove,
+      followUser,
+      unfollowUser,
+      publishViewportUpdate,
     };
   }
 
@@ -856,6 +1182,8 @@ export function useRoomChannel(
     participants,
     currentParticipant,
     remoteCursors,
+    followingUserId,
+    followerUserIds,
     broadcastNodeUpsert,
     broadcastNodeDeleted,
     broadcastNodeMoved,
@@ -864,5 +1192,8 @@ export function useRoomChannel(
     broadcastGroupUpsert,
     broadcastGroupDeleted,
     broadcastCursorMove,
+    followUser,
+    unfollowUser,
+    publishViewportUpdate,
   };
 }

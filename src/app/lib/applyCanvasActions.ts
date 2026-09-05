@@ -66,7 +66,7 @@ export function applyCanvasActions(
     currentCanvas.nodes.map((node) => node.id)
   );
 
-  let nextCanvas: CanvasState = {
+  const nextCanvas: CanvasState = {
     nodes: [...currentCanvas.nodes],
     edges: [...currentCanvas.edges],
     groups: [...(currentCanvas.groups ?? [])],
