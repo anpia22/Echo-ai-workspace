@@ -31,6 +31,8 @@ import {
 } from "./lib/collaboration/groupEvents";
 import { getRoomIdFromUrl } from "./lib/collaboration/room";
 import { useRoomChannel } from "./lib/collaboration/useRoomChannel";
+import { useMeeting } from "./lib/collaboration/meeting";
+import { MeetingDock } from "./components/meeting";
 import {
   buildGraphContext,
   logGraphContext,
@@ -382,6 +384,10 @@ function Home() {
 
   const followingUserIdRef = useRef<string | null>(null);
 
+  const meetingHandleSignalRef = useRef<
+    ((payload: unknown) => Promise<void>) | null
+  >(null);
+
   const roomConnection = useRoomChannel(isLoaded ? roomId : null, {
     getSnapshot: () => createCanvasSnapshot(canvasRef.current),
     onRemoteSnapshot: (snapshot) => {
@@ -411,7 +417,47 @@ function Home() {
       }
       viewportApiRef.current?.applyRemoteViewport(event.viewport);
     },
+    onMeetingSignal: (payload) => {
+      void meetingHandleSignalRef.current?.(payload);
+    },
   });
+
+  const broadcastMeetingSignalRef = useRef(roomConnection.broadcastMeetingSignal);
+  useEffect(() => {
+    broadcastMeetingSignalRef.current = roomConnection.broadcastMeetingSignal;
+  }, [roomConnection.broadcastMeetingSignal]);
+
+  const meeting = useMeeting({
+    roomId: isLoaded ? roomId : null,
+    userId: roomConnection.currentParticipant?.userId ?? null,
+    displayName: roomConnection.currentParticipant?.displayName ?? "Guest",
+    color: roomConnection.currentParticipant?.color ?? "#6366f1",
+    broadcastSignal: (payload) => {
+      broadcastMeetingSignalRef.current(payload);
+    },
+  });
+
+  useEffect(() => {
+    meetingHandleSignalRef.current = meeting.handleSignal;
+  }, [meeting.handleSignal]);
+
+  const { meeting: meetingDomainState, syncPeers: meetingSyncPeers } = meeting;
+
+  useEffect(() => {
+    if (meetingDomainState.status !== "in-meeting") return;
+
+    void meetingSyncPeers(
+      roomConnection.participants.map((participant) => ({
+        userId: participant.userId,
+        displayName: participant.displayName,
+        color: participant.color,
+      }))
+    );
+  }, [
+    meetingDomainState.status,
+    meetingSyncPeers,
+    roomConnection.participants,
+  ]);
 
   useEffect(() => {
     followingUserIdRef.current = roomConnection.followingUserId;
@@ -1569,6 +1615,17 @@ function Home() {
               followInterruptedNotice={followInterruptedNotice}
             />
 
+            {meeting.meeting.status === "in-meeting" ? (
+              <div
+                data-testid="header-meeting-badge"
+                className="flex items-center gap-1.5 rounded-xl border border-indigo-500/40 bg-indigo-950/40 px-2.5 py-1 text-xs text-indigo-300"
+                title={`${1 + meeting.meeting.participants.size} in meeting`}
+              >
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="font-medium">In Meeting</span>
+              </div>
+            ) : null}
+
             <span className="h-2 w-2 rounded-full bg-green-500" />
 
             <span className="text-sm text-zinc-400">
@@ -1794,6 +1851,30 @@ function Home() {
                 </div>
               </div>
             ) : null}
+
+            {/* Meeting UI Dock (Phase 12.3 & 12.4) */}
+            <MeetingDock
+              meetingState={meeting.meeting}
+              localStream={meeting.localStream}
+              screenStream={meeting.screenStream}
+              remoteStreams={meeting.remoteStreams}
+              isMicEnabled={meeting.isMicEnabled}
+              isCameraEnabled={meeting.isCameraEnabled}
+              isScreenSharing={meeting.isScreenSharing}
+              activePresenterId={meeting.activePresenterId}
+              localUserId={roomConnection.currentParticipant?.userId ?? null}
+              localDisplayName={roomConnection.currentParticipant?.displayName ?? "You"}
+              localColor={roomConnection.currentParticipant?.color ?? "#6366f1"}
+              onStartMeeting={meeting.startMeeting}
+              onLeaveMeeting={meeting.leaveMeeting}
+              onSetMicEnabled={meeting.setMicEnabled}
+              onSetCameraEnabled={meeting.setCameraEnabled}
+              onToggleScreenShare={
+                meeting.isScreenSharing
+                  ? meeting.stopScreenShare
+                  : meeting.startScreenShare
+              }
+            />
 
           </section>
 

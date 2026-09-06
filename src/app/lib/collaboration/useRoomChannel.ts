@@ -71,6 +71,14 @@ import {
   getBrowserSupabaseClient,
   getBrowserSupabaseConfig,
 } from "./supabase";
+import {
+  WEBRTC_OFFER_EVENT,
+  WEBRTC_ANSWER_EVENT,
+  WEBRTC_ICE_CANDIDATE_EVENT,
+  MEDIA_STATE_EVENT,
+  MEETING_LEAVE_EVENT,
+  type MeetingSignalingEnvelope,
+} from "./meeting/meetingSignals";
 
 export type RoomConnectionState =
   | "idle"
@@ -104,6 +112,7 @@ export type RoomChannelSyncHandlers = {
   onRemoteFollowUser?: (event: FollowUserPayload) => void;
   onRemoteUnfollowUser?: (event: UnfollowUserPayload) => void;
   onRemoteViewportUpdate?: (event: ViewportUpdatePayload) => void;
+  onMeetingSignal?: (payload: unknown) => void;
 };
 
 export type RoomNodeBroadcast = {
@@ -132,11 +141,18 @@ export type RoomViewportBroadcast = {
   publishViewportUpdate: (viewport: ViewportState) => void;
 };
 
+export type RoomMeetingBroadcast = {
+  broadcastMeetingSignal: (
+    payload: MeetingSignalingEnvelope
+  ) => void;
+};
+
 export type RoomBroadcast = RoomNodeBroadcast &
   RoomEdgeBroadcast &
   RoomGroupBroadcast &
   RoomCursorBroadcast &
-  RoomViewportBroadcast;
+  RoomViewportBroadcast &
+  RoomMeetingBroadcast;
 
 type ActiveSubscription = {
   roomId: RoomId;
@@ -226,6 +242,7 @@ const NOOP_BROADCAST: RoomBroadcast = {
   followUser: () => {},
   unfollowUser: () => {},
   publishViewportUpdate: () => {},
+  broadcastMeetingSignal: () => {},
 };
 
 export function useRoomChannel(
@@ -265,6 +282,7 @@ export function useRoomChannel(
   const onRemoteFollowUserRef = useRef(syncHandlers?.onRemoteFollowUser);
   const onRemoteUnfollowUserRef = useRef(syncHandlers?.onRemoteUnfollowUser);
   const onRemoteViewportUpdateRef = useRef(syncHandlers?.onRemoteViewportUpdate);
+  const onMeetingSignalRef = useRef(syncHandlers?.onMeetingSignal);
   const channelRef = useRef<RealtimeChannel | null>(null);
   const publishContextRef = useRef<PublishContext | null>(null);
   const subscribedRef = useRef(false);
@@ -287,6 +305,7 @@ export function useRoomChannel(
     onRemoteFollowUserRef.current = syncHandlers?.onRemoteFollowUser;
     onRemoteUnfollowUserRef.current = syncHandlers?.onRemoteUnfollowUser;
     onRemoteViewportUpdateRef.current = syncHandlers?.onRemoteViewportUpdate;
+    onMeetingSignalRef.current = syncHandlers?.onMeetingSignal;
   });
 
   const sessionGenerationRef = useRef<number>(0);
@@ -670,6 +689,43 @@ export function useRoomChannel(
       "broadcast",
       { event: VIEWPORT_UPDATE_EVENT },
       handleViewportUpdate
+    );
+
+    // Meeting signaling listeners
+    const handleMeetingSignal = ({ payload }: { payload: unknown }) => {
+      if (cancelled) return;
+
+      onMeetingSignalRef.current?.(payload);
+    };
+
+    channel.on(
+      "broadcast",
+      { event: WEBRTC_OFFER_EVENT },
+      handleMeetingSignal
+    );
+
+    channel.on(
+      "broadcast",
+      { event: WEBRTC_ANSWER_EVENT },
+      handleMeetingSignal
+    );
+
+    channel.on(
+      "broadcast",
+      { event: WEBRTC_ICE_CANDIDATE_EVENT },
+      handleMeetingSignal
+    );
+
+    channel.on(
+      "broadcast",
+      { event: MEDIA_STATE_EVENT },
+      handleMeetingSignal
+    );
+
+    channel.on(
+      "broadcast",
+      { event: MEETING_LEAVE_EVENT },
+      handleMeetingSignal
     );
 
     let hasConnectedOnce = false;
@@ -1125,6 +1181,29 @@ export function useRoomChannel(
     });
   }, []);
 
+  const broadcastMeetingSignal = useCallback(
+    (payload: MeetingSignalingEnvelope) => {
+      const channel = channelRef.current;
+      const meta = publishContextRef.current;
+
+      if (!channel || !meta || !subscribedRef.current) return;
+
+      if (
+        payload.roomId !== meta.roomId ||
+        payload.senderId !== meta.senderId
+      ) {
+        return;
+      }
+
+      void channel.send({
+        type: "broadcast",
+        event: payload.type,
+        payload,
+      });
+    },
+    []
+  );
+
   if (!roomId) {
     return {
       ...IDLE_CONNECTION,
@@ -1171,6 +1250,7 @@ export function useRoomChannel(
       followUser,
       unfollowUser,
       publishViewportUpdate,
+      broadcastMeetingSignal,
     };
   }
 
@@ -1195,5 +1275,6 @@ export function useRoomChannel(
     followUser,
     unfollowUser,
     publishViewportUpdate,
+    broadcastMeetingSignal,
   };
 }
