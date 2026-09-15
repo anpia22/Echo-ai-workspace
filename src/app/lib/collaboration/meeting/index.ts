@@ -12,3 +12,6 @@ export * from "./meetingSignals";
 export * from "./mediaLifecycle";
 export * from "./meetingRuntime";
 export * from "./useMeeting";
+export * from "./conversation";
+export * from "./analysis";
+export * from "./bridge";

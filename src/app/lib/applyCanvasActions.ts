@@ -7,6 +7,16 @@ import {
 } from "./groupNodesAction";
 import { parseMoveNodeAction } from "./moveNodeAction";
 
+export interface CanvasActionMetadata {
+  source: "meeting";
+  meetingId: string;
+  insightId: string;
+  sourceSegmentIds: string[];
+  speakerIds: string[];
+  confidence?: number;
+  [key: string]: unknown;
+}
+
 export type CanvasAction = {
   type: string;
   nodeType?: string;
@@ -26,6 +36,7 @@ export type CanvasAction = {
     description?: string;
     nodeType?: string;
   };
+  metadata?: CanvasActionMetadata;
 };
 
 export type CanvasNode = {

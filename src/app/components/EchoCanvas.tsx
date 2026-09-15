@@ -129,43 +129,49 @@ const getNodeStyle = (nodeType?: string) => {
   switch (nodeType) {
     case "problem":
       return {
-        background: "#2a1111",
-        border: "1px solid #ef4444",
+        background: "linear-gradient(145deg, rgba(42,17,17,0.8) 0%, rgba(20,5,5,0.9) 100%)",
+        border: "1px solid rgba(239, 68, 68, 0.3)",
+        borderTop: "1px solid rgba(239, 68, 68, 0.6)",
         color: "#fca5a5",
       };
 
     case "solution":
       return {
-        background: "#0d2418",
-        border: "1px solid #22c55e",
+        background: "linear-gradient(145deg, rgba(13,36,24,0.8) 0%, rgba(5,20,10,0.9) 100%)",
+        border: "1px solid rgba(34, 197, 94, 0.3)",
+        borderTop: "1px solid rgba(34, 197, 94, 0.6)",
         color: "#86efac",
       };
 
     case "decision":
       return {
-        background: "#20180a",
-        border: "1px solid #eab308",
+        background: "linear-gradient(145deg, rgba(32,24,10,0.8) 0%, rgba(20,15,5,0.9) 100%)",
+        border: "1px solid rgba(234, 179, 8, 0.3)",
+        borderTop: "1px solid rgba(234, 179, 8, 0.6)",
         color: "#fde047",
       };
 
     case "task":
       return {
-        background: "#111c2d",
-        border: "1px solid #3b82f6",
+        background: "linear-gradient(145deg, rgba(17,28,45,0.8) 0%, rgba(10,15,25,0.9) 100%)",
+        border: "1px solid rgba(59, 130, 246, 0.3)",
+        borderTop: "1px solid rgba(59, 130, 246, 0.6)",
         color: "#93c5fd",
       };
 
     case "question":
       return {
-        background: "#20142d",
-        border: "1px solid #a855f7",
+        background: "linear-gradient(145deg, rgba(32,20,45,0.8) 0%, rgba(15,10,25,0.9) 100%)",
+        border: "1px solid rgba(168, 85, 247, 0.3)",
+        borderTop: "1px solid rgba(168, 85, 247, 0.6)",
         color: "#d8b4fe",
       };
 
     default:
       return {
-        background: "#18181b",
-        border: "1px solid #52525b",
+        background: "linear-gradient(145deg, rgba(24,24,27,0.8) 0%, rgba(9,9,11,0.9) 100%)",
+        border: "1px solid rgba(82, 82, 91, 0.3)",
+        borderTop: "1px solid rgba(82, 82, 91, 0.6)",
         color: "#e4e4e7",
       };
   }
@@ -174,81 +180,41 @@ const getNodeStyle = (nodeType?: string) => {
 function EchoNode({ data }: NodeProps<Node<EchoNodeData>>) {
   return (
     <div
-      className="relative"
+      className="relative flex flex-col transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
       style={{
         ...getNodeStyle(data.nodeType),
-        borderRadius: "16px",
-        padding: "16px",
+        borderRadius: "20px",
+        padding: "18px 20px",
         width: NODE_WIDTH,
         minHeight: 120,
-        boxShadow: "0 10px 30px rgba(0,0,0,0.25)",
+        boxShadow: "0 12px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)",
+        backdropFilter: "blur(12px)",
+        WebkitBackdropFilter: "blur(12px)",
       }}
     >
-      <Handle
-        type="target"
-        position={Position.Top}
-        id="t-top"
-        style={handleStyle}
-        isConnectable={false}
-      />
-      <Handle
-        type="source"
-        position={Position.Top}
-        id="s-top"
-        style={handleStyle}
-        isConnectable={false}
-      />
-      <Handle
-        type="target"
-        position={Position.Right}
-        id="t-right"
-        style={handleStyle}
-        isConnectable={false}
-      />
-      <Handle
-        type="source"
-        position={Position.Right}
-        id="s-right"
-        style={handleStyle}
-        isConnectable={false}
-      />
-      <Handle
-        type="target"
-        position={Position.Bottom}
-        id="t-bottom"
-        style={handleStyle}
-        isConnectable={false}
-      />
-      <Handle
-        type="source"
-        position={Position.Bottom}
-        id="s-bottom"
-        style={handleStyle}
-        isConnectable={false}
-      />
-      <Handle
-        type="target"
-        position={Position.Left}
-        id="t-left"
-        style={handleStyle}
-        isConnectable={false}
-      />
-      <Handle
-        type="source"
-        position={Position.Left}
-        id="s-left"
-        style={handleStyle}
-        isConnectable={false}
-      />
+      <Handle type="target" position={Position.Top} id="t-top" style={handleStyle} isConnectable={false} />
+      <Handle type="source" position={Position.Top} id="s-top" style={handleStyle} isConnectable={false} />
+      <Handle type="target" position={Position.Right} id="t-right" style={handleStyle} isConnectable={false} />
+      <Handle type="source" position={Position.Right} id="s-right" style={handleStyle} isConnectable={false} />
+      <Handle type="target" position={Position.Bottom} id="t-bottom" style={handleStyle} isConnectable={false} />
+      <Handle type="source" position={Position.Bottom} id="s-bottom" style={handleStyle} isConnectable={false} />
+      <Handle type="target" position={Position.Left} id="t-left" style={handleStyle} isConnectable={false} />
+      <Handle type="source" position={Position.Left} id="s-left" style={handleStyle} isConnectable={false} />
 
-      <div className="mb-2 text-xs font-semibold uppercase tracking-wider opacity-60">
-        {data.nodeType}
+      <div className="mb-2 flex items-center justify-between">
+        <span className="text-[10px] font-bold uppercase tracking-widest opacity-60">
+          {data.nodeType}
+        </span>
       </div>
 
-      <div className="text-base font-semibold">{data.title}</div>
+      <div className="text-[15px] font-semibold leading-snug tracking-tight text-white/90">
+        {data.title}
+      </div>
 
       {data.description ? (
-        <div className="mt-2 text-xs opacity-70">{data.description}</div>
+        <div className="mt-2.5 text-xs font-medium leading-relaxed opacity-70">
+          {data.description}
+        </div>
       ) : null}
     </div>
   );
@@ -257,10 +223,10 @@ function EchoNode({ data }: NodeProps<Node<EchoNodeData>>) {
 function EchoGroup({ data }: NodeProps<Node<EchoGroupData>>) {
   return (
     <div
-      className="h-full w-full rounded-[20px] border border-dashed border-zinc-600 bg-zinc-900/40"
+      className="h-full w-full rounded-[24px] border-2 border-dashed border-zinc-700/50 bg-zinc-900/20 backdrop-blur-[2px] transition-all duration-500"
       style={{ pointerEvents: "none" }}
     >
-      <div className="px-3 py-2 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">
+      <div className="px-4 py-3 text-xs font-bold uppercase tracking-widest text-zinc-500">
         {data.title}
       </div>
     </div>

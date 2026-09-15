@@ -165,7 +165,7 @@ export function MeetingDock({
       {isVideoPanelOpen ? (
         <div
           data-testid="meeting-video-panel"
-          className="pointer-events-auto absolute right-4 top-4 flex max-w-full flex-col gap-2 rounded-2xl border border-zinc-800/80 bg-zinc-950/80 p-2.5 shadow-2xl backdrop-blur-md transition-all sm:max-w-2xl"
+          className="pointer-events-auto absolute right-6 top-6 flex max-w-full flex-col gap-2 rounded-3xl border border-zinc-700/50 bg-zinc-900/80 p-3 shadow-2xl backdrop-blur-xl transition-all sm:max-w-2xl"
         >
           <div className="flex items-center justify-between px-1 text-[11px] font-medium text-zinc-400">
             <span className="flex items-center gap-1.5">
@@ -237,7 +237,7 @@ export function MeetingDock({
       ) : null}
 
       {/* Floating Bottom Meeting Controls Bar */}
-      <div className="pointer-events-auto absolute bottom-6 left-1/2 -translate-x-1/2">
+      <div className="pointer-events-auto absolute bottom-6 right-6">
         <MeetingControls
           isMicEnabled={isMicEnabled}
           isCameraEnabled={isCameraEnabled}

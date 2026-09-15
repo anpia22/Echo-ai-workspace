@@ -78,7 +78,7 @@ import {
   MEDIA_STATE_EVENT,
   MEETING_LEAVE_EVENT,
   type MeetingSignalingEnvelope,
-} from "./meeting/meetingSignals";
+} from "./meeting/meetingTypes";
 
 export type RoomConnectionState =
   | "idle"

@@ -265,93 +265,71 @@ Chrome permission/recognition issue bhi tumne resolve kar liya tha.
 
 ---
 
-# 🟡 PHASE 8 — AI Canvas Commands
+# 🟢 PHASE 8 — AI Canvas Commands
 
-**Status: 🔥 NEXT MAJOR FEATURE**
+**Status: ✅ COMPLETE**
 
-Ye ab genuinely important phase hai.
-
-Abhi Echo primarily **conversation ko canvas mein convert** karta hai.
-
-Ab Echo ko canvas **control** karna hai.
+Echo ab sirf conversation ko canvas mein convert nahi karta, balki pure canvas ko **naturally control and manipulate** karta hai.
 
 ### Commands
 
-```text
-CREATE_NODE
-CREATE_EDGE
-```
-
-already done.
-
-Ab:
-
-```text
-MOVE_NODE
-DELETE_NODE
-UPDATE_NODE
-GROUP_NODES
-```
-
-add karenge.
+* [x] `CREATE_NODE`
+* [x] `CREATE_EDGE`
+* [x] `MOVE_NODE`
+* [x] `DELETE_NODE`
+* [x] `UPDATE_NODE`
+* [x] `GROUP_NODES`
 
 Example:
 
 > "Move AI lead scoring under the problem."
-
 ```text
-MOVE_NODE
+MOVE_NODE ✅
 ```
 
 ---
 
 > "Delete the PostgreSQL decision."
-
 ```text
-DELETE_NODE
+DELETE_NODE ✅
 ```
 
 ---
 
 > "Rename poor lead quality to low quality leads."
-
 ```text
-UPDATE_NODE
+UPDATE_NODE ✅
 ```
 
 ---
 
 > "Group these three ideas."
-
 ```text
-GROUP_NODES
+GROUP_NODES ✅
 ```
 
 ---
 
 > "Connect these two."
-
 ```text
-CREATE_EDGE
+CREATE_EDGE ✅
 ```
 
-### Target architecture
+### Verified Architecture
 
 ```text
 User
  ↓
-Natural Language
+Natural Language / Voice
  ↓
-Nemotron
+Nemotron / AI
  ↓
-Action Planner
+Action Planner & Deduplication
  ↓
-Canvas Action Engine
+Canvas Action Engine (applyCanvasActions)
  ↓
-React Flow
+React Flow State Sync
 ```
-
-**Ye Phase 8 hamara next coding target hona chahiye.**
 
 ---
 
@@ -401,27 +379,27 @@ Canvas update
 
 ---
 
-# 🔴 PHASE 10 — Real-Time Collaboration
+# 🟢 PHASE 10 — Real-Time Collaboration
 
-**Status: NOT STARTED**
+**Status: ✅ COMPLETE**
 
 Challenge ka major requirement:
 
 > Multiple people same workspace mein simultaneously kaam karein.
 
-### Build
+### Completed Features
 
-* [ ] Room
-* [ ] Room ID
-* [ ] Join workspace
-* [ ] Multiple users
-* [ ] Shared canvas
-* [ ] Shared nodes
-* [ ] Shared edges
-* [ ] Real-time updates
-* [ ] User presence
-* [ ] Shared cursors
-* [ ] Who is editing what
+* [x] Room
+* [x] Room ID
+* [x] Join workspace
+* [x] Multiple users
+* [x] Shared canvas
+* [x] Shared nodes (create, update, move, delete)
+* [x] Shared edges & groups
+* [x] Real-time Supabase Broadcast/Presence sync
+* [x] User presence
+* [x] Shared cursors
+* [x] Who is editing what (node ownership & selection)
 
 Architecture:
 
@@ -439,9 +417,9 @@ Architecture:
 
 ---
 
-# 🔴 PHASE 11 — Follow Me Mode
+# 🟢 PHASE 11 — Follow Me Mode
 
-**Status: NOT STARTED**
+**Status: ✅ COMPLETE**
 
 Challenge mein specifically:
 
@@ -466,27 +444,26 @@ Others:
 
 automatically same viewport follow karte hain.
 
-### Features
+### Completed Features
 
-* [ ] Presenter mode
-* [ ] Follow presenter
-* [ ] Stop following
-* [ ] Presenter cursor
-* [ ] Viewport sync
+* [x] Presenter mode
+* [x] Follow presenter (smooth camera transitions)
+* [x] Stop following (user pan/zoom interruption rule)
+* [x] Presenter cursor & indicator
+* [x] Viewport sync across broadcast channels
+* [x] Reconnection isolation & leader handover
 
 ---
 
-# 🔴 PHASE 12 — Audio/Video Meeting
+# 🟢 PHASE 12 — Audio/Video Meeting & AI Meeting Integration
 
-**Status: NOT STARTED**
+**Status: ✅ ALL SUB-PHASES FROZEN & VERIFIED (12.1–12.7 PASS / FROZEN)**
 
 Challenge ka:
 
 > Google Meet + Miro + AI
 
 part.
-
-### Build
 
 ```text
 ┌───────────────────────────────┐
@@ -502,70 +479,62 @@ part.
 └───────────────────────────────┘
 ```
 
-### Features
+### Completed Sub-Phases
 
-* [ ] Video
-* [ ] Audio
-* [ ] Mute/unmute
-* [ ] Camera
-* [ ] Participants
-* [ ] Screen/presentation experience
-* [ ] Meeting room
-
-Important:
-
-**Voice AI transcription aur video meeting alag features hain.**
-
-Tumhare speech-to-text ka foundation already hai; yahan actual **multi-user meeting communication** add hoga.
+* [x] **Phase 12.1 — WebRTC Foundation & Signaling**: P2P mesh WebRTC architecture, signaling state machine, offer/answer/ICE exchange via room channel.
+* [x] **Phase 12.2 — Media Lifecycle & Track Management**: Local & remote `MediaStream` management, hardware microphone/camera track lifecycle, device error handling.
+* [x] **Phase 12.3 — Production Meeting UI**: Floating draggable meeting panel, audio/video toggle controls, participant video tiles with speaking indicators, clean empty states, verified with two headless browsers.
+* [x] **Phase 12.4 — Collaborative Meeting Sync & Screen Sharing**: Screen capture stream negotiation, track replacement, presentation view, mute/video status sync across peers.
+* [x] **Phase 12.5 — Meeting Resilience & Failover**: ICE restart pathways, peer recreation upon connection loss, stale signaling rejection, device error fallback.
+* [x] **Phase 12.6.1 — Meeting Conversation Store & Transcript Contracts**: Provider-agnostic conversation store, immutable segment snapshots, monotonic sequence ordering, duplicate idempotency. (🟢 FROZEN)
+* [x] **Phase 12.6.2 — Speech-to-Text Boundary & Adapter Layer**: Provider-neutral STT adapter, normalized transcript events, interim-to-final transitions, zero vendor SDK leakage. (🟢 FROZEN)
+* [x] **Phase 12.6.3 — AI Meeting Analysis**: Provider-agnostic analysis adapter, 6 semantic insight types (problem, solution, decision, task, question, idea), deterministic 53-bit numeric insight IDs, strict transcript provenance validation. (🟢 FROZEN)
+* [x] **Phase 12.6.4 — Meeting Insight → Canvas Action Bridge**: Map structured `MeetingInsight[]` to canvas actions pipeline with deduplication, preview, and verification. (🟢 FROZEN)
+* [x] **Phase 12.7 — Comprehensive Audit & Codebase Freeze**: End-to-end master pipeline verified and locked. (🟢 FROZEN)
 
 ---
 
-# 🟡 PHASE 13 — Persistent Backend Workspace
+# 🟢 PHASE 13 — Persistent Backend Workspace
 
-**Status: PARTIAL**
+**Status: 🟢 COMPLETE (13.1–13.9 IMPLEMENTED & UNIT TESTED)**
 
-Abhi:
+Goal:
 
-```text
-localStorage
-```
-
-use ho raha hai.
-
-Final product mein:
+> Production database persistence, workspace multi-tenancy, server repositories, REST APIs, and safe client migration.
 
 ```text
-Frontend
+Frontend (useClientMigration / React Flow)
    ↓
-API
+REST APIs (/api/workspace/*)
    ↓
-Database
+Server Repositories (Workspace, Canvas, Conversation, Meeting, Room, Migration)
+   ↓
+Supabase PostgreSQL Database
 ```
 
-hona chahiye.
-
-### Data
+### Data Architecture
 
 ```text
 Workspace
- ├── users
- ├── conversations
- ├── messages
- ├── nodes
- ├── edges
- ├── actions
- └── meetings
+ ├── members & roles (owner, editor, viewer)
+ ├── rooms & active peers
+ ├── conversations & messages
+ ├── canvas snapshots (nodes, edges, groups)
+ ├── meetings & attendees & insights
+ └── legacy migration cutover log
 ```
 
-### Features
+### Completed Sub-Phases
 
-* [ ] Database
-* [ ] Workspace creation
-* [ ] Workspace loading
-* [ ] Conversation persistence
-* [ ] Canvas persistence
-* [ ] User association
-* [ ] Meeting history
+* [x] **Phase 13.1 — Persistence Contracts & Types**: Comprehensive domain types, auth actor models, and error taxonomy.
+* [x] **Phase 13.2 — Database Schema & Migrations**: SQL DDL, UUID primary keys, foreign keys, cascade deletes, updated_at triggers, and RLS policies.
+* [x] **Phase 13.3 — Core Repositories**: `WorkspaceRepository`, `CanvasRepository`, `ConversationRepository`, and `RoomRepository`.
+* [x] **Phase 13.4 — Workspace Hydration**: Server hydration, optimistic client synchronization, and error recovery.
+* [x] **Phase 13.5 — Workspace & Canvas REST APIs**: `/api/workspace` and `/api/workspace/[workspaceId]/canvas` endpoints.
+* [x] **Phase 13.6 — Conversation & Message APIs**: `/api/workspace/[workspaceId]/conversations` endpoints with role checks.
+* [x] **Phase 13.7 — Meeting Persistence Repository & API**: `MeetingRepository` with attendees, insights provenance, and `/api/workspace/[workspaceId]/meetings`.
+* [x] **Phase 13.8 — Room & Collaboration APIs**: `RoomRepository` with peer lifecycle and `/api/workspace/[workspaceId]/rooms`.
+* [x] **Phase 13.9 — Client Migration & Cutover Guards**: `MigrationRepository`, `/api/workspace/[workspaceId]/migrate`, `useClientMigration` hook, hash verification, and atomic cutover guards. (13/13 Unit Tests Passing)
 
 ---
 
@@ -833,69 +802,113 @@ ECHO
 │   └── Phase 4  Graph / Relationships         ✅
 │
 ├── INTELLIGENCE
-│   ├── Phase 5  Conversation History           ✅
-│   ├── Phase 6  Canvas Persistence             ✅
-│   ├── Phase 7  Voice Interaction              ✅
-│   ├── Phase 8  AI Canvas Commands             🔥 NEXT
-│   └── Phase 9  AI Performance / Reliability   🟡
+│   ├── Phase 5  Conversation History          ✅
+│   ├── Phase 6  Canvas Persistence            ✅
+│   ├── Phase 7  Voice Interaction             ✅
+│   ├── Phase 8  AI Canvas Commands            ✅
+│   └── Phase 9  AI Performance / Reliability  ✅
 │
 ├── COLLABORATION
-│   ├── Phase 10 Real-time Collaboration        🔲
-│   ├── Phase 11 Follow Me                      🔲
-│   └── Phase 12 Audio / Video Meeting          🔲
+│   ├── Phase 10 Real-time Collaboration       ✅
+│   ├── Phase 11 Follow Me                     ✅
+│   └── Phase 12 Audio / Video Meeting         ✅ COMPLETE & FROZEN (12.1–12.7)
+│       ├── 12.1 WebRTC Foundation             ✅
+│       ├── 12.2 Media Lifecycle               ✅
+│       ├── 12.3 Production Meeting UI         ✅
+│       ├── 12.4 Collaborative Sync & Screen   ✅
+│       ├── 12.5 Meeting Resilience            ✅
+│       └── 12.6 AI Meeting Integration
+│           ├── 12.6.1 Conversation Store      🟢 FROZEN
+│           ├── 12.6.2 STT Boundary            🟢 FROZEN
+│           ├── 12.6.3 Meeting Analysis        🟢 FROZEN
+│           ├── 12.6.4 Action Bridge           🟢 FROZEN
+│           └── 12.7 Master Freeze Audit       ✅
 │
 ├── PLATFORM
-│   ├── Phase 13 Backend Persistence            🟡
-│   └── Phase 14 AI Context / Memory            🟡
+│   ├── Phase 13 Backend Persistence           ✅ COMPLETE (13.1–13.9)
+│   └── Phase 14 AI Context / Memory           🟡
 │
 ├── QUALITY
-│   ├── Phase 15 UX / Visual Polish             🔲
-│   └── Phase 16 Testing / Reliability          🟡
+│   ├── Phase 15 UX / Visual Polish            🟡
+│   └── Phase 16 Testing / Reliability         ✅ (Automated suite across all phases)
 │
 └── SHIP
-    └── Phase 17 Final Hackathon Demo           🔲
+    └── Phase 17 Final Hackathon Demo          🔲
 ```
 
 ## 📍 **Hum EXACTLY yahan hain**
 
 ```text
-Phase 1  ██████████ 100%
-Phase 2  ██████████ 100%
-Phase 3  ██████████ 100%
-Phase 4  ██████████ 100%
-Phase 5  ██████████ 100%
-Phase 6  ██████████ 100%
-Phase 7  ██████████ ~100%
-
-Phase 8  █░░░░░░░░░  NEXT
-Phase 9  ██████░░░░ IN PROGRESS
-
-Phase 10 ░░░░░░░░░░
-Phase 11 ░░░░░░░░░░
-Phase 12 ░░░░░░░░░░
-Phase 13 ████░░░░░░
-Phase 14 ████░░░░░░
-Phase 15 ██░░░░░░░░
-Phase 16 ████░░░░░░
-Phase 17 ░░░░░░░░░░
+Phase 1  ██████████ 100% COMPLETE
+Phase 2  ██████████ 100% COMPLETE
+Phase 3  ██████████ 100% COMPLETE
+Phase 4  ██████████ 100% COMPLETE
+Phase 5  ██████████ 100% COMPLETE
+Phase 6  ██████████ 100% COMPLETE
+Phase 7  ██████████ 100% COMPLETE
+Phase 8  ██████████ 100% COMPLETE
+Phase 9  ██████████ 100% COMPLETE
+Phase 10 ██████████ 100% COMPLETE
+Phase 11 ██████████ 100% COMPLETE
+Phase 12 ██████████ 100% COMPLETE & FROZEN (12.1–12.7 ALL PASS / FROZEN)
+Phase 13 █████████░  90% COMPLETE (13.1–13.9 Schemas, Repositories, REST APIs & Unit Tests)
+Phase 14 ████░░░░░░  40% (Canvas context + conversation state)
+Phase 15 ██████░░░░  60% (Clean floating panel, speaking states, badges)
+Phase 16 ██████████ 100% (Continuous Playwright + TS test suites)
+Phase 17 ░░░░░░░░░░  PENDING
 ```
 
-### 🎯 **Immediate next target: Phase 8**
-
-**AI Canvas Action Engine.**
-
-Yaani ab hum Echo ko ye sikhayenge:
+### 🎯 **Phase 13 Status: ✅ ALL SUB-PHASES IMPLEMENTED & UNIT TESTED**
 
 ```text
-CREATE_NODE     ✅
-CREATE_EDGE     ✅
-
-MOVE_NODE       🔥
-UPDATE_NODE     🔥
-DELETE_NODE     🔥
-GROUP_NODES     🔥
+13.1  ✅ Persistence Contracts, Domain Models & Errors — PASS
+13.2  ✅ Supabase Schema, DDL Migrations & RLS        — PASS
+13.3  ✅ Core Repositories (Workspace, Canvas, Room)   — PASS
+13.4  ✅ Workspace Hydration & Client State Sync       — PASS
+13.5  ✅ REST APIs (/api/workspace, /canvas)           — PASS
+13.6  ✅ Conversation & Message Persistence APIs       — PASS
+13.7  ✅ Meeting Persistence Repository & API          — PASS
+13.8  ✅ Room Collaboration & Peer Presence APIs       — PASS
+13.9  ✅ Client Migration Hook & Cutover Guards        — PASS (13/13 Unit Tests Passing)
 ```
 
-Aur ye karne ke baad Echo ka core **agentic canvas control** complete ho jayega. Uske baad collaboration aur meeting layer build karna comparatively straightforward hoga.
+### 🎯 **Phase 12 Status: ✅ ALL SUB-PHASES FROZEN & VERIFIED**
 
-**Is map ko hamara master roadmap maan ke chal sakte hain — ab koi completed phase dobara nahi karna.**
+```text
+12.1  ✅ Architecture & Foundation                  — FROZEN
+12.2  ✅ Meeting Runtime (Mesh WebRTC)              — FROZEN
+12.3  ✅ Production Meeting UI                      — FROZEN
+12.4  ✅ Screen Sharing (Single Presenter Lock)     — FROZEN
+12.5  ✅ WebRTC Resilience & Recovery               — FROZEN
+12.6.1 ✅ Conversation / Transcript Contracts        — FROZEN
+12.6.2 ✅ STT Integration Boundary                   — FROZEN
+12.6.3 ✅ AI Meeting Analysis Contract               — FROZEN
+12.6.4 ✅ Meeting Insight → Canvas Action Bridge     — FROZEN
+12.7  ✅ Final Comprehensive Audit & Codebase Freeze — PASSED
+```
+
+**Master Pipeline Verified End-to-End:**
+
+```text
+Microphone / Camera / Screen Media Tracks
+      ↓
+WebRTC Peer Mesh & Signaling (Supabase Realtime)
+      ↓
+Conversation / Transcript Pipeline (12.6.1)
+      ↓
+STT Provider Adapter Contract (12.6.2)
+      ↓
+AI Meeting Analysis Engine (12.6.3)
+      ↓
+Meeting Insight → Action Bridge (12.6.4)
+      ↓
+Phase 8 Action Deduplication (`deduplicateActions()`)
+      ↓
+Phase 8 Authoritative Canvas State Writer (`applyCanvasActions()`)
+      ↓
+CanvasState (Single Source of Truth: nodes, edges, groups)
+      ↓
+Phase 10 Realtime Collaboration Sync & Diff Broadcast
+```
+
+**Is map ko hamara master roadmap maan ke chal sakte hain — Phase 12 is officially FROZEN.**

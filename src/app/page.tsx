@@ -7,7 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import EchoCanvas, { type ViewportApi } from "./components/EchoCanvas";
 import RoomControls from "./components/RoomControls";
 import { applyCanvasActions } from "./lib/applyCanvasActions";
@@ -37,6 +37,19 @@ import {
   buildGraphContext,
   logGraphContext,
 } from "./lib/graphContext";
+import {
+  useWorkspaceHydration,
+  useCanvasPersistence,
+  useConversationPersistence,
+  useMeetingPersistence,
+  useRoomPersistence,
+  useClientMigration,
+  isWorkspaceMigrated,
+} from "./lib/persistence/client";
+import type {
+  CanvasPersistenceStatus,
+  ConversationPersistenceStatus,
+} from "./lib/persistence/client";
 
 type CanvasAction = {
   type: string;
@@ -360,11 +373,162 @@ function getVoiceErrorMessage(code: string): string {
   }
 }
 
+// --------------------------------------------------
+// Phase 14 — Unified System Status Badge
+// --------------------------------------------------
+
+function SystemStatusBadge({
+  canvasStatus,
+  conversationStatus,
+}: {
+  canvasStatus: CanvasPersistenceStatus;
+  conversationStatus: ConversationPersistenceStatus;
+}) {
+  const isError = canvasStatus === "error" || conversationStatus === "error";
+  const isConflict = canvasStatus === "conflict" || conversationStatus === "conflict";
+  const isSaving = canvasStatus === "saving" || conversationStatus === "saving";
+  const isSaved = canvasStatus === "saved" || conversationStatus === "saved";
+
+  if (isError) {
+    return (
+      <div
+        data-testid="system-persistence-error"
+        className="flex cursor-default items-center gap-1.5 rounded-lg border border-rose-500/40 bg-rose-950/40 px-2 py-1 text-xs text-rose-400"
+        title="Save failed — changes may not be persisted"
+        aria-label="System save error"
+      >
+        <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+          <path d="M6 2v4m0 2h.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          <circle cx="6" cy="6" r="5" stroke="currentColor" strokeWidth="1.2" />
+        </svg>
+        <span className="hidden sm:inline">Save Error</span>
+      </div>
+    );
+  }
+
+  if (isConflict) {
+    return (
+      <div
+        data-testid="system-persistence-conflict"
+        className="flex cursor-default items-center gap-1.5 rounded-lg border border-amber-500/40 bg-amber-950/40 px-2 py-1 text-xs text-amber-400"
+        title="Sync conflict detected"
+        aria-label="System conflict"
+      >
+        <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+          <path d="M6 2v4m0 2h.01" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+          <circle cx="6" cy="6" r="5" stroke="currentColor" strokeWidth="1.2" />
+        </svg>
+        <span className="hidden sm:inline">Conflict</span>
+      </div>
+    );
+  }
+
+  if (isSaving) {
+    return (
+      <div
+        data-testid="system-persistence-saving"
+        className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-zinc-400"
+        title="Saving changes…"
+        aria-label="Saving changes"
+      >
+        <span className="h-3 w-3 animate-spin rounded-full border border-zinc-600 border-t-zinc-300" />
+        <span className="hidden sm:inline">Saving</span>
+      </div>
+    );
+  }
+
+  if (isSaved) {
+    return (
+      <div
+        data-testid="system-persistence-saved"
+        className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-emerald-400"
+        title="All changes saved"
+        aria-label="All changes saved"
+      >
+        <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+          <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+        </svg>
+        <span className="hidden sm:inline">Saved</span>
+      </div>
+    );
+  }
+
+  return null;
+}
+
 function Home() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const roomId = getRoomIdFromUrl(searchParams);
+  const rawWorkspaceParam = searchParams.get("workspace");
+  const workspaceHydration = useWorkspaceHydration(rawWorkspaceParam);
+
+  // --------------------------------------------------
+  // Phase 13.5 — Canvas Persistence
+  // --------------------------------------------------
+  const [persistenceRevision, setPersistenceRevision] = useState<number | null>(null);
+
+  const { persistenceStatus, persistCanvas, persistNodeMove } = useCanvasPersistence(
+    workspaceHydration.workspaceId,
+    persistenceRevision,
+    (newRevision) => setPersistenceRevision(newRevision)
+  );
+
+  // --------------------------------------------------
+  // Phase 13.6 — Conversation Persistence
+  // --------------------------------------------------
+  const {
+    conversationPersistenceStatus,
+    persistNewConversation,
+    persistMessage,
+    loadConversationMessages,
+  } = useConversationPersistence(workspaceHydration.workspaceId);
+
+  // --------------------------------------------------
+  // Phase 13.7 — Meeting Persistence (Non-invasive)
+  // --------------------------------------------------
+  const meetingPersistence = useMeetingPersistence({
+    workspaceId: workspaceHydration.workspaceId,
+  });
+  const activeMeetingIdRef = useRef<string | null>(null);
+
+  // --------------------------------------------------
+  // Phase 13.8 — Collaboration Room Persistence (Non-invasive & Guarded)
+  // --------------------------------------------------
+  const roomPersistence = useRoomPersistence({
+    workspaceId: workspaceHydration.workspaceId,
+  });
+  const lastPersistedRoomRef = useRef<string | null>(null);
+
+  // --------------------------------------------------
+  // Phase 13.9 — Client Migration & Storage Cutover
+  // --------------------------------------------------
+  useClientMigration({
+    workspaceId: workspaceHydration.workspaceId,
+    enabled: workspaceHydration.status === "ready" && !!workspaceHydration.workspaceId,
+    onMigrationComplete: useCallback(() => {
+      workspaceHydration.retry();
+    }, [workspaceHydration]),
+  });
 
   const [transcript, setTranscript] = useState("");
+
+  // Phase 14.2 Composer Focus
+  const composerInputRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
+        e.preventDefault();
+        composerInputRef.current?.focus();
+      }
+    };
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
+
+  // Phase 14 Layout States
+  const [isHistoryOpen, setIsHistoryOpen] = useState(true);
+  const [isConversationOpen, setIsConversationOpen] = useState(true);
 
   const [canvas, setCanvas] = useState<CanvasState>(emptyCanvas);
   const canvasRef = useRef(canvas);
@@ -427,6 +591,24 @@ function Home() {
     broadcastMeetingSignalRef.current = roomConnection.broadcastMeetingSignal;
   }, [roomConnection.broadcastMeetingSignal]);
 
+  // Phase 13.8: Guarded non-blocking room persistence lifecycle
+  useEffect(() => {
+    if (!isLoaded || !workspaceHydration.workspaceId) {
+      return;
+    }
+
+    if (roomId) {
+      if (lastPersistedRoomRef.current !== roomId) {
+        lastPersistedRoomRef.current = roomId;
+        void roomPersistence.persistRoomStart(roomId, `Echo Room - ${roomId.slice(0, 8)}`);
+      }
+    } else if (lastPersistedRoomRef.current) {
+      const prev = lastPersistedRoomRef.current;
+      lastPersistedRoomRef.current = null;
+      void roomPersistence.persistRoomClose(prev);
+    }
+  }, [isLoaded, roomId, workspaceHydration.workspaceId, roomPersistence]);
+
   const meeting = useMeeting({
     roomId: isLoaded ? roomId : null,
     userId: roomConnection.currentParticipant?.userId ?? null,
@@ -440,6 +622,33 @@ function Home() {
   useEffect(() => {
     meetingHandleSignalRef.current = meeting.handleSignal;
   }, [meeting.handleSignal]);
+
+  const handleStartMeeting = useCallback(async () => {
+    const newMeetingId = crypto.randomUUID();
+    activeMeetingIdRef.current = newMeetingId;
+
+    // 1. Live meeting runtime starts immediately (Phase 12 untouched)
+    await meeting.startMeeting();
+
+    // 2. Asynchronously persist meeting start (non-blocking)
+    void meetingPersistence.persistStart(
+      newMeetingId,
+      `Echo Meeting - ${new Date().toLocaleDateString()}`
+    );
+  }, [meeting, meetingPersistence]);
+
+  const handleLeaveMeeting = useCallback(async () => {
+    const endingMeetingId = activeMeetingIdRef.current;
+    activeMeetingIdRef.current = null;
+
+    // 1. Live meeting runtime leaves immediately (Phase 12 untouched)
+    await meeting.leaveMeeting();
+
+    // 2. Asynchronously mark meeting as ended in persistence (handles recovery if start failed)
+    if (endingMeetingId) {
+      void meetingPersistence.persistEnd(endingMeetingId);
+    }
+  }, [meeting, meetingPersistence]);
 
   const { meeting: meetingDomainState, syncPeers: meetingSyncPeers } = meeting;
 
@@ -583,10 +792,41 @@ function Home() {
     useState("");
 
   // --------------------------------------------------
-  // Load saved conversation
+  // Load saved conversation / Hydrate workspace
   // --------------------------------------------------
 
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
+    // Wait until workspace hydration completes
+    if (workspaceHydration.status !== "ready") {
+      return;
+    }
+
+    // Phase 13.5: Initialize persistence revision from hydrated workspace
+    if (workspaceHydration.workspace?.revision != null) {
+      setPersistenceRevision(workspaceHydration.workspace.revision);
+    }
+
+    // 1. If persisted workspace canvas exists and has meaningful content, hydrate it
+    if (workspaceHydration.hydratedCanvas && hasMeaningfulCanvasContent(workspaceHydration.hydratedCanvas)) {
+      skipAutosaveRef.current = true;
+      canvasRef.current = workspaceHydration.hydratedCanvas;
+      setCanvas(workspaceHydration.hydratedCanvas);
+    }
+
+    // 2. Hydrate conversations with precedence:
+    // If persisted conversations exist in workspace, hydrate them
+    if (workspaceHydration.hydratedConversations && workspaceHydration.hydratedConversations.length > 0) {
+      setConversations(workspaceHydration.hydratedConversations);
+      const activeConv = workspaceHydration.hydratedConversations[0];
+      setConversationId(activeConv.id);
+      setConversationTitle(activeConv.title);
+      setMessages(activeConv.messages || []);
+      setIsLoaded(true);
+      return;
+    }
+
+    // Fallback: Check local storage (Phase 13.4 non-destructive precedence)
     try {
       const saved = localStorage.getItem(STORAGE_KEY);
 
@@ -595,7 +835,6 @@ function Home() {
           JSON.parse(saved);
 
         // Existing localStorage hydrate (Phase 9); keep this path unchanged.
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- client storage restore
         setConversations(
           savedConversations
         );
@@ -616,14 +855,13 @@ function Home() {
             latestConversation.messages || []
           );
 
-          if (!remoteSnapshotAppliedRef.current) {
+          if (!remoteSnapshotAppliedRef.current && (!workspaceHydration.hydratedCanvas || !hasMeaningfulCanvasContent(workspaceHydration.hydratedCanvas))) {
             const next = normalizeLoadedCanvas(latestConversation.canvas);
             canvasRef.current = next;
             setCanvas(next);
           }
 
           setIsLoaded(true);
-
           return;
         }
       }
@@ -640,9 +878,11 @@ function Home() {
 
       setMessages([]);
 
-      const initialEmpty = emptyCanvas();
-      canvasRef.current = initialEmpty;
-      setCanvas(initialEmpty);
+      if (!hasMeaningfulCanvasContent(canvasRef.current)) {
+        const initialEmpty = emptyCanvas();
+        canvasRef.current = initialEmpty;
+        setCanvas(initialEmpty);
+      }
 
       setIsLoaded(true);
     } catch (error) {
@@ -653,7 +893,8 @@ function Home() {
 
       setIsLoaded(true);
     }
-  }, []);
+  }, [workspaceHydration.status, workspaceHydration.hydratedCanvas, workspaceHydration.hydratedConversations, workspaceHydration.workspace]);
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   // --------------------------------------------------
   // Save conversation automatically
@@ -716,18 +957,22 @@ function Home() {
         ...remainingConversations,
       ];
 
-      // Existing localStorage autosave (Phase 9); keep this path unchanged.
+      // Update in-memory conversations list for UI
       // eslint-disable-next-line react-hooks/set-state-in-effect -- persist conversation list
       setConversations(
         updatedConversations
       );
 
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(
-          updatedConversations
-        )
-      );
+      // Phase 13.9 Cutover: If migrated to PostgreSQL for active workspace, skip localStorage write
+      const isMigrated = isWorkspaceMigrated(workspaceHydration.workspaceId);
+      if (!isMigrated) {
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify(
+            updatedConversations
+          )
+        );
+      }
     } catch (error) {
       console.error(
         "Failed to save Echo conversation:",
@@ -740,6 +985,7 @@ function Home() {
     conversationId,
     conversationTitle,
     isLoaded,
+    workspaceHydration.workspaceId,
   ]);
 
   const clearSlowResponseTimer = () => {
@@ -1067,12 +1313,14 @@ function Home() {
         ...storedConversations,
       ];
 
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(
-          storedConversations
-        )
-      );
+      if (!isWorkspaceMigrated(workspaceHydration.workspaceId)) {
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify(
+            storedConversations
+          )
+        );
+      }
 
       // Skip the next autosave so batched resets cannot
       // write empty messages/canvas into the previous id.
@@ -1096,6 +1344,12 @@ function Home() {
 
       setTranscript("");
       setRenamingConversationId(null);
+
+      // Phase 13.6: persist new conversation to backend (non-blocking)
+      persistNewConversation({
+        id: newConversation.id,
+        title: newConversation.title,
+      });
     } catch (error) {
       console.error(
         "Failed to create new Echo conversation:",
@@ -1129,6 +1383,23 @@ function Home() {
 
     setTranscript("");
     setRenamingConversationId(null);
+
+    // Phase 13.6: If switching to an inactive conversation whose messages are not yet loaded,
+    // fetch them from backend with race-protection
+    if (workspaceHydration.workspaceId && (!selectedConversation.messages || selectedConversation.messages.length === 0)) {
+      loadConversationMessages(selectedConversation.id, (loadedConvId, loadedMessages) => {
+        const mappedMsgs: Message[] = loadedMessages.map((m) => ({
+          id: m.id,
+          role: m.role as "user" | "assistant",
+          content: m.content,
+          createdAt: m.createdAt,
+        }));
+        setMessages(mappedMsgs);
+        setConversations((prevConvs) =>
+          prevConvs.map((c) => (c.id === loadedConvId ? { ...c, messages: mappedMsgs } : c))
+        );
+      });
+    }
   };
 
   // --------------------------------------------------
@@ -1180,10 +1451,12 @@ function Home() {
               : conversation
         );
 
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(updatedConversations)
-      );
+      if (!isWorkspaceMigrated(workspaceHydration.workspaceId)) {
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify(updatedConversations)
+        );
+      }
 
       setConversations(updatedConversations);
 
@@ -1236,12 +1509,14 @@ function Home() {
           const nextConversation =
             remainingConversations[0];
 
-          localStorage.setItem(
-            STORAGE_KEY,
-            JSON.stringify(
-              remainingConversations
-            )
-          );
+          if (!isWorkspaceMigrated(workspaceHydration.workspaceId)) {
+            localStorage.setItem(
+              STORAGE_KEY,
+              JSON.stringify(
+                remainingConversations
+              )
+            );
+          }
 
           setConversations(
             remainingConversations
@@ -1275,10 +1550,12 @@ function Home() {
           newConversation,
         ];
 
-        localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify(nextConversations)
-        );
+        if (!isWorkspaceMigrated(workspaceHydration.workspaceId)) {
+          localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify(nextConversations)
+          );
+        }
 
         setConversations(nextConversations);
 
@@ -1299,10 +1576,12 @@ function Home() {
         return;
       }
 
-      localStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify(remainingConversations)
-      );
+      if (!isWorkspaceMigrated(workspaceHydration.workspaceId)) {
+        localStorage.setItem(
+          STORAGE_KEY,
+          JSON.stringify(remainingConversations)
+        );
+      }
 
       setConversations(remainingConversations);
 
@@ -1334,6 +1613,11 @@ function Home() {
       canvasRef.current = nextCanvas;
       setCanvas(nextCanvas);
       roomConnection.broadcastNodeMoved(nodeId, position);
+      // Phase 13.5: persist drag-end position (called only at drag-end by EchoCanvas)
+      const movedNode = nextCanvas.nodes.find((n) => n.id === nodeId);
+      if (movedNode) {
+        persistNodeMove(movedNode);
+      }
     }
   };
 
@@ -1366,6 +1650,11 @@ function Home() {
       ...currentMessages,
       newUserMessage,
     ]);
+
+    // Phase 13.6: Persist user message to backend (non-blocking)
+    if (conversationId) {
+      persistMessage(conversationId, newUserMessage);
+    }
 
     // Title only from the first meaningful user
     // message; keep it once it is set.
@@ -1488,6 +1777,7 @@ function Home() {
       }
 
       if (Array.isArray(data.actions)) {
+        // Capture prevCanvas BEFORE mutation — needed by canvasActionMapper for ID derivation
         const currentCanvas = canvasRef.current;
         const applyStart = performance.now();
         const nextCanvas = applyCanvasActions(
@@ -1521,6 +1811,12 @@ function Home() {
         publishLocalEdgeMutations(edgeMutations, roomConnection);
         publishLocalGroupMutations(groupMutations, roomConnection);
 
+        // Phase 13.5: persist canvas mutation (non-blocking, after runtime state committed)
+        // Uses prevCanvas (currentCanvas) and nextCanvas for ID derivation in canvasActionMapper
+        if (data.actions.length > 0) {
+          persistCanvas(data.actions as Parameters<typeof persistCanvas>[0], currentCanvas, nextCanvas);
+        }
+
         if (process.env.NODE_ENV !== "production") {
           const paintStart = performance.now();
           requestAnimationFrame(() => {
@@ -1552,6 +1848,11 @@ function Home() {
           assistantMessage,
         ]
       );
+
+      // Phase 13.6: Persist assistant message to backend (non-blocking)
+      if (conversationId) {
+        persistMessage(conversationId, assistantMessage);
+      }
 
       setTranscript("");
     } catch (error) {
@@ -1587,28 +1888,93 @@ function Home() {
     messages.length === 0 &&
     !hasMeaningfulCanvasContent(canvas);
 
+  if (workspaceHydration.status === "loading") {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-zinc-950 text-white">
+        <div className="flex flex-col items-center gap-4">
+          <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+          <p className="text-sm font-medium text-zinc-400">Loading Echo Workspace…</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (workspaceHydration.status === "error") {
+    return (
+      <div className="flex h-screen w-screen items-center justify-center bg-zinc-950 p-6 text-white">
+        <div className="max-w-md rounded-2xl border border-zinc-800 bg-zinc-900/60 p-6 text-center backdrop-blur">
+          <div className="mb-3 text-3xl">⚠️</div>
+          <h2 className="text-lg font-semibold text-zinc-100">
+            {workspaceHydration.error?.status === 404
+              ? "Workspace Not Found"
+              : workspaceHydration.error?.status === 403
+                ? "Access Forbidden"
+                : "Workspace Error"}
+          </h2>
+          <p className="mt-2 text-sm text-zinc-400">
+            {workspaceHydration.error?.message || "Failed to load workspace."}
+          </p>
+          <div className="mt-6 flex justify-center gap-3">
+            <button
+              onClick={() => workspaceHydration.retry()}
+              className="rounded-lg bg-zinc-800 px-4 py-2 text-sm font-medium text-zinc-200 transition hover:bg-zinc-700"
+            >
+              Retry
+            </button>
+            <button
+              onClick={() => {
+                router.push("/");
+              }}
+              className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black transition hover:bg-zinc-200"
+            >
+              New Workspace
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <main className="h-screen overflow-hidden bg-zinc-950 text-white">
+    <div className="h-screen overflow-hidden bg-zinc-950 text-white">
       <div className="flex h-full min-w-0 flex-col">
 
         {/* Header */}
 
         <header className="flex h-16 min-w-0 items-center justify-between border-b border-zinc-800 px-6">
 
-          <div className="min-w-0 pr-4">
-            <h1 className="text-xl font-semibold">
-              Echo
-            </h1>
-
-            <p
-              className="truncate text-xs text-zinc-500"
-              title={conversationTitle}
+          <div className="flex min-w-0 items-center gap-4 pr-4">
+            <button
+              onClick={() => setIsHistoryOpen((v) => !v)}
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 transition"
+              title="Toggle History"
             >
-              {conversationTitle}
-            </p>
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M4 6h16M4 12h16M4 18h7" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
+
+            <div className="min-w-0">
+              <h1 className="text-xl font-semibold">
+                Echo
+              </h1>
+
+              <p
+                className="truncate text-xs text-zinc-500"
+                title={conversationTitle}
+              >
+                {workspaceHydration.workspace?.title ? `${workspaceHydration.workspace.title} • ` : ""}{conversationTitle}
+              </p>
+            </div>
           </div>
 
           <div className="flex min-w-0 items-center gap-3">
+
+            {/* Unified System Status Badge */}
+            <SystemStatusBadge 
+              canvasStatus={persistenceStatus} 
+              conversationStatus={conversationPersistenceStatus} 
+            />
 
             <RoomControls
               connection={roomConnection}
@@ -1628,9 +1994,19 @@ function Home() {
 
             <span className="h-2 w-2 rounded-full bg-green-500" />
 
-            <span className="text-sm text-zinc-400">
+            <span className="hidden sm:inline text-sm text-zinc-400">
               AI Ready
             </span>
+
+            <button
+              onClick={() => setIsConversationOpen((v) => !v)}
+              className="ml-2 flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 transition"
+              title="Toggle Conversation"
+            >
+              <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" strokeLinecap="round" strokeLinejoin="round"/>
+              </svg>
+            </button>
 
           </div>
 
@@ -1638,13 +2014,13 @@ function Home() {
 
         {/* Workspace */}
 
-        <div className="flex min-h-0 min-w-0 flex-1">
+        <div className="relative flex min-h-0 min-w-0 flex-1 overflow-hidden">
 
           {/* History Sidebar */}
 
-          <aside className="flex w-64 min-w-0 shrink-0 flex-col overflow-hidden border-r border-zinc-800 bg-zinc-950">
-
-            <div className="border-b border-zinc-800 p-4">
+          <aside className={`flex shrink-0 flex-col overflow-hidden bg-zinc-950 transition-all duration-300 ${isHistoryOpen ? "absolute inset-y-0 left-0 z-40 w-64 md:static md:z-auto border-r border-zinc-800 shadow-2xl md:shadow-none" : "w-0 border-r-0"}`}>
+            <div className="flex h-full w-64 flex-col">
+              <div className="border-b border-zinc-800 p-4">
 
               <input
                 type="search"
@@ -1812,88 +2188,209 @@ function Home() {
               )}
 
             </div>
+            </div>
 
           </aside>
-          {/* Canvas */}
 
-          <section className="relative min-h-0 min-w-0 flex-1">
+          {/* Main Workspace (Canvas Viewport + Composer Dock) */}
 
-            <EchoCanvas
-              roomId={roomId}
-              canvas={canvas}
-              onNodePositionChange={
-                updateNodePosition
-              }
-              remoteCursors={roomConnection.remoteCursors}
-              participants={roomConnection.participants}
-              onCursorMove={
-                roomId ? roomConnection.broadcastCursorMove : undefined
-              }
-              onViewportChange={handleViewportChange}
-              onViewportInit={handleViewportInit}
-              isLeader={isLeader}
-              onViewportBroadcast={
-                roomId ? roomConnection.publishViewportUpdate : undefined
-              }
-              onManualViewportChange={handleManualViewportChange}
-            />
+          <main
+            data-testid="main-workspace"
+            className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden"
+          >
 
-            {isEmptyWorkspace ? (
-              <div className="pointer-events-none absolute inset-0 flex items-center justify-center p-8">
-                <div className="max-w-sm text-center">
-                  <p className="text-lg font-medium text-zinc-200">
-                    Start thinking with Echo
-                  </p>
-                  <p className="mt-2 text-sm text-zinc-500">
-                    Describe a problem, idea, decision, or
-                    question.
-                  </p>
+            {/* Canvas Viewport */}
+
+            <div
+              data-testid="canvas-viewport"
+              className="relative min-h-0 min-w-0 flex-1 w-full overflow-hidden"
+            >
+
+              <EchoCanvas
+                roomId={roomId}
+                canvas={canvas}
+                onNodePositionChange={
+                  updateNodePosition
+                }
+                remoteCursors={roomConnection.remoteCursors}
+                participants={roomConnection.participants}
+                onCursorMove={
+                  roomId ? roomConnection.broadcastCursorMove : undefined
+                }
+                onViewportChange={handleViewportChange}
+                onViewportInit={handleViewportInit}
+                isLeader={isLeader}
+                onViewportBroadcast={
+                  roomId ? roomConnection.publishViewportUpdate : undefined
+                }
+                onManualViewportChange={handleManualViewportChange}
+              />
+
+              {isEmptyWorkspace ? (
+                <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center p-8">
+                  <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-3xl border border-zinc-800/50 bg-zinc-900/40 shadow-2xl backdrop-blur-md">
+                    <span className="h-8 w-8 animate-pulse rounded-full bg-gradient-to-tr from-zinc-500 to-white shadow-[0_0_20px_rgba(255,255,255,0.2)]"></span>
+                  </div>
+                  <div className="max-w-md text-center">
+                    <h3 className="text-2xl font-semibold tracking-tight text-white/90">
+                      Start thinking with Echo
+                    </h3>
+                    <p className="mt-3 text-[15px] leading-relaxed text-zinc-500">
+                      Describe a problem, idea, decision, or question. Echo will automatically build a structured canvas as you type or talk.
+                    </p>
+                  </div>
+                </div>
+              ) : null}
+
+              {/* Meeting UI Dock (Phase 12.3 & 12.4) [FROZEN] */}
+              <MeetingDock
+                meetingState={meeting.meeting}
+                localStream={meeting.localStream}
+                screenStream={meeting.screenStream}
+                remoteStreams={meeting.remoteStreams}
+                isMicEnabled={meeting.isMicEnabled}
+                isCameraEnabled={meeting.isCameraEnabled}
+                isScreenSharing={meeting.isScreenSharing}
+                activePresenterId={meeting.activePresenterId}
+                localUserId={roomConnection.currentParticipant?.userId ?? null}
+                localDisplayName={roomConnection.currentParticipant?.displayName ?? "You"}
+                localColor={roomConnection.currentParticipant?.color ?? "#6366f1"}
+                onStartMeeting={handleStartMeeting}
+                onLeaveMeeting={handleLeaveMeeting}
+                onSetMicEnabled={meeting.setMicEnabled}
+                onSetCameraEnabled={meeting.setCameraEnabled}
+                onToggleScreenShare={
+                  meeting.isScreenSharing
+                    ? meeting.stopScreenShare
+                    : meeting.startScreenShare
+                }
+              />
+
+            </div>
+
+            {/* Composer Dock */}
+
+            <div
+              data-testid="composer-dock"
+              className="shrink-0 w-full border-t border-zinc-800/40 bg-zinc-950/80 px-4 py-2.5 sm:py-3 flex justify-center items-center z-10 backdrop-blur-sm"
+            >
+              <div className="w-full max-w-3xl">
+                <div className="flex flex-col overflow-hidden rounded-2xl border border-zinc-700/50 bg-zinc-900/80 p-2 shadow-2xl backdrop-blur-xl transition-all focus-within:border-zinc-500/50 focus-within:bg-zinc-900/95">
+                  <div className="relative flex items-end gap-2">
+                    <textarea
+                      ref={composerInputRef}
+                      value={transcript}
+                      onChange={(event) => setTranscript(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key !== "Enter") return;
+                        if (event.shiftKey) return;
+                        event.preventDefault();
+                        if (loading || isListening || !transcript.trim()) return;
+                        void analyzeTranscript();
+                      }}
+                      placeholder={isListening ? "Listening..." : "Ask Echo... (Cmd+K)"}
+                      rows={Math.min(4, Math.max(1, transcript.split('\n').length))}
+                      className={`max-h-32 min-h-[44px] w-full resize-none bg-transparent px-3 py-3 text-sm outline-none placeholder:text-zinc-500 ${
+                        isListening ? "text-red-400" : "text-zinc-200"
+                      }`}
+                    />
+
+                    <div className="flex shrink-0 items-center gap-2 pb-1 pr-1">
+                      <button
+                        type="button"
+                        onClick={toggleListening}
+                        disabled={loading}
+                        className={`flex h-9 w-9 items-center justify-center rounded-xl transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
+                          isListening
+                            ? "bg-red-500 text-white animate-pulse"
+                            : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
+                        }`}
+                        title={loading ? "Echo is thinking..." : isListening ? "Stop listening" : "Start voice input"}
+                      >
+                        {isListening ? "⏹" : "🎙️"}
+                      </button>
+
+                      <button
+                        onClick={analyzeTranscript}
+                        disabled={loading || isListening || !transcript.trim()}
+                        className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-black transition-all hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-zinc-800 disabled:text-zinc-600"
+                        title="Send message"
+                      >
+                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                          <line x1="22" y1="2" x2="11" y2="13"></line>
+                          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                        </svg>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-3 px-3 pb-2 pt-1">
+                    <select
+                      value={voiceLanguage}
+                      onChange={(event) => setVoiceLanguage(event.target.value)}
+                      disabled={isListening}
+                      className="rounded-md border border-zinc-800/50 bg-transparent px-2 py-1 text-xs text-zinc-500 outline-none transition hover:border-zinc-700 hover:text-zinc-400 disabled:cursor-not-allowed disabled:opacity-50"
+                    >
+                      <option value="en-US">English</option>
+                      <option value="hi-IN">Hindi</option>
+                    </select>
+
+                    {loading ? (
+                      <div className="flex items-center gap-2">
+                        <span className="flex gap-1">
+                          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-zinc-500" style={{ animationDelay: "0ms" }}></span>
+                          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-zinc-500" style={{ animationDelay: "150ms" }}></span>
+                          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-zinc-500" style={{ animationDelay: "300ms" }}></span>
+                        </span>
+                        <span className="text-xs text-zinc-500">
+                          {slowThinking ? "Echo is thinking deeply..." : "Echo is thinking..."}
+                        </span>
+                      </div>
+                    ) : (
+                      <span
+                        className={`min-w-0 flex-1 text-right text-xs leading-snug ${
+                          voiceFeedback.kind === "error"
+                            ? "text-red-400"
+                            : "text-zinc-500"
+                        }`}
+                      >
+                        {voiceFeedback.kind === "listening"
+                          ? "Listening…"
+                          : voiceFeedback.kind === "error" || voiceFeedback.kind === "info"
+                          ? voiceFeedback.message
+                          : "Ready"}
+                      </span>
+                    )}
+                  </div>
                 </div>
               </div>
-            ) : null}
+            </div>
 
-            {/* Meeting UI Dock (Phase 12.3 & 12.4) */}
-            <MeetingDock
-              meetingState={meeting.meeting}
-              localStream={meeting.localStream}
-              screenStream={meeting.screenStream}
-              remoteStreams={meeting.remoteStreams}
-              isMicEnabled={meeting.isMicEnabled}
-              isCameraEnabled={meeting.isCameraEnabled}
-              isScreenSharing={meeting.isScreenSharing}
-              activePresenterId={meeting.activePresenterId}
-              localUserId={roomConnection.currentParticipant?.userId ?? null}
-              localDisplayName={roomConnection.currentParticipant?.displayName ?? "You"}
-              localColor={roomConnection.currentParticipant?.color ?? "#6366f1"}
-              onStartMeeting={meeting.startMeeting}
-              onLeaveMeeting={meeting.leaveMeeting}
-              onSetMicEnabled={meeting.setMicEnabled}
-              onSetCameraEnabled={meeting.setCameraEnabled}
-              onToggleScreenShare={
-                meeting.isScreenSharing
-                  ? meeting.stopScreenShare
-                  : meeting.startScreenShare
-              }
-            />
-
-          </section>
+          </main>
 
           {/* Conversation */}
 
-          <aside className="flex w-96 min-w-0 shrink-0 flex-col overflow-hidden border-l border-zinc-800">
-
-            <div className="border-b border-zinc-800 p-5">
-
-              <h2 className="font-medium">
-                Conversation
-              </h2>
-
-              <p className="mt-1 text-sm text-zinc-500">
-                Talk to Echo and let AI build
-                the canvas.
-              </p>
-
-            </div>
+          <aside className={`flex shrink-0 flex-col overflow-hidden bg-zinc-950 transition-all duration-300 ${isConversationOpen ? "absolute inset-y-0 right-0 z-40 w-full sm:w-96 lg:static lg:z-auto border-l border-zinc-800 shadow-2xl lg:shadow-none" : "w-0 border-l-0"}`}>
+            <div className="flex h-full w-full sm:w-96 flex-col">
+              <div className="flex items-center justify-between border-b border-zinc-800 p-5">
+                <div>
+                  <h2 className="font-medium">
+                    Conversation
+                  </h2>
+                  <p className="mt-1 text-sm text-zinc-500">
+                    Talk to Echo and let AI build
+                    the canvas.
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsConversationOpen(false)}
+                  className="lg:hidden flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200 transition"
+                  title="Close conversation panel"
+                >
+                  ✕
+                </button>
+              </div>
 
             <div className="flex min-h-0 flex-1 flex-col">
 
@@ -1975,140 +2472,15 @@ function Home() {
                 ) : null}
 
               </div>
-
-              {/* Composer */}
-
-              <div className="relative">
-
-                <textarea
-                  value={transcript}
-                  onChange={(event) =>
-                    setTranscript(
-                      event.target.value
-                    )
-                  }
-                  onKeyDown={(event) => {
-                    if (event.key !== "Enter") {
-                      return;
-                    }
-
-                    if (event.shiftKey) {
-                      return;
-                    }
-
-                    event.preventDefault();
-
-                    if (
-                      loading ||
-                      isListening ||
-                      !transcript.trim()
-                    ) {
-                      return;
-                    }
-
-                    void analyzeTranscript();
-                  }}
-                  placeholder={
-                    isListening
-                      ? "Listening..."
-                      : "Talk to Echo..."
-                  }
-                  rows={4}
-                  className={`w-full resize-none rounded-xl border bg-zinc-900 p-4 pr-14 text-sm outline-none placeholder:text-zinc-600 ${isListening
-                    ? "border-red-500/50"
-                    : "border-zinc-800 focus:border-zinc-600"
-                    }`}
-                />
-
-                <button
-                  type="button"
-                  onClick={toggleListening}
-                  disabled={loading}
-                  className={`absolute bottom-3 right-3 flex h-9 w-9 items-center justify-center rounded-full transition disabled:cursor-not-allowed disabled:opacity-50 ${isListening
-                    ? "bg-red-500 text-white animate-pulse"
-                    : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
-                    }`}
-                  title={
-                    loading
-                      ? slowThinking
-                        ? "Echo is still thinking…"
-                        : "Echo is thinking..."
-                      : isListening
-                        ? "Stop listening"
-                        : "Start voice input"
-                  }
-                >
-                  {isListening ? "⏹" : "🎙️"}
-                </button>
-
-              </div>
-
-              <div className="mt-3 flex items-center justify-between gap-3">
-
-                <select
-                  value={voiceLanguage}
-                  onChange={(event) =>
-                    setVoiceLanguage(
-                      event.target.value
-                    )
-                  }
-                  disabled={isListening}
-                  className="rounded-lg border border-zinc-800 bg-zinc-900 px-3 py-2 text-xs text-zinc-400 outline-none transition hover:border-zinc-700 disabled:cursor-not-allowed disabled:opacity-50"
-                >
-                  <option value="en-US">
-                    English
-                  </option>
-
-                  <option value="hi-IN">
-                    Hindi
-                  </option>
-                </select>
-
-                <span
-                  className={`min-w-0 flex-1 text-right text-xs leading-snug ${
-                    voiceFeedback.kind === "error"
-                      ? "text-red-400"
-                      : "text-zinc-600"
-                  }`}
-                >
-                  {voiceFeedback.kind === "listening"
-                    ? "Listening…"
-                    : voiceFeedback.kind === "error" ||
-                        voiceFeedback.kind === "info"
-                      ? voiceFeedback.message
-                      : "Voice input available"}
-                </span>
-
-              </div>
-
             </div>
+          </div>
 
-            <div className="border-t border-zinc-800 p-5">
-
-              <button
-                onClick={analyzeTranscript}
-                disabled={
-                  loading ||
-                  isListening ||
-                  !transcript.trim()
-                }
-                className="w-full rounded-xl bg-white px-4 py-3 font-medium text-black transition hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {loading
-                  ? slowThinking
-                    ? "Echo is still thinking…"
-                    : "Echo is thinking..."
-                  : "🧠 Analyze with Echo"}
-              </button>
-
-            </div>
-
-          </aside>
+        </aside>
 
         </div>
 
       </div>
-    </main>
+    </div>
   );
 }
 

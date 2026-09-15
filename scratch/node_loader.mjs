@@ -11,7 +11,11 @@ export async function resolve(specifier, context, nextResolve) {
       try {
         return await nextResolve(specifier + ".ts", context);
       } catch {
-        // fallback
+        try {
+          return await nextResolve(specifier + "/index.ts", context);
+        } catch {
+          // fallback
+        }
       }
     }
   }
