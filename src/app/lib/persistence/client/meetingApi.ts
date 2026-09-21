@@ -10,7 +10,11 @@
  * - Browser-safe; zero server dependencies.
  */
 
-import type { MeetingRecord } from "../meetingTypes";
+import type {
+  MeetingInsightRecord,
+  MeetingRecord,
+  MeetingTranscriptSegmentRecord,
+} from "../meetingTypes";
 
 export class MeetingPersistenceApiError extends Error {
   readonly code: string;
@@ -38,6 +42,8 @@ export type CreateMeetingPayload = {
 
 export type EndMeetingPayload = {
   title?: string;
+  segments?: MeetingTranscriptSegmentRecord[];
+  insights?: MeetingInsightRecord[];
 };
 
 /**
@@ -75,7 +81,7 @@ export async function createMeetingApi(
 }
 
 /**
- * Persists meeting end asynchronously.
+ * Persists meeting end asynchronously along with finalized transcript segments and insights.
  */
 export async function endMeetingApi(
   workspaceId: string,
@@ -92,6 +98,8 @@ export async function endMeetingApi(
       body: JSON.stringify({
         status: "ended",
         title: payload?.title,
+        segments: payload?.segments,
+        insights: payload?.insights,
       }),
     }
   );
@@ -153,3 +161,58 @@ export async function getMeetingApi(workspaceId: string, meetingId: string): Pro
 
   return data.meeting;
 }
+
+/**
+ * Retrieves canonical transcript segments for a meeting in a workspace.
+ */
+export async function getMeetingTranscriptsApi(
+  workspaceId: string,
+  meetingId: string
+): Promise<MeetingTranscriptSegmentRecord[]> {
+  const response = await fetch(
+    `/api/workspace/${encodeURIComponent(workspaceId)}/meetings/${encodeURIComponent(meetingId)}/transcripts`,
+    {
+      method: "GET",
+    }
+  );
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new MeetingPersistenceApiError(
+      data?.error?.code || "PERSISTENCE_ERROR",
+      data?.error?.message || `Failed to get transcripts: HTTP ${response.status}`,
+      response.status
+    );
+  }
+
+  return data.transcripts || data.segments || [];
+}
+
+/**
+ * Retrieves synthesized meeting insights for a meeting in a workspace.
+ */
+export async function getMeetingInsightsApi(
+  workspaceId: string,
+  meetingId: string
+): Promise<MeetingInsightRecord[]> {
+  const response = await fetch(
+    `/api/workspace/${encodeURIComponent(workspaceId)}/meetings/${encodeURIComponent(meetingId)}/insights`,
+    {
+      method: "GET",
+    }
+  );
+
+  const data = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    throw new MeetingPersistenceApiError(
+      data?.error?.code || "PERSISTENCE_ERROR",
+      data?.error?.message || `Failed to get insights: HTTP ${response.status}`,
+      response.status
+    );
+  }
+
+  return data.insights || [];
+}
+

@@ -190,7 +190,10 @@ export class MigrationRepository {
         throw new PersistenceError("FORBIDDEN", msg);
       }
       if (msg.includes("COLLISION")) {
-        throw new PersistenceError("CONFLICT", msg);
+        throw new PersistenceError(
+          "CONFLICT",
+          `Cross-workspace collision detected (data already migrated to another workspace). ${msg}`
+        );
       }
       if (msg.includes("NOT_FOUND")) {
         throw new PersistenceError("NOT_FOUND", msg);

@@ -21,13 +21,24 @@ import {
 import { deduplicateActions } from "../../lib/deduplicateActions";
 import { parseGroupNodesAction, resolveGroupMemberIds } from "../../lib/groupNodesAction";
 import { parseMoveNodeAction } from "../../lib/moveNodeAction";
+import { resolveServerActor } from "../../lib/persistence/server/auth";
+import { PersistenceError } from "../../lib/persistence/server/errors";
+import {
+  AIContextEngine,
+  classifyAIIntent,
+  buildHistoricalContextSection,
+  buildUserPromptContent,
+  type AIContext,
+} from "../../lib/ai";
+
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const NVIDIA_REQUEST_TIMEOUT_MS = 60_000;
 const NVIDIA_503_RETRY_DELAY_MS = 750;
 
 const client = new OpenAI({
   baseURL: "https://integrate.api.nvidia.com/v1",
-  apiKey: process.env.NVIDIA_API_KEY,
+  apiKey: process.env.NVIDIA_API_KEY || "mock-nvidia-key",
 });
 
 type CanvasNode = {
@@ -972,8 +983,75 @@ export async function POST(
     }
 
     // ==================================================
-    // AI REQUEST
+    // PHASE 14.3: SERVER AI CONTEXT & AUTHORIZATION GUARD
     // ==================================================
+
+    const workspaceId =
+      typeof body.workspaceId === "string" ? body.workspaceId.trim() : undefined;
+    let aiContext: AIContext | undefined;
+
+    if (workspaceId) {
+      if (!UUID_REGEX.test(workspaceId)) {
+        return NextResponse.json(
+          {
+            error: {
+              code: "VALIDATION_ERROR",
+              message: `Invalid workspace ID format: '${workspaceId}'`,
+            },
+          },
+          { status: 400 }
+        );
+      }
+
+      // Authoritative server-side identity resolution & workspace authorization
+      const actor = await resolveServerActor(request);
+      const contextEngine = new AIContextEngine();
+      const classifiedIntent = classifyAIIntent(transcript);
+      aiContext = await contextEngine.retrieveAIContext(actor, workspaceId, {
+        intent: classifiedIntent,
+        conversationId:
+          typeof body.conversationId === "string" ? body.conversationId.trim() : undefined,
+        meetingId:
+          typeof body.meetingId === "string" ? body.meetingId.trim() : undefined,
+        inMemoryCanvas: body.currentCanvas,
+        inMemoryMessages: conversationHistory,
+        includeCurrentCanvas: true,
+        includeRelevantConversations: true,
+        includeRelevantMeetings: true,
+        includeMeetingInsights: Boolean(body.meetingId),
+        includeTranscriptSegments: Boolean(body.meetingId),
+      });
+
+      if (process.env.NODE_ENV !== "production") {
+        console.log(`[AIContextEngine] Intent '${classifiedIntent.intent}' resolved for workspace ${workspaceId}:`, {
+          role: aiContext.workspace.role,
+          intent: classifiedIntent,
+          historicalSelection: aiContext.historicalSelection,
+          conversations: aiContext.relevantConversations?.length ?? 0,
+          meetings: aiContext.relevantMeetings?.length ?? 0,
+          insights: aiContext.meetingInsights?.length ?? 0,
+          segments: aiContext.transcriptSegments?.length ?? 0,
+        });
+      }
+    }
+
+    // ==================================================
+    // AI REQUEST (Phase 14.5 Bounded Prompt Assembly)
+    // ==================================================
+
+    const historicalContextResult = aiContext
+      ? buildHistoricalContextSection(aiContext)
+      : undefined;
+
+    const userPromptContent = buildUserPromptContent({
+      transcript,
+      conversationHistory,
+      graphContext,
+      explicitGraphSummary,
+      graphInsightSummary,
+      graphRecommendationSummary,
+      historicalSectionText: historicalContextResult?.sectionText,
+    });
 
     const aiStart = Date.now();
 
@@ -1042,98 +1120,7 @@ Keep message concise. If no canvas mutation, actions must be empty.`,
 
             {
               role: "user",
-
-              content: `RECENT CONVERSATION:
-
-${JSON.stringify(
-                conversationHistory,
-                null,
-                2
-              )}
-
-CURRENT CANVAS GRAPH:
-
-${JSON.stringify(
-                graphContext,
-                null,
-                2
-              )}
-
-${explicitGraphSummary}
-
-${graphInsightSummary}
-
-${graphRecommendationSummary}
-
-CURRENT USER MESSAGE:
-
-${transcript}
-
-Use the conversation history and CURRENT CANVAS GRAPH as context.
-
-Understand the user's message naturally.
-
-Do not assume that the user is giving a command.
-
-Determine what the user means in the context of the ongoing conversation.
-
-A single request may need multiple actions. Generate only the
-minimum actions, in dependency order (CREATE_NODE before any
-CREATE_EDGE that uses that new title). Prefer existing nodes.
-Do not duplicate existing titles.
-If the user asks to add a solution without naming it, or
-confirms a prior recommendation with "do that" / "go ahead"
-when one target is clear, invent a concise solution from
-context and emit CREATE_NODE plus the needed CREATE_EDGE.
-Do not ask them to name the solution first.
-If several recommended targets are still equally valid,
-ask which one and return "actions": [].
-
-If the user asks a reasoning, insight, or recommendation
-question about the workspace (main problems, causes,
-solutions, unresolved items, workspace summary, evidence,
-ranking, what to do next, what to focus on, coverage gaps,
-or similar), inspect CURRENT CANVAS GRAPH, EXPLICIT
-RELATIONSHIPS, GRAPH INSIGHT FACTS, and GRAPH
-RECOMMENDATION FACTS first. Answer from those facts only.
-Return "actions": [] unless they explicitly ask to modify
-the canvas. Do not invent ranking, causality, solutions,
-impact, or priority. Recommendations must stay
-recommendations. If there is not enough evidence, say so
-and return "actions": [].
-
-If the message introduces meaningful information that belongs on the
-workspace, create or update the appropriate canvas elements.
-
-If the message is only conversational, respond naturally and return:
-
-"actions": []
-
-When referring to existing canvas nodes or edges, always use
-their exact titles from CURRENT CANVAS GRAPH.
-
-When resolving words such as "this", "that", "it", "this problem",
-"that problem", "this solution", "that solution", "this decision",
-"that relationship", "the previous problem", or similar references,
-use both RECENT CONVERSATION and CURRENT CANVAS GRAPH.
-
-Prefer the most recently discussed relevant object of that type.
-Do not invent titles. Do not recreate deleted nodes.
-Do not create a new node when the user is referring to an
-existing canvas concept.
-Do not invent relationships that are not explicit edges.
-
-If a reference is genuinely ambiguous, ask a natural
-clarification question and return:
-
-"actions": []
-
-If the user is revising, replacing, correcting, or renaming an
-existing canvas concept, use UPDATE_NODE. Do not DELETE then CREATE.
-
-If the user wants a concept removed entirely, use DELETE_NODE.
-
-Return ONLY valid JSON.`,
+              content: userPromptContent,
             },
           ],
 
@@ -1307,6 +1294,13 @@ Return ONLY valid JSON.`,
     );
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
   } catch (error: any) {
+    if (error instanceof PersistenceError) {
+      return NextResponse.json(
+        { error: { code: error.code, message: error.message } },
+        { status: error.toHttpStatus() }
+      );
+    }
+
     if (isNvidiaTimeoutError(error)) {
       console.error(
         "NVIDIA request timed out after",

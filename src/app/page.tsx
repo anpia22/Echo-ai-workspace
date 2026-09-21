@@ -32,6 +32,14 @@ import {
 import { getRoomIdFromUrl } from "./lib/collaboration/room";
 import { useRoomChannel } from "./lib/collaboration/useRoomChannel";
 import { useMeeting } from "./lib/collaboration/meeting";
+import {
+  createMeetingConversationStore,
+  type MeetingConversationStore,
+} from "./lib/collaboration/meeting/conversation";
+import type {
+  MeetingInsightRecord,
+  MeetingTranscriptSegmentRecord,
+} from "./lib/persistence/meetingTypes";
 import { MeetingDock } from "./components/meeting";
 import {
   buildGraphContext,
@@ -491,6 +499,8 @@ function Home() {
     workspaceId: workspaceHydration.workspaceId,
   });
   const activeMeetingIdRef = useRef<string | null>(null);
+  const meetingConversationStoreRef = useRef<MeetingConversationStore | null>(null);
+  const activeMeetingInsightsRef = useRef<MeetingInsightRecord[]>([]);
 
   // --------------------------------------------------
   // Phase 13.8 — Collaboration Room Persistence (Non-invasive & Guarded)
@@ -627,6 +637,16 @@ function Home() {
     const newMeetingId = crypto.randomUUID();
     activeMeetingIdRef.current = newMeetingId;
 
+    // Phase 14.2 — Initialize scoped conversation store for meeting session
+    const store = createMeetingConversationStore(newMeetingId);
+    meetingConversationStoreRef.current = store;
+    activeMeetingInsightsRef.current = [];
+
+    // Expose on window for runtime STT/analysis pipelines and automated tests
+    if (typeof window !== "undefined") {
+      (window as unknown as { __echoMeetingConversationStore?: MeetingConversationStore | null }).__echoMeetingConversationStore = store;
+    }
+
     // 1. Live meeting runtime starts immediately (Phase 12 untouched)
     await meeting.startMeeting();
 
@@ -641,12 +661,30 @@ function Home() {
     const endingMeetingId = activeMeetingIdRef.current;
     activeMeetingIdRef.current = null;
 
+    const store = meetingConversationStoreRef.current;
+    meetingConversationStoreRef.current = null;
+    if (typeof window !== "undefined") {
+      (window as unknown as { __echoMeetingConversationStore?: MeetingConversationStore | null }).__echoMeetingConversationStore = null;
+    }
+
+    // Phase 14.2 — Gather finalized segments and insights
+    const finalizedSegments: MeetingTranscriptSegmentRecord[] = store
+      ? (store.getFinalizedSegments() as unknown as MeetingTranscriptSegmentRecord[])
+      : [];
+    const finalizedInsights: MeetingInsightRecord[] = activeMeetingInsightsRef.current;
+    activeMeetingInsightsRef.current = [];
+
     // 1. Live meeting runtime leaves immediately (Phase 12 untouched)
     await meeting.leaveMeeting();
 
-    // 2. Asynchronously mark meeting as ended in persistence (handles recovery if start failed)
+    // 2. Asynchronously mark meeting as ended with finalized transcripts & insights
     if (endingMeetingId) {
-      void meetingPersistence.persistEnd(endingMeetingId);
+      void meetingPersistence.persistEnd(
+        endingMeetingId,
+        undefined,
+        finalizedSegments.length > 0 ? finalizedSegments : undefined,
+        finalizedInsights.length > 0 ? finalizedInsights : undefined
+      );
     }
   }, [meeting, meetingPersistence]);
 
@@ -1676,6 +1714,7 @@ function Home() {
 
     setSlowThinking(false);
     setLoading(true);
+    setVoiceFeedback((prev) => (prev.kind === "listening" ? prev : { kind: "idle" }));
     clearSlowResponseTimer();
     slowResponseTimerRef.current = setTimeout(() => {
       slowResponseTimerRef.current = null;
@@ -1714,6 +1753,9 @@ function Home() {
           body: JSON.stringify({
             transcript: userMessage,
 
+            workspaceId: workspaceHydration.workspaceId || undefined,
+            meetingId: activeMeetingIdRef.current || undefined,
+
             conversationHistory: [
               ...messages,
               newUserMessage,
@@ -1746,6 +1788,10 @@ function Home() {
 
       if (!response.ok) {
         console.error("❌ ANALYZE ERROR:", data);
+        setVoiceFeedback({
+          kind: "error",
+          message: typeof data?.error === "string" ? data.error : "Echo couldn't process this request. Please try again.",
+        });
         return;
       }
 
@@ -1854,9 +1900,25 @@ function Home() {
         persistMessage(conversationId, assistantMessage);
       }
 
+      if (Array.isArray(data.actions) && data.actions.length > 0) {
+        setVoiceFeedback({
+          kind: "info",
+          message: `Canvas updated (${data.actions.length} action${data.actions.length > 1 ? "s" : ""})`,
+        });
+        setTimeout(() => {
+          if (isMountedRef.current) {
+            setVoiceFeedback((prev) => (prev.kind === "info" ? { kind: "idle" } : prev));
+          }
+        }, 4000);
+      }
+
       setTranscript("");
     } catch (error) {
       console.error(error);
+      setVoiceFeedback({
+        kind: "error",
+        message: "Connection issue. Please check your network and try again.",
+      });
     } finally {
       analyzeInFlightRef.current = false;
       clearSlowResponseTimer();
@@ -1992,11 +2054,36 @@ function Home() {
               </div>
             ) : null}
 
-            <span className="h-2 w-2 rounded-full bg-green-500" />
-
-            <span className="hidden sm:inline text-sm text-zinc-400">
-              AI Ready
-            </span>
+            {loading ? (
+              <div
+                data-testid="header-ai-status"
+                className="flex items-center gap-1.5 rounded-xl border border-amber-500/40 bg-amber-950/40 px-2.5 py-1 text-xs text-amber-300 transition-all"
+                title="Echo is processing your request"
+              >
+                <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
+                <span className="font-medium">
+                  {slowThinking ? "Echo Reasoning…" : "Echo Thinking…"}
+                </span>
+              </div>
+            ) : isListening ? (
+              <div
+                data-testid="header-ai-status"
+                className="flex items-center gap-1.5 rounded-xl border border-red-500/40 bg-red-950/40 px-2.5 py-1 text-xs text-red-300 transition-all"
+                title="Listening to your microphone"
+              >
+                <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
+                <span className="font-medium">Listening…</span>
+              </div>
+            ) : (
+              <div
+                data-testid="header-ai-status"
+                className="flex items-center gap-1.5 text-xs text-zinc-400"
+                title="Echo AI is ready"
+              >
+                <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                <span className="hidden sm:inline">AI Ready</span>
+              </div>
+            )}
 
             <button
               onClick={() => setIsConversationOpen((v) => !v)}
@@ -2226,6 +2313,22 @@ function Home() {
                 onManualViewportChange={handleManualViewportChange}
               />
 
+              {/* Floating AI Status Pill (Phase 15.2) */}
+              {loading ? (
+                <div
+                  data-testid="canvas-ai-status"
+                  className="pointer-events-none absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2.5 rounded-full border border-indigo-500/40 bg-zinc-950/85 px-4 py-1.5 shadow-2xl backdrop-blur-md transition-all duration-300"
+                >
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-400 opacity-75"></span>
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-indigo-500"></span>
+                  </span>
+                  <span className="text-xs font-medium text-zinc-200">
+                    {slowThinking ? "Echo is reasoning deeply…" : "Echo is analyzing…"}
+                  </span>
+                </div>
+              ) : null}
+
               {isEmptyWorkspace ? (
                 <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center p-8">
                   <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-3xl border border-zinc-800/50 bg-zinc-900/40 shadow-2xl backdrop-blur-md">
@@ -2238,6 +2341,25 @@ function Home() {
                     <p className="mt-3 text-[15px] leading-relaxed text-zinc-500">
                       Describe a problem, idea, decision, or question. Echo will automatically build a structured canvas as you type or talk.
                     </p>
+                  </div>
+                  <div className="pointer-events-auto mt-6 flex flex-wrap items-center justify-center gap-2 max-w-lg">
+                    {[
+                      "Map out authentication flow",
+                      "Brainstorm architecture & database decisions",
+                      "Identify bottlenecks & root causes",
+                    ].map((promptText) => (
+                      <button
+                        key={promptText}
+                        type="button"
+                        onClick={() => {
+                          setTranscript(promptText);
+                          composerInputRef.current?.focus();
+                        }}
+                        className="rounded-xl border border-zinc-800/80 bg-zinc-900/60 px-3 py-1.5 text-xs text-zinc-400 hover:border-zinc-700 hover:bg-zinc-800/80 hover:text-zinc-200 transition-all shadow-sm backdrop-blur-sm"
+                      >
+                        {promptText} →
+                      </button>
+                    ))}
                   </div>
                 </div>
               ) : null}
@@ -2281,6 +2403,7 @@ function Home() {
                       ref={composerInputRef}
                       value={transcript}
                       onChange={(event) => setTranscript(event.target.value)}
+                      disabled={loading}
                       onKeyDown={(event) => {
                         if (event.key !== "Enter") return;
                         if (event.shiftKey) return;
@@ -2288,9 +2411,9 @@ function Home() {
                         if (loading || isListening || !transcript.trim()) return;
                         void analyzeTranscript();
                       }}
-                      placeholder={isListening ? "Listening..." : "Ask Echo... (Cmd+K)"}
+                      placeholder={isListening ? "Listening..." : loading ? "Echo is thinking..." : "Ask Echo... (Cmd+K)"}
                       rows={Math.min(4, Math.max(1, transcript.split('\n').length))}
-                      className={`max-h-32 min-h-[44px] w-full resize-none bg-transparent px-3 py-3 text-sm outline-none placeholder:text-zinc-500 ${
+                      className={`max-h-32 min-h-[44px] w-full resize-none bg-transparent px-3 py-3 text-sm outline-none placeholder:text-zinc-500 disabled:opacity-60 disabled:cursor-not-allowed ${
                         isListening ? "text-red-400" : "text-zinc-200"
                       }`}
                     />
@@ -2314,43 +2437,59 @@ function Home() {
                         onClick={analyzeTranscript}
                         disabled={loading || isListening || !transcript.trim()}
                         className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-black transition-all hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-zinc-800 disabled:text-zinc-600"
-                        title="Send message"
+                        title={loading ? "Echo is thinking..." : "Send message (Enter)"}
                       >
-                        <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <line x1="22" y1="2" x2="11" y2="13"></line>
-                          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                        </svg>
+                        {loading ? (
+                          <svg className="h-4 w-4 animate-spin text-zinc-400" viewBox="0 0 24 24" fill="none">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                          </svg>
+                        ) : (
+                          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <line x1="22" y1="2" x2="11" y2="13"></line>
+                            <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                          </svg>
+                        )}
                       </button>
                     </div>
                   </div>
 
                   <div className="flex items-center justify-between gap-3 px-3 pb-2 pt-1">
-                    <select
-                      value={voiceLanguage}
-                      onChange={(event) => setVoiceLanguage(event.target.value)}
-                      disabled={isListening}
-                      className="rounded-md border border-zinc-800/50 bg-transparent px-2 py-1 text-xs text-zinc-500 outline-none transition hover:border-zinc-700 hover:text-zinc-400 disabled:cursor-not-allowed disabled:opacity-50"
-                    >
-                      <option value="en-US">English</option>
-                      <option value="hi-IN">Hindi</option>
-                    </select>
+                    <div className="flex items-center gap-2">
+                      <select
+                        value={voiceLanguage}
+                        onChange={(event) => setVoiceLanguage(event.target.value)}
+                        disabled={isListening || loading}
+                        className="rounded-md border border-zinc-800/60 bg-transparent px-2 py-1 text-xs text-zinc-500 outline-none transition hover:border-zinc-700 hover:text-zinc-400 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        <option value="en-US">English</option>
+                        <option value="hi-IN">Hindi</option>
+                      </select>
+                      <kbd className="hidden sm:inline-block rounded border border-zinc-800 bg-zinc-950/60 px-1.5 py-0.5 text-[10px] font-mono text-zinc-500">
+                        ⌘K
+                      </kbd>
+                    </div>
 
                     {loading ? (
-                      <div className="flex items-center gap-2">
+                      <div data-testid="composer-thinking" className="flex items-center gap-2">
                         <span className="flex gap-1">
-                          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-zinc-500" style={{ animationDelay: "0ms" }}></span>
-                          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-zinc-500" style={{ animationDelay: "150ms" }}></span>
-                          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-zinc-500" style={{ animationDelay: "300ms" }}></span>
+                          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-amber-400" style={{ animationDelay: "0ms" }}></span>
+                          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-amber-400" style={{ animationDelay: "150ms" }}></span>
+                          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-amber-400" style={{ animationDelay: "300ms" }}></span>
                         </span>
-                        <span className="text-xs text-zinc-500">
-                          {slowThinking ? "Echo is thinking deeply..." : "Echo is thinking..."}
+                        <span className="text-xs font-medium text-amber-300/90">
+                          {slowThinking ? "Echo is reasoning deeply…" : "Echo is thinking…"}
                         </span>
                       </div>
                     ) : (
                       <span
-                        className={`min-w-0 flex-1 text-right text-xs leading-snug ${
+                        className={`min-w-0 flex-1 text-right text-xs leading-snug transition-colors ${
                           voiceFeedback.kind === "error"
-                            ? "text-red-400"
+                            ? "text-red-400 font-medium"
+                            : voiceFeedback.kind === "info"
+                            ? "text-emerald-400"
+                            : voiceFeedback.kind === "listening"
+                            ? "text-red-400 animate-pulse font-medium"
                             : "text-zinc-500"
                         }`}
                       >
@@ -2399,24 +2538,21 @@ function Home() {
               <div className="flex-1 space-y-4 overflow-y-auto p-5">
 
                 {messages.length === 0 ? (
-
                   <div className="flex h-full items-center justify-center">
-
                     <div className="max-w-xs text-center">
-
+                      <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/80 text-zinc-400 shadow-sm">
+                        <svg className="h-5 w-5 text-zinc-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+                          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" strokeLinecap="round" strokeLinejoin="round" />
+                        </svg>
+                      </div>
                       <p className="text-sm font-medium text-zinc-200">
                         Start thinking with Echo
                       </p>
-
-                      <p className="mt-2 text-xs text-zinc-500">
-                        Describe a problem, idea, decision,
-                        or question.
+                      <p className="mt-1.5 text-xs leading-relaxed text-zinc-500">
+                        Describe a problem, idea, decision, or question using the composer below or by speaking to Echo.
                       </p>
-
                     </div>
-
                   </div>
-
                 ) : (
 
                   messages.map((message) => (

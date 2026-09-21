@@ -12,11 +12,17 @@
  */
 
 import { useCallback, useRef, useState } from "react";
-import type { MeetingRecord } from "../meetingTypes";
+import type {
+  MeetingInsightRecord,
+  MeetingRecord,
+  MeetingTranscriptSegmentRecord,
+} from "../meetingTypes";
 import {
   createMeetingApi,
   endMeetingApi,
   getMeetingHistoryApi,
+  getMeetingInsightsApi,
+  getMeetingTranscriptsApi,
 } from "./meetingApi";
 
 export type MeetingPersistenceStatus = "idle" | "persisting" | "persisted" | "error";
@@ -31,8 +37,15 @@ export interface UseMeetingPersistenceReturn {
   lastPersistedMeeting: MeetingRecord | null;
   error: string | null;
   persistStart: (meetingId: string, title?: string) => Promise<MeetingRecord | null>;
-  persistEnd: (meetingId: string, title?: string) => Promise<MeetingRecord | null>;
+  persistEnd: (
+    meetingId: string,
+    title?: string,
+    segments?: MeetingTranscriptSegmentRecord[],
+    insights?: MeetingInsightRecord[]
+  ) => Promise<MeetingRecord | null>;
   fetchHistory: () => Promise<MeetingRecord[]>;
+  fetchTranscripts: (meetingId: string) => Promise<MeetingTranscriptSegmentRecord[]>;
+  fetchInsights: (meetingId: string) => Promise<MeetingInsightRecord[]>;
 }
 
 interface ActiveMeetingRef {
@@ -100,7 +113,12 @@ export function useMeetingPersistence({
    * Handles recovery: if start failed or was dropped, still attempts to end/recover.
    */
   const persistEnd = useCallback(
-    async (meetingId: string, title?: string): Promise<MeetingRecord | null> => {
+    async (
+      meetingId: string,
+      title?: string,
+      segments?: MeetingTranscriptSegmentRecord[],
+      insights?: MeetingInsightRecord[]
+    ): Promise<MeetingRecord | null> => {
       if (!workspaceId) {
         return null;
       }
@@ -112,6 +130,8 @@ export function useMeetingPersistence({
       try {
         const meeting = await endMeetingApi(workspaceId, meetingId, {
           title: effectiveTitle,
+          segments,
+          insights,
         });
 
         activeMeetingRef.current = null;
@@ -147,6 +167,48 @@ export function useMeetingPersistence({
     }
   }, [workspaceId, onPersistError]);
 
+  /**
+   * Loads transcript segments for a meeting in the workspace.
+   */
+  const fetchTranscripts = useCallback(
+    async (meetingId: string): Promise<MeetingTranscriptSegmentRecord[]> => {
+      if (!workspaceId) {
+        return [];
+      }
+
+      try {
+        return await getMeetingTranscriptsApi(workspaceId, meetingId);
+      } catch (err: unknown) {
+        const errorObj = err instanceof Error ? err : new Error(String(err));
+        setError(errorObj.message);
+        onPersistError?.(errorObj);
+        return [];
+      }
+    },
+    [workspaceId, onPersistError]
+  );
+
+  /**
+   * Loads synthesized insights for a meeting in the workspace.
+   */
+  const fetchInsights = useCallback(
+    async (meetingId: string): Promise<MeetingInsightRecord[]> => {
+      if (!workspaceId) {
+        return [];
+      }
+
+      try {
+        return await getMeetingInsightsApi(workspaceId, meetingId);
+      } catch (err: unknown) {
+        const errorObj = err instanceof Error ? err : new Error(String(err));
+        setError(errorObj.message);
+        onPersistError?.(errorObj);
+        return [];
+      }
+    },
+    [workspaceId, onPersistError]
+  );
+
   return {
     status,
     lastPersistedMeeting,
@@ -154,5 +216,7 @@ export function useMeetingPersistence({
     persistStart,
     persistEnd,
     fetchHistory,
+    fetchTranscripts,
+    fetchInsights,
   };
 }

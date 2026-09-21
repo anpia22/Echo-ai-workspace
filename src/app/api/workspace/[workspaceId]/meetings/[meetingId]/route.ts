@@ -16,6 +16,7 @@ import { NextResponse } from "next/server";
 import { resolveServerActor } from "../../../../../lib/persistence/server/auth";
 import { PersistenceError } from "../../../../../lib/persistence/server/errors";
 import { MeetingRepository } from "../../../../../lib/persistence/repositories/meetingRepository";
+import type { MeetingInsightType } from "../../../../../lib/persistence/meetingTypes";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -108,17 +109,81 @@ export async function PATCH(
     const title = typeof body.title === "string" ? body.title.trim() : undefined;
 
     const repository = new MeetingRepository();
+    const cleanMeetingId = meetingId.trim();
+
     const result = await repository.endMeeting(
       actor,
       {
-        meetingId: meetingId.trim(),
+        meetingId: cleanMeetingId,
         title,
         workspaceId,
       },
       workspaceId
     );
 
-    return NextResponse.json({ ok: true, meeting: result.meeting }, { status: 200 });
+    let persistedSegmentsCount = 0;
+    if (Array.isArray(body.segments) && body.segments.length > 0) {
+      const validatedSegments = body.segments
+        .filter((s): s is Record<string, unknown> => Boolean(s && typeof s === "object"))
+        .map((s, idx) => ({
+          id: typeof s.id === "string" && s.id.trim().length > 0 ? s.id.trim() : `seg-${cleanMeetingId}-${idx}`,
+          meetingId: cleanMeetingId,
+          speakerId: typeof s.speakerId === "string" && s.speakerId.trim().length > 0 ? s.speakerId.trim() : actor.userId,
+          speakerName: typeof s.speakerName === "string" && s.speakerName.trim().length > 0 ? s.speakerName.trim() : "Speaker",
+          text: typeof s.text === "string" ? s.text : "",
+          timestamp: typeof s.timestamp === "number" ? s.timestamp : Date.now(),
+          sequence: typeof s.sequence === "number" ? s.sequence : idx + 1,
+          status: "final" as const,
+          source: "meeting" as const,
+          language: typeof s.language === "string" ? s.language : undefined,
+          createdAt: typeof s.createdAt === "string" ? s.createdAt : new Date().toISOString(),
+        }))
+        .filter((s) => s.text.trim().length > 0);
+
+      if (validatedSegments.length > 0) {
+        const segResult = await repository.persistTranscriptSegments(actor, {
+          meetingId: cleanMeetingId,
+          segments: validatedSegments,
+        });
+        persistedSegmentsCount = segResult.persistedCount;
+      }
+    }
+
+    let persistedInsightsCount = 0;
+    if (Array.isArray(body.insights) && body.insights.length > 0) {
+      const validatedInsights = body.insights
+        .filter((ins): ins is Record<string, unknown> => Boolean(ins && typeof ins === "object"))
+        .map((ins, idx) => ({
+          id: typeof ins.id === "string" && ins.id.trim().length > 0 ? ins.id.trim() : `ins-${cleanMeetingId}-${idx}`,
+          meetingId: cleanMeetingId,
+          type: (typeof ins.type === "string" ? (ins.type as MeetingInsightType) : "note"),
+          title: typeof ins.title === "string" ? ins.title : "Insight",
+          summary: typeof ins.summary === "string" ? ins.summary : "",
+          sourceSegmentIds: Array.isArray(ins.sourceSegmentIds) ? ins.sourceSegmentIds.map(String) : [],
+          speakerIds: Array.isArray(ins.speakerIds) ? ins.speakerIds.map(String) : [],
+          timestamp: typeof ins.timestamp === "number" ? ins.timestamp : Date.now(),
+          confidence: typeof ins.confidence === "number" ? ins.confidence : undefined,
+          createdAt: typeof ins.createdAt === "string" ? ins.createdAt : new Date().toISOString(),
+        }));
+
+      if (validatedInsights.length > 0) {
+        const insResult = await repository.persistMeetingInsights(actor, {
+          meetingId: cleanMeetingId,
+          insights: validatedInsights,
+        });
+        persistedInsightsCount = insResult.persistedCount;
+      }
+    }
+
+    return NextResponse.json(
+      {
+        ok: true,
+        meeting: result.meeting,
+        persistedSegmentsCount,
+        persistedInsightsCount,
+      },
+      { status: 200 }
+    );
   } catch (error) {
     if (error instanceof PersistenceError) {
       return NextResponse.json(

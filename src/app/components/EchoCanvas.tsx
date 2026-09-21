@@ -177,17 +177,46 @@ const getNodeStyle = (nodeType?: string) => {
   }
 };
 
-function EchoNode({ data }: NodeProps<Node<EchoNodeData>>) {
+const getNodeGlyph = (nodeType?: string) => {
+  switch (nodeType) {
+    case "problem":
+      return "⚠️";
+    case "solution":
+      return "✓";
+    case "decision":
+      return "◆";
+    case "task":
+      return "◻";
+    case "question":
+      return "?";
+    case "idea":
+      return "✦";
+    default:
+      return "●";
+  }
+};
+
+function EchoNode({ data, selected }: NodeProps<Node<EchoNodeData>>) {
+  const isSelected = Boolean(selected);
+
   return (
     <div
-      className="relative flex flex-col transition-all duration-300 hover:-translate-y-1 hover:shadow-2xl"
+      data-testid={`echo-node-${data.nodeType || "default"}`}
+      data-selected={isSelected ? "true" : "false"}
+      className={`relative flex flex-col transition-all duration-200 hover:-translate-y-0.5 hover:shadow-2xl ${
+        isSelected
+          ? "ring-2 ring-white/90 shadow-[0_0_24px_rgba(255,255,255,0.22)] scale-[1.01]"
+          : "hover:border-white/30"
+      }`}
       style={{
         ...getNodeStyle(data.nodeType),
         borderRadius: "20px",
         padding: "18px 20px",
         width: NODE_WIDTH,
         minHeight: 120,
-        boxShadow: "0 12px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)",
+        boxShadow: isSelected
+          ? "0 16px 36px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.15)"
+          : "0 12px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)",
         backdropFilter: "blur(12px)",
         WebkitBackdropFilter: "blur(12px)",
       }}
@@ -202,8 +231,9 @@ function EchoNode({ data }: NodeProps<Node<EchoNodeData>>) {
       <Handle type="source" position={Position.Left} id="s-left" style={handleStyle} isConnectable={false} />
 
       <div className="mb-2 flex items-center justify-between">
-        <span className="text-[10px] font-bold uppercase tracking-widest opacity-60">
-          {data.nodeType}
+        <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest opacity-75">
+          <span className="text-[11px] leading-none opacity-90">{getNodeGlyph(data.nodeType)}</span>
+          <span>{data.nodeType}</span>
         </span>
       </div>
 
@@ -545,31 +575,38 @@ function EchoCanvasInner({
         edge.relationship?.toLowerCase().trim() || "related to";
 
       let strokeWidth = 1.75;
+      let strokeColor = "#94a3b8"; // clean slate
 
       switch (relationship) {
         case "causes":
           strokeWidth = 2;
+          strokeColor = "#f87171"; // soft red
           break;
 
         case "solves":
           strokeWidth = 2.25;
+          strokeColor = "#4ade80"; // soft emerald
           break;
 
         case "supports":
           strokeWidth = 1.75;
+          strokeColor = "#38bdf8"; // soft sky blue
           break;
 
         case "depends on":
           strokeWidth = 2;
+          strokeColor = "#a78bfa"; // soft purple
           break;
 
         case "decided by":
           strokeWidth = 1.75;
+          strokeColor = "#fbbf24"; // soft amber
           break;
 
         case "related to":
         default:
           strokeWidth = 1.5;
+          strokeColor = "#94a3b8";
           break;
       }
 
@@ -592,13 +629,13 @@ function EchoCanvasInner({
           type: MarkerType.ArrowClosed,
           width: 16,
           height: 16,
-          color: "#a1a1aa",
+          color: strokeColor,
         },
         label: relationship,
         animated: false,
         style: {
           strokeWidth,
-          stroke: "#a1a1aa",
+          stroke: strokeColor,
         },
         labelStyle: {
           fill: "#d4d4d8",
