@@ -17,6 +17,7 @@ import {
   createConversationApi,
   listConversationMessagesApi,
   ConversationPersistenceConflictError,
+  ConversationPersistenceApiError,
 } from "./conversationApi";
 import type { MessageRecord, MessageRole } from "../conversationTypes";
 
@@ -97,7 +98,11 @@ export function useConversationPersistence(workspaceId: string | null) {
    * Persists a user or assistant message to the active conversation thread.
    */
   const persistMessage = useCallback(
-    async (conversationId: string, message: RuntimeMessageInput): Promise<boolean> => {
+    async (
+      conversationId: string,
+      message: RuntimeMessageInput,
+      conversationTitle?: string
+    ): Promise<boolean> => {
       if (!workspaceId || !conversationId) {
         return false;
       }
@@ -114,6 +119,40 @@ export function useConversationPersistence(workspaceId: string | null) {
         setSavedWithAutoClear();
         return true;
       } catch (err) {
+        // Self-healing: if the conversation thread does not exist yet in this workspace
+        // (e.g. client initialized, legacy localStorage, or created before workspace persistence),
+        // auto-create the conversation thread and retry appending the message.
+        if (
+          err instanceof ConversationPersistenceApiError &&
+          (err.status === 404 || err.code === "NOT_FOUND" || err.message.includes("not found in workspace"))
+        ) {
+          try {
+            try {
+              await createConversationApi(workspaceId, {
+                id: conversationId,
+                title: conversationTitle || "New Conversation",
+              });
+            } catch (createErr) {
+              if (!(createErr instanceof ConversationPersistenceConflictError)) {
+                throw createErr;
+              }
+            }
+
+            await appendMessageApi(workspaceId, conversationId, {
+              id: message.id,
+              role: message.role as MessageRole,
+              content: message.content,
+            });
+
+            setSavedWithAutoClear();
+            return true;
+          } catch (retryErr) {
+            console.error("[useConversationPersistence] Failed to auto-provision conversation and persist message:", retryErr);
+            setConversationPersistenceStatus("error");
+            return false;
+          }
+        }
+
         if (err instanceof ConversationPersistenceConflictError) {
           setConversationPersistenceStatus("conflict");
         } else {
@@ -154,6 +193,15 @@ export function useConversationPersistence(workspaceId: string | null) {
         onLoaded(conversationId, messages);
       } catch (err) {
         if (requestId !== activeRequestIdRef.current) {
+          return;
+        }
+        if (
+          err instanceof ConversationPersistenceApiError &&
+          (err.status === 404 || err.code === "NOT_FOUND" || err.message.includes("not found in workspace"))
+        ) {
+          // If conversation does not exist on server yet (e.g. client created, local storage),
+          // treat as empty message list rather than fatal error
+          onLoaded(conversationId, []);
           return;
         }
         console.error("[useConversationPersistence] Failed to load messages:", err);

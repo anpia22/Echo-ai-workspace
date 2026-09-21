@@ -923,6 +923,12 @@ function Home() {
       }
 
       setIsLoaded(true);
+
+      // Phase 13.6: Persist newly initialized default conversation to backend (non-blocking)
+      persistNewConversation({
+        id: newConversation.id,
+        title: newConversation.title,
+      });
     } catch (error) {
       console.error(
         "Failed to load Echo conversation:",
@@ -931,7 +937,7 @@ function Home() {
 
       setIsLoaded(true);
     }
-  }, [workspaceHydration.status, workspaceHydration.hydratedCanvas, workspaceHydration.hydratedConversations, workspaceHydration.workspace]);
+  }, [workspaceHydration.status, workspaceHydration.hydratedCanvas, workspaceHydration.hydratedConversations, workspaceHydration.workspace, persistNewConversation]);
   /* eslint-enable react-hooks/set-state-in-effect */
 
   // --------------------------------------------------
@@ -1611,6 +1617,12 @@ function Home() {
 
         setTranscript("");
         setRenamingConversationId(null);
+
+        // Phase 13.6: persist new fallback conversation to backend (non-blocking)
+        persistNewConversation({
+          id: newConversation.id,
+          title: newConversation.title,
+        });
         return;
       }
 
@@ -1691,7 +1703,7 @@ function Home() {
 
     // Phase 13.6: Persist user message to backend (non-blocking)
     if (conversationId) {
-      persistMessage(conversationId, newUserMessage);
+      persistMessage(conversationId, newUserMessage, conversationTitle);
     }
 
     // Title only from the first meaningful user
@@ -1897,7 +1909,7 @@ function Home() {
 
       // Phase 13.6: Persist assistant message to backend (non-blocking)
       if (conversationId) {
-        persistMessage(conversationId, assistantMessage);
+        persistMessage(conversationId, assistantMessage, conversationTitle);
       }
 
       if (Array.isArray(data.actions) && data.actions.length > 0) {
