@@ -53,6 +53,9 @@ import {
   useRoomPersistence,
   useClientMigration,
   isWorkspaceMigrated,
+  updateConversationTitleApi,
+  updateConversationApi,
+  loadConversationCanvasApi,
 } from "./lib/persistence/client";
 import type {
   CanvasPersistenceStatus,
@@ -144,11 +147,58 @@ function emptyCanvas(): CanvasState {
 function normalizeLoadedCanvas(
   canvas?: CanvasState | null
 ): CanvasState {
-  return {
-    nodes: Array.isArray(canvas?.nodes) ? canvas.nodes : [],
-    edges: Array.isArray(canvas?.edges) ? canvas.edges : [],
-    groups: Array.isArray(canvas?.groups) ? canvas.groups : [],
-  };
+  if (!canvas) {
+    return emptyCanvas();
+  }
+  const nodes: CanvasNode[] = Array.isArray(canvas.nodes)
+    ? canvas.nodes
+        .filter((node): node is CanvasNode => Boolean(node && typeof node === "object" && (node as any).id))
+        .map((node: any) => ({
+          id: String(node.id),
+          nodeType: String(node.nodeType || "problem"),
+          title: String(node.title || ""),
+          description: node.description ? String(node.description) : undefined,
+          position: {
+            x: typeof node.position?.x === "number"
+              ? node.position.x
+              : typeof node.positionX === "number"
+              ? node.positionX
+              : 0,
+            y: typeof node.position?.y === "number"
+              ? node.position.y
+              : typeof node.positionY === "number"
+              ? node.positionY
+              : 0,
+          },
+        }))
+    : [];
+
+  const edges: CanvasEdge[] = Array.isArray(canvas.edges)
+    ? canvas.edges
+        .filter((edge): edge is CanvasEdge => Boolean(edge && typeof edge === "object" && (edge as any).id))
+        .map((edge: any) => ({
+          id: String(edge.id),
+          sourceId: String(edge.sourceId || edge.source || ""),
+          targetId: String(edge.targetId || edge.target || ""),
+          relationship: edge.relationship ? String(edge.relationship) : undefined,
+        }))
+    : [];
+
+  const groups: CanvasGroup[] = Array.isArray(canvas.groups)
+    ? canvas.groups
+        .filter((group): group is CanvasGroup => Boolean(group && typeof group === "object" && (group as any).id))
+        .map((group: any) => ({
+          id: String(group.id),
+          title: String(group.title || ""),
+          memberIds: Array.isArray(group.memberIds)
+            ? group.memberIds.map(String)
+            : Array.isArray(group.members)
+            ? group.members.map(String)
+            : [],
+        }))
+    : [];
+
+  return { nodes, edges, groups };
 }
 
 const DEFAULT_CONVERSATION_TITLE = "New Conversation";
@@ -184,6 +234,17 @@ function generateConversationTitle(message: string): string {
   return title.charAt(0).toUpperCase() + title.slice(1);
 }
 
+function getConversationDisplayName(conversation: Conversation): string {
+  if (conversation.title && !isPlaceholderTitle(conversation.title)) {
+    return conversation.title;
+  }
+  const firstUserMessage = conversation.messages?.find((m) => m.role === "user");
+  if (firstUserMessage?.content) {
+    return generateConversationTitle(firstUserMessage.content);
+  }
+  return DEFAULT_CONVERSATION_TITLE;
+}
+
 function conversationMatchesSearch(
   conversation: Conversation,
   query: string
@@ -194,7 +255,8 @@ function conversationMatchesSearch(
     return true;
   }
 
-  if (conversation.title.toLowerCase().includes(needle)) {
+  const title = getConversationDisplayName(conversation).toLowerCase();
+  if (title.includes(needle)) {
     return true;
   }
 
@@ -812,6 +874,24 @@ function Home() {
   const analyzeInFlightRef =
     useRef(false);
 
+  // Authoritative conversation switch race protection & request generation token
+  const canvasRequestGenerationRef =
+    useRef(0);
+  const activeConversationGenRef =
+    canvasRequestGenerationRef;
+
+  const activeConversationIdRef =
+    useRef<string | null>(null);
+
+  const currentWorkspaceIdRef =
+    useRef<string | null>(null);
+
+  const canvasOwnerConversationIdRef =
+    useRef<string | null>(null);
+
+  const canvasAbortControllerRef =
+    useRef<AbortController | null>(null);
+
   const slowResponseTimerRef =
     useRef<ReturnType<typeof setTimeout> | null>(
       null
@@ -845,8 +925,12 @@ function Home() {
       setPersistenceRevision(workspaceHydration.workspace.revision);
     }
 
-    // 1. If persisted workspace canvas exists and has meaningful content, hydrate it
-    if (workspaceHydration.hydratedCanvas && hasMeaningfulCanvasContent(workspaceHydration.hydratedCanvas)) {
+    // 1. If persisted workspace canvas exists and no conversations exist, hydrate it
+    if (
+      (!workspaceHydration.hydratedConversations || workspaceHydration.hydratedConversations.length === 0) &&
+      workspaceHydration.hydratedCanvas &&
+      hasMeaningfulCanvasContent(workspaceHydration.hydratedCanvas)
+    ) {
       skipAutosaveRef.current = true;
       canvasRef.current = workspaceHydration.hydratedCanvas;
       setCanvas(workspaceHydration.hydratedCanvas);
@@ -855,11 +939,98 @@ function Home() {
     // 2. Hydrate conversations with precedence:
     // If persisted conversations exist in workspace, hydrate them
     if (workspaceHydration.hydratedConversations && workspaceHydration.hydratedConversations.length > 0) {
-      setConversations(workspaceHydration.hydratedConversations);
-      const activeConv = workspaceHydration.hydratedConversations[0];
+      const normalizedConvs = workspaceHydration.hydratedConversations.map((conv) => ({
+        ...conv,
+        title: getConversationDisplayName(conv),
+      }));
+
+      setConversations(normalizedConvs);
+
+      // Restore active conversation identity:
+      // Priority 1: URL search parameter `conversation`
+      // Priority 2: Stored active conversation in localStorage for this workspace
+      // Priority 3: First conversation
+      const urlConvId = searchParams.get("conversation");
+      const storageKey = `echo_active_conv_${workspaceHydration.workspaceId}`;
+      const storedConvId = typeof window !== "undefined" ? localStorage.getItem(storageKey) : null;
+
+      const activeConv =
+        (urlConvId && normalizedConvs.find((c) => c.id === urlConvId)) ||
+        (storedConvId && normalizedConvs.find((c) => c.id === storedConvId)) ||
+        normalizedConvs[0];
+
+      activeConversationIdRef.current = activeConv.id;
+      canvasOwnerConversationIdRef.current = activeConv.id;
+      currentWorkspaceIdRef.current = workspaceHydration.workspaceId;
       setConversationId(activeConv.id);
       setConversationTitle(activeConv.title);
-      setMessages(activeConv.messages || []);
+
+      // Hydrate messages for active conversation with request generation guard
+      if (activeConv.messages && activeConv.messages.length > 0) {
+        setMessages(activeConv.messages);
+      } else {
+        setMessages([]);
+        if (workspaceHydration.workspaceId) {
+          const currentGen = ++canvasRequestGenerationRef.current;
+          const requestedConvId = activeConv.id;
+          const requestedWsId = workspaceHydration.workspaceId;
+          loadConversationMessages(activeConv.id, (loadedConvId, loadedMessages) => {
+            if (
+              currentGen !== canvasRequestGenerationRef.current ||
+              loadedConvId !== activeConversationIdRef.current ||
+              requestedWsId !== currentWorkspaceIdRef.current
+            ) {
+              return;
+            }
+            const mappedMsgs: Message[] = loadedMessages.map((m) => ({
+              id: m.id,
+              role: m.role as "user" | "assistant",
+              content: m.content,
+              createdAt: m.createdAt,
+            }));
+            setMessages(mappedMsgs);
+            setConversations((prevConvs) =>
+              prevConvs.map((c) => {
+                if (c.id !== loadedConvId) return c;
+                const withMsgs = { ...c, messages: mappedMsgs };
+                return { ...withMsgs, title: getConversationDisplayName(withMsgs) };
+              })
+            );
+          });
+        }
+      }
+
+      // Hydrate canvas: use conversation's isolated canvas; if empty, render a clean canvas!
+      const targetCanvas = activeConv.canvas ? normalizeLoadedCanvas(activeConv.canvas) : emptyCanvas();
+
+      canvasRef.current = targetCanvas;
+      setCanvas(targetCanvas);
+
+      // Persist active conversation identity to localStorage & URL without triggering full reload
+      if (typeof window !== "undefined") {
+        try {
+          localStorage.setItem(storageKey, activeConv.id);
+          const currentUrl = new URL(window.location.href);
+          if (currentUrl.searchParams.get("conversation") !== activeConv.id) {
+            currentUrl.searchParams.set("conversation", activeConv.id);
+            window.history.replaceState({}, "", currentUrl.toString());
+          }
+        } catch {}
+      }
+
+      // If active conversation had a placeholder title in DB but has messages, persist the derived title
+      if (
+        workspaceHydration.workspaceId &&
+        isPlaceholderTitle(activeConv.title) === false &&
+        isPlaceholderTitle(workspaceHydration.hydratedConversations.find((c) => c.id === activeConv.id)?.title || "")
+      ) {
+        updateConversationTitleApi(
+          workspaceHydration.workspaceId,
+          activeConv.id,
+          activeConv.title
+        ).catch(console.error);
+      }
+
       setIsLoaded(true);
       return;
     }
@@ -954,69 +1125,75 @@ function Home() {
       return;
     }
 
+    // STRICT SAVE RACE PROTECTION:
+    // A save operation must be associated with the conversationId for which the canvas state was captured.
+    const saveConversationId = activeConversationIdRef.current;
+    if (!saveConversationId || saveConversationId !== conversationId) {
+      return;
+    }
+
+    // Never save using a later/current conversationId if the snapshot was created for another conversation.
+    // Do not allow: Conversation A nodes + Conversation B current ID = save A's nodes into B
+    if (canvasOwnerConversationIdRef.current !== saveConversationId) {
+      return;
+    }
+
+    const nodesSnapshot = canvas.nodes;
+    const edgesSnapshot = canvas.edges;
+    const groupsSnapshot = canvas.groups || [];
+    const canvasSnapshot = {
+      nodes: nodesSnapshot,
+      edges: edgesSnapshot,
+      groups: groupsSnapshot,
+    };
+
     try {
-      const saved =
-        localStorage.getItem(STORAGE_KEY);
+      const now = new Date().toISOString();
 
-      let storedConversations: Conversation[] =
-        [];
+      setConversations((prevConversations) => {
+        // Double check saveConversationId is still active conversation
+        if (activeConversationIdRef.current !== saveConversationId) {
+          return prevConversations;
+        }
 
-      if (saved) {
-        storedConversations =
-          JSON.parse(saved);
-      }
-
-      const now =
-        new Date().toISOString();
-
-      const existingConversation =
-        storedConversations.find(
-          (conversation) =>
-            conversation.id ===
-            conversationId
+        const existingConversation = prevConversations.find(
+          (conversation) => conversation.id === saveConversationId
         );
 
-      const updatedConversation: Conversation = {
-        id: conversationId,
-        title: conversationTitle,
-        messages,
-        actions:
-          existingConversation?.actions || [],
-        canvas,
-        createdAt:
-          existingConversation?.createdAt ||
-          now,
-        updatedAt: now,
-      };
+        const updatedConversation: Conversation = {
+          id: saveConversationId,
+          title: conversationTitle,
+          messages,
+          actions: existingConversation?.actions || [],
+          canvas: canvasSnapshot,
+          createdAt: existingConversation?.createdAt || now,
+          updatedAt: now,
+        };
 
-      const remainingConversations =
-        storedConversations.filter(
-          (conversation) =>
-            conversation.id !==
-            conversationId
+        const remainingConversations = prevConversations.filter(
+          (conversation) => conversation.id !== saveConversationId
         );
 
-      const updatedConversations = [
-        updatedConversation,
-        ...remainingConversations,
-      ];
+        const updatedConversations = [
+          updatedConversation,
+          ...remainingConversations,
+        ];
 
-      // Update in-memory conversations list for UI
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- persist conversation list
-      setConversations(
-        updatedConversations
-      );
+        // Phase 13.9 Cutover: If migrated to PostgreSQL for active workspace, skip localStorage write
+        const isMigrated = isWorkspaceMigrated(workspaceHydration.workspaceId);
+        if (!isMigrated) {
+          try {
+            localStorage.setItem(
+              STORAGE_KEY,
+              JSON.stringify(updatedConversations)
+            );
+          } catch {
+            // ignore
+          }
+        }
 
-      // Phase 13.9 Cutover: If migrated to PostgreSQL for active workspace, skip localStorage write
-      const isMigrated = isWorkspaceMigrated(workspaceHydration.workspaceId);
-      if (!isMigrated) {
-        localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify(
-            updatedConversations
-          )
-        );
-      }
+        return updatedConversations;
+      });
     } catch (error) {
       console.error(
         "Failed to save Echo conversation:",
@@ -1297,97 +1474,65 @@ function Home() {
 
   const createNewConversation = () => {
     try {
-      const saved =
-        localStorage.getItem(STORAGE_KEY);
+      const now = new Date().toISOString();
+      const prevConvId = activeConversationIdRef.current;
+      const prevOwned = prevConvId && canvasOwnerConversationIdRef.current === prevConvId;
+      const prevCanvasSnapshot = canvasRef.current;
 
-      let storedConversations: Conversation[] =
-        [];
-
-      if (saved) {
-        storedConversations =
-          JSON.parse(saved);
+      // 1. Abort any in-flight canvas request
+      if (canvasAbortControllerRef.current) {
+        canvasAbortControllerRef.current.abort();
+        canvasAbortControllerRef.current = null;
       }
 
-      // Flush the active conversation first so the empty
-      // reset cannot overwrite it in the autosave effect.
-      if (conversationId) {
-        const now =
-          new Date().toISOString();
+      // 2. Invalidate request generation/token
+      const generation = ++canvasRequestGenerationRef.current;
 
-        const existingConversation =
-          storedConversations.find(
-            (conversation) =>
-              conversation.id ===
-              conversationId
-          );
+      const newConversation = createConversation();
+      const newConvId = newConversation.id;
 
-        const currentConversation: Conversation =
-          {
-            id: conversationId,
-            title: conversationTitle,
-            messages,
-            actions:
-              existingConversation?.actions ||
-              [],
-            canvas,
-            createdAt:
-              existingConversation?.createdAt ||
-              now,
-            updatedAt: now,
-          };
+      // 3. Clear transient canvas state and set active conversation ID
+      activeConversationIdRef.current = newConvId;
+      canvasOwnerConversationIdRef.current = newConvId;
+      currentWorkspaceIdRef.current = workspaceHydration.workspaceId;
 
-        storedConversations =
-          storedConversations.filter(
-            (conversation) =>
-              conversation.id !==
-              conversationId
-          );
-
-        storedConversations = [
-          currentConversation,
-          ...storedConversations,
-        ];
-      }
-
-      const newConversation =
-        createConversation();
-
-      storedConversations = [
-        newConversation,
-        ...storedConversations,
-      ];
-
-      if (!isWorkspaceMigrated(workspaceHydration.workspaceId)) {
-        localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify(
-            storedConversations
-          )
-        );
-      }
-
-      // Skip the next autosave so batched resets cannot
-      // write empty messages/canvas into the previous id.
+      // 4 & 5. Clear visible canvas immediately
       skipAutosaveRef.current = true;
-
-      setConversations(
-        storedConversations
-      );
-
-      setConversationId(
-        newConversation.id
-      );
-
-      setConversationTitle(
-        newConversation.title
-      );
-
-      setMessages([]);
-
+      canvasRef.current = emptyCanvas();
       setCanvas(emptyCanvas());
-
+      setMessages([]);
       setTranscript("");
       setRenamingConversationId(null);
+
+      setConversationId(newConvId);
+      setConversationTitle(newConversation.title);
+
+      // Flush previous conversation canvas snapshot safely (associated strictly with previous conversation ID)
+      setConversations((prevConversations) => {
+        let baseConversations = prevConversations;
+        if (prevConvId && prevOwned) {
+          baseConversations = prevConversations.map((c) =>
+            c.id === prevConvId ? { ...c, canvas: prevCanvasSnapshot } : c
+          );
+        }
+        const nextConversations = [newConversation, ...baseConversations];
+        if (!isWorkspaceMigrated(workspaceHydration.workspaceId)) {
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(nextConversations));
+          } catch {}
+        }
+        return nextConversations;
+      });
+
+      // Sync active conversation identity to localStorage & URL
+      if (typeof window !== "undefined" && workspaceHydration.workspaceId) {
+        try {
+          localStorage.setItem(`echo_active_conv_${workspaceHydration.workspaceId}`, newConvId);
+          const currentUrl = new URL(window.location.href);
+          currentUrl.searchParams.set("conversation", newConvId);
+          window.history.replaceState({}, "", currentUrl.toString());
+        } catch {}
+      }
 
       // Phase 13.6: persist new conversation to backend (non-blocking)
       persistNewConversation({
@@ -1409,29 +1554,138 @@ function Home() {
   const switchConversation = (
     selectedConversation: Conversation
   ) => {
-    setConversationId(
-      selectedConversation.id
-    );
+    // 1. Flush active conversation's current canvas to in-memory conversations state
+    // strictly associated with previous conversation ID
+    const prevConvId = activeConversationIdRef.current;
+    if (prevConvId && canvasOwnerConversationIdRef.current === prevConvId) {
+      const prevCanvasSnapshot = canvasRef.current;
+      setConversations((prev) =>
+        prev.map((c) => (c.id === prevConvId ? { ...c, canvas: prevCanvasSnapshot } : c))
+      );
+    }
 
-    setConversationTitle(
-      selectedConversation.title
-    );
+    // 2. Abort any in-flight canvas request for previous conversation
+    if (canvasAbortControllerRef.current) {
+      canvasAbortControllerRef.current.abort();
+      canvasAbortControllerRef.current = null;
+    }
 
-    setMessages(
-      selectedConversation.messages || []
-    );
+    // 3. Invalidate previous request generation/token
+    const generation = ++canvasRequestGenerationRef.current;
 
-    const next = normalizeLoadedCanvas(selectedConversation.canvas);
-    canvasRef.current = next;
-    setCanvas(next);
+    // 4. Capture target conversation and workspace IDs
+    const targetConvId = selectedConversation.id;
+    const currentWorkspaceId = workspaceHydration.workspaceId;
+    activeConversationIdRef.current = targetConvId;
+    canvasOwnerConversationIdRef.current = targetConvId;
+    currentWorkspaceIdRef.current = currentWorkspaceId;
 
+    // 5. Clear visible canvas & transient UI state immediately
+    skipAutosaveRef.current = true;
+    canvasRef.current = emptyCanvas();
+    setCanvas(emptyCanvas());
+    setMessages([]);
     setTranscript("");
     setRenamingConversationId(null);
 
-    // Phase 13.6: If switching to an inactive conversation whose messages are not yet loaded,
-    // fetch them from backend with race-protection
-    if (workspaceHydration.workspaceId && (!selectedConversation.messages || selectedConversation.messages.length === 0)) {
-      loadConversationMessages(selectedConversation.id, (loadedConvId, loadedMessages) => {
+    // 6. Update active conversation ID and title in UI
+    setConversationId(targetConvId);
+    const displayName = getConversationDisplayName(selectedConversation);
+    setConversationTitle(displayName);
+
+    // Sync active conversation identity to localStorage & URL
+    if (typeof window !== "undefined" && currentWorkspaceId) {
+      try {
+        localStorage.setItem(`echo_active_conv_${currentWorkspaceId}`, targetConvId);
+        const currentUrl = new URL(window.location.href);
+        if (currentUrl.searchParams.get("conversation") !== targetConvId) {
+          currentUrl.searchParams.set("conversation", targetConvId);
+          window.history.replaceState({}, "", currentUrl.toString());
+        }
+      } catch {}
+    }
+
+    // 7. Load target conversation's canvas:
+    // First, if selectedConversation already has a non-empty canvas in memory, apply it optimistically
+    if (
+      selectedConversation.canvas &&
+      (selectedConversation.canvas.nodes.length > 0 || selectedConversation.canvas.edges.length > 0)
+    ) {
+      const localCanvas = normalizeLoadedCanvas(selectedConversation.canvas);
+      canvasRef.current = localCanvas;
+      setCanvas(localCanvas);
+    }
+
+    // Start async load from server with AbortController and strict stale-request protection
+    if (currentWorkspaceId) {
+      const controller = new AbortController();
+      canvasAbortControllerRef.current = controller;
+      const requestedWorkspaceId = currentWorkspaceId;
+      const requestedConversationId = targetConvId;
+
+      loadConversationCanvasApi(requestedWorkspaceId, requestedConversationId, {
+        signal: controller.signal,
+      })
+        .then((result) => {
+          // STRICT STALE-REQUEST PROTECTION:
+          // 4. Before applying the response, verify:
+          //    requestedWorkspaceId === currentWorkspaceId
+          //    &&
+          //    requestedConversationId === activeConversationId
+          //    &&
+          //    generation === canvasRequestGenerationRef.current
+          if (
+            controller.signal.aborted ||
+            generation !== canvasRequestGenerationRef.current ||
+            requestedConversationId !== activeConversationIdRef.current ||
+            requestedWorkspaceId !== currentWorkspaceIdRef.current
+          ) {
+            // 5. If either does not match, discard the response completely.
+            return;
+          }
+
+          // 6. Never call setNodes/setEdges/setCanvasState for a stale conversation response.
+          const loadedCanvas = normalizeLoadedCanvas(result);
+          canvasRef.current = loadedCanvas;
+          canvasOwnerConversationIdRef.current = requestedConversationId;
+          setCanvas(loadedCanvas);
+
+          setConversations((prev) =>
+            prev.map((c) =>
+              c.id === requestedConversationId ? { ...c, canvas: loadedCanvas } : c
+            )
+          );
+        })
+        .catch((err) => {
+          if (
+            controller.signal.aborted ||
+            generation !== canvasRequestGenerationRef.current ||
+            requestedConversationId !== activeConversationIdRef.current ||
+            requestedWorkspaceId !== currentWorkspaceIdRef.current
+          ) {
+            return;
+          }
+          if (err?.name === "AbortError") {
+            return;
+          }
+          console.warn("[switchConversation] Failed to load remote canvas:", err);
+        });
+    }
+
+    // 8. Load target conversation's messages
+    if (selectedConversation.messages && selectedConversation.messages.length > 0) {
+      setMessages(selectedConversation.messages);
+    } else if (currentWorkspaceId) {
+      loadConversationMessages(targetConvId, (loadedConvId, loadedMessages) => {
+        // Strict race-condition guard: drop delayed response if user already switched
+        if (
+          generation !== canvasRequestGenerationRef.current ||
+          loadedConvId !== activeConversationIdRef.current ||
+          currentWorkspaceId !== currentWorkspaceIdRef.current
+        ) {
+          return;
+        }
+
         const mappedMsgs: Message[] = loadedMessages.map((m) => ({
           id: m.id,
           role: m.role as "user" | "assistant",
@@ -1439,8 +1693,27 @@ function Home() {
           createdAt: m.createdAt,
         }));
         setMessages(mappedMsgs);
+
+        // Derive title from newly loaded messages if currently placeholder
+        let currentTitle = selectedConversation.title;
+        const firstUser = mappedMsgs.find((m) => m.role === "user");
+        if (isPlaceholderTitle(currentTitle) && firstUser?.content) {
+          const derived = generateConversationTitle(firstUser.content);
+          if (!isPlaceholderTitle(derived)) {
+            currentTitle = derived;
+            setConversationTitle(derived);
+            if (currentWorkspaceId) {
+              updateConversationTitleApi(currentWorkspaceId, loadedConvId, derived).catch((err) => {
+                console.error("Failed to update conversation title:", err);
+              });
+            }
+          }
+        }
+
         setConversations((prevConvs) =>
-          prevConvs.map((c) => (c.id === loadedConvId ? { ...c, messages: mappedMsgs } : c))
+          prevConvs.map((c) =>
+            c.id === loadedConvId ? { ...c, title: currentTitle, messages: mappedMsgs } : c
+          )
         );
       });
     }
@@ -1454,7 +1727,7 @@ function Home() {
     conversation: Conversation
   ) => {
     setRenamingConversationId(conversation.id);
-    setRenameDraft(conversation.title);
+    setRenameDraft(getConversationDisplayName(conversation));
   };
 
   const cancelRenamingConversation = () => {
@@ -1481,31 +1754,41 @@ function Home() {
     }
 
     try {
-      const storedConversations =
-        readStoredConversations();
-
-      const updatedConversations =
-        storedConversations.map(
-          (conversation) =>
-            conversation.id === targetId
-              ? {
-                  ...conversation,
-                  title: nextTitle,
-                }
-              : conversation
+      setConversations((prevConversations) => {
+        const updatedConversations = prevConversations.map((conversation) =>
+          conversation.id === targetId
+            ? {
+                ...conversation,
+                title: nextTitle,
+              }
+            : conversation
         );
 
-      if (!isWorkspaceMigrated(workspaceHydration.workspaceId)) {
-        localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify(updatedConversations)
-        );
-      }
+        if (!isWorkspaceMigrated(workspaceHydration.workspaceId)) {
+          try {
+            localStorage.setItem(
+              STORAGE_KEY,
+              JSON.stringify(updatedConversations)
+            );
+          } catch {}
+        }
 
-      setConversations(updatedConversations);
+        return updatedConversations;
+      });
 
       if (targetId === conversationId) {
         setConversationTitle(nextTitle);
+      }
+
+      // Persist renamed title to backend
+      if (workspaceHydration.workspaceId) {
+        updateConversationTitleApi(
+          workspaceHydration.workspaceId,
+          targetId,
+          nextTitle
+        ).catch((err) => {
+          console.error("Failed to persist renamed conversation title:", err);
+        });
       }
     } catch (error) {
       console.error(
@@ -1537,30 +1820,33 @@ function Home() {
     }
 
     try {
-      const storedConversations =
-        readStoredConversations();
+      const remainingConversations = conversations.filter(
+        (conversation) => conversation.id !== targetId
+      );
 
-      const remainingConversations =
-        storedConversations.filter(
-          (conversation) =>
-            conversation.id !== targetId
-        );
+      if (!isWorkspaceMigrated(workspaceHydration.workspaceId)) {
+        try {
+          localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify(remainingConversations)
+          );
+        } catch {}
+      }
 
       if (targetId === conversationId) {
         skipAutosaveRef.current = true;
+        if (canvasAbortControllerRef.current) {
+          canvasAbortControllerRef.current.abort();
+          canvasAbortControllerRef.current = null;
+        }
+        ++canvasRequestGenerationRef.current;
 
         if (remainingConversations.length > 0) {
           const nextConversation =
             remainingConversations[0];
 
-          if (!isWorkspaceMigrated(workspaceHydration.workspaceId)) {
-            localStorage.setItem(
-              STORAGE_KEY,
-              JSON.stringify(
-                remainingConversations
-              )
-            );
-          }
+          activeConversationIdRef.current = nextConversation.id;
+          canvasOwnerConversationIdRef.current = nextConversation.id;
 
           setConversations(
             remainingConversations
@@ -1590,16 +1876,12 @@ function Home() {
         const newConversation =
           createConversation();
 
+        activeConversationIdRef.current = newConversation.id;
+        canvasOwnerConversationIdRef.current = newConversation.id;
+
         const nextConversations = [
           newConversation,
         ];
-
-        if (!isWorkspaceMigrated(workspaceHydration.workspaceId)) {
-          localStorage.setItem(
-            STORAGE_KEY,
-            JSON.stringify(nextConversations)
-          );
-        }
 
         setConversations(nextConversations);
 
@@ -1626,13 +1908,6 @@ function Home() {
         return;
       }
 
-      if (!isWorkspaceMigrated(workspaceHydration.workspaceId)) {
-        localStorage.setItem(
-          STORAGE_KEY,
-          JSON.stringify(remainingConversations)
-        );
-      }
-
       setConversations(remainingConversations);
 
       if (renamingConversationId === targetId) {
@@ -1657,16 +1932,43 @@ function Home() {
       y: number;
     }
   ) => {
+    // Save race protection: capture saveConversationId and workspaceId at snapshot time
+    const saveConversationId = activeConversationIdRef.current;
+    const currentWorkspaceId = currentWorkspaceIdRef.current;
+
     const currentCanvas = canvasRef.current;
     const nextCanvas = moveSemanticNode(currentCanvas, nodeId, position);
     if (nextCanvas !== currentCanvas) {
       canvasRef.current = nextCanvas;
+      if (saveConversationId) {
+        canvasOwnerConversationIdRef.current = saveConversationId;
+      }
       setCanvas(nextCanvas);
       roomConnection.broadcastNodeMoved(nodeId, position);
       // Phase 13.5: persist drag-end position (called only at drag-end by EchoCanvas)
       const movedNode = nextCanvas.nodes.find((n) => n.id === nodeId);
       if (movedNode) {
         persistNodeMove(movedNode);
+      }
+      if (saveConversationId && currentWorkspaceId) {
+        setConversations((prev) =>
+          prev.map((c) => (c.id === saveConversationId ? { ...c, canvas: nextCanvas } : c))
+        );
+        updateConversationApi(currentWorkspaceId, saveConversationId, {
+          metadata: { canvas: nextCanvas },
+        })
+          .then(() => {
+            // After save completion, do not update UI state unless the saved conversation is still the active conversation.
+            if (
+              saveConversationId !== activeConversationIdRef.current ||
+              currentWorkspaceId !== currentWorkspaceIdRef.current
+            ) {
+              return;
+            }
+          })
+          .catch((err) => {
+            console.error("Failed to persist conversation canvas on move:", err);
+          });
       }
     }
   };
@@ -1680,6 +1982,14 @@ function Home() {
     if (!transcript.trim()) return;
 
     if (analyzeInFlightRef.current || loading) {
+      return;
+    }
+
+    const requestConversationId = activeConversationIdRef.current;
+    const requestWorkspaceId = currentWorkspaceIdRef.current;
+    const requestGen = canvasRequestGenerationRef.current;
+
+    if (!requestConversationId || !requestWorkspaceId) {
       return;
     }
 
@@ -1701,13 +2011,7 @@ function Home() {
       newUserMessage,
     ]);
 
-    // Phase 13.6: Persist user message to backend (non-blocking)
-    if (conversationId) {
-      persistMessage(conversationId, newUserMessage, conversationTitle);
-    }
-
-    // Title only from the first meaningful user
-    // message; keep it once it is set.
+    let activeTitle = conversationTitle;
     const hasUserMessage = messages.some(
       (message) => message.role === "user"
     );
@@ -1720,9 +2024,27 @@ function Home() {
         generateConversationTitle(userMessage);
 
       if (!isPlaceholderTitle(generatedTitle)) {
+        activeTitle = generatedTitle;
         setConversationTitle(generatedTitle);
+
+        setConversations((prev) =>
+          prev.map((c) =>
+            c.id === requestConversationId ? { ...c, title: generatedTitle } : c
+          )
+        );
+
+        updateConversationTitleApi(
+          requestWorkspaceId,
+          requestConversationId,
+          generatedTitle
+        ).catch((err) => {
+          console.error("Failed to persist generated conversation title:", err);
+        });
       }
     }
+
+    // Phase 13.6: Persist user message to backend (non-blocking)
+    persistMessage(requestConversationId, newUserMessage, activeTitle);
 
     setSlowThinking(false);
     setLoading(true);
@@ -1765,7 +2087,7 @@ function Home() {
           body: JSON.stringify({
             transcript: userMessage,
 
-            workspaceId: workspaceHydration.workspaceId || undefined,
+            workspaceId: requestWorkspaceId,
             meetingId: activeMeetingIdRef.current || undefined,
 
             conversationHistory: [
@@ -1803,6 +2125,20 @@ function Home() {
         setVoiceFeedback({
           kind: "error",
           message: typeof data?.error === "string" ? data.error : "Echo couldn't process this request. Please try again.",
+        });
+        return;
+      }
+
+      // STRICT STALE-REQUEST PROTECTION:
+      // Verify workspace, conversation, and generation token before applying response
+      if (
+        requestConversationId !== activeConversationIdRef.current ||
+        requestWorkspaceId !== currentWorkspaceIdRef.current ||
+        requestGen !== canvasRequestGenerationRef.current
+      ) {
+        console.warn("[analyzeTranscript] Discarding AI response for stale conversation", {
+          requestConversationId,
+          activeConversationId: activeConversationIdRef.current,
         });
         return;
       }
@@ -1863,6 +2199,7 @@ function Home() {
         }
 
         canvasRef.current = nextCanvas;
+        canvasOwnerConversationIdRef.current = requestConversationId;
         setCanvas(nextCanvas);
 
         publishLocalNodeMutations(nodeMutations, roomConnection);
@@ -1870,10 +2207,29 @@ function Home() {
         publishLocalGroupMutations(groupMutations, roomConnection);
 
         // Phase 13.5: persist canvas mutation (non-blocking, after runtime state committed)
-        // Uses prevCanvas (currentCanvas) and nextCanvas for ID derivation in canvasActionMapper
         if (data.actions.length > 0) {
           persistCanvas(data.actions as Parameters<typeof persistCanvas>[0], currentCanvas, nextCanvas);
         }
+
+        // Persist canvas to active conversation strictly associated with saveConversationId
+        const saveConversationId = requestConversationId;
+        setConversations((prev) =>
+          prev.map((c) => (c.id === saveConversationId ? { ...c, canvas: nextCanvas } : c))
+        );
+        updateConversationApi(requestWorkspaceId, saveConversationId, {
+          metadata: { canvas: nextCanvas },
+        })
+          .then(() => {
+            if (
+              saveConversationId !== activeConversationIdRef.current ||
+              requestWorkspaceId !== currentWorkspaceIdRef.current
+            ) {
+              return;
+            }
+          })
+          .catch((err) => {
+            console.error("Failed to persist conversation canvas:", err);
+          });
 
         if (process.env.NODE_ENV !== "production") {
           const paintStart = performance.now();
@@ -1908,9 +2264,7 @@ function Home() {
       );
 
       // Phase 13.6: Persist assistant message to backend (non-blocking)
-      if (conversationId) {
-        persistMessage(conversationId, assistantMessage, conversationTitle);
-      }
+      persistMessage(requestConversationId, assistantMessage, activeTitle);
 
       if (Array.isArray(data.actions) && data.actions.length > 0) {
         setVoiceFeedback({
@@ -2214,8 +2568,8 @@ function Home() {
                         ) : (
                           <button
                             type="button"
-                            title={conversation.title}
-                            aria-label={conversation.title}
+                            title={getConversationDisplayName(conversation)}
+                            aria-label={getConversationDisplayName(conversation)}
                             onClick={() =>
                               switchConversation(
                                 conversation
@@ -2223,7 +2577,7 @@ function Home() {
                             }
                             className="block w-full min-w-0 truncate text-left text-sm font-medium text-zinc-200"
                           >
-                            {conversation.title}
+                            {getConversationDisplayName(conversation)}
                           </button>
                         )}
 

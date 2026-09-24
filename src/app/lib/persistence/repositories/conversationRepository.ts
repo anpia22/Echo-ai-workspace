@@ -106,6 +106,63 @@ export class ConversationRepository {
   }
 
   /**
+   * Updates an existing conversation thread (title and/or metadata).
+   */
+  async updateConversation(
+    actor: PersistenceActor,
+    workspaceId: WorkspaceId,
+    conversationId: ConversationId,
+    updates: { title?: string; metadata?: Record<string, unknown> }
+  ): Promise<ConversationRecord> {
+    await requireWorkspaceRole(this.client, workspaceId, actor, ["owner", "admin", "editor", "member"]);
+
+    const updatePayload: Record<string, unknown> = {
+      updated_at: new Date().toISOString(),
+    };
+
+    if (typeof updates.title === "string") {
+      const finalTitle = updates.title.trim();
+      if (!finalTitle) {
+        throw new PersistenceError("VALIDATION_ERROR", "Conversation title cannot be empty");
+      }
+      updatePayload.title = finalTitle;
+    }
+
+    if (updates.metadata && typeof updates.metadata === "object") {
+      updatePayload.metadata = updates.metadata;
+    }
+
+    const { data, error } = await this.client
+      .from("conversations")
+      .update(updatePayload)
+      .eq("workspace_id", workspaceId)
+      .eq("id", conversationId)
+      .select("*")
+      .single();
+
+    if (error || !data) {
+      throw new PersistenceError(
+        "DATABASE_ERROR",
+        `Failed to update conversation: ${error?.message || "Not found"}`
+      );
+    }
+
+    return mapConversationRow(data);
+  }
+
+  /**
+   * Updates the title of an existing conversation thread.
+   */
+  async updateConversationTitle(
+    actor: PersistenceActor,
+    workspaceId: WorkspaceId,
+    conversationId: ConversationId,
+    title: string
+  ): Promise<ConversationRecord> {
+    return this.updateConversation(actor, workspaceId, conversationId, { title });
+  }
+
+  /**
    * Appends a message to a conversation with strict idempotency, concurrency row-locking, and conflict checks.
    */
   async appendMessage(actor: PersistenceActor, req: AppendMessageRequest): Promise<AppendMessageResponse> {

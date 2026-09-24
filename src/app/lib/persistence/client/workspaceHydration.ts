@@ -87,8 +87,16 @@ export function normalizePersistedCanvas(
       title: node.title,
       description: node.description || undefined,
       position: {
-        x: typeof node.positionX === "number" ? node.positionX : 0,
-        y: typeof node.positionY === "number" ? node.positionY : 0,
+        x: typeof node.positionX === "number"
+          ? node.positionX
+          : typeof (node as any).position?.x === "number"
+          ? (node as any).position.x
+          : 0,
+        y: typeof node.positionY === "number"
+          ? node.positionY
+          : typeof (node as any).position?.y === "number"
+          ? (node as any).position.y
+          : 0,
       },
     });
   }
@@ -204,11 +212,23 @@ export function normalizePersistedConversations(
       }
     }
 
+    let convCanvas: RuntimeCanvasState;
+    if (record.metadata?.canvas && typeof record.metadata.canvas === "object") {
+      convCanvas = normalizePersistedCanvas(record.metadata.canvas as any);
+    } else {
+      const hasAnyMetadataCanvas = records.some((r) => r.metadata?.canvas);
+      if (isFirst && !hasAnyMetadataCanvas && activeCanvas && (activeCanvas.nodes.length > 0 || activeCanvas.edges.length > 0)) {
+        convCanvas = activeCanvas;
+      } else {
+        convCanvas = { nodes: [], edges: [], groups: [] };
+      }
+    }
+
     return {
       id: record.id,
       title: record.title,
       messages: msgs,
-      canvas: isFirst ? activeCanvas : { nodes: [], edges: [], groups: [] },
+      canvas: convCanvas,
       createdAt: record.createdAt,
       updatedAt: record.updatedAt,
     };

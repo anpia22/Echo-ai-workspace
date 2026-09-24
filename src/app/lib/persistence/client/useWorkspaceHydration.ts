@@ -45,6 +45,8 @@ export type WorkspaceHydrationResult = {
 };
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+const LAST_WORKSPACE_KEY = "echo_last_active_workspace_id";
+const CANONICAL_FALLBACK_WORKSPACE_ID = "cf6233ce-0e8d-45a4-9624-3c97f3ccd1d1";
 
 export function useWorkspaceHydration(rawWorkspaceParam: string | null): WorkspaceHydrationResult {
   const [status, setStatus] = useState<HydrationStatus>("loading");
@@ -110,6 +112,15 @@ export function useWorkspaceHydration(rawWorkspaceParam: string | null): Workspa
         setWorkspace(hydrationData.workspace);
         setHydratedCanvas(normalizedCanvas);
         setHydratedConversations(normalizedConvs);
+
+        if (typeof window !== "undefined" && window.localStorage) {
+          try {
+            window.localStorage.setItem(LAST_WORKSPACE_KEY, trimmedParam);
+          } catch {
+            // ignore localStorage quota/disabled errors
+          }
+        }
+
         setStatus("ready");
       } catch (err) {
         if (currentGen !== activeRequestGenRef.current || controller.signal.aborted) {
@@ -134,10 +145,82 @@ export function useWorkspaceHydration(rawWorkspaceParam: string | null): Workspa
       }
     } else {
       // -------------------------------------------------------------
-      // Case B: No workspace identity in URL -> Create new workspace
+      // Case B: No workspace identity in URL -> Restore last active or create new
       // -------------------------------------------------------------
       // Prevent duplicate creation attempts for the same unparameterized mount (StrictMode defense)
       if (hasCreatedRef.current) {
+        return;
+      }
+
+      // Check for stored last active workspace, or fallback to known existing workspace
+      let candidateWorkspaceId: string | null = null;
+      if (typeof window !== "undefined" && window.localStorage) {
+        try {
+          const stored = window.localStorage.getItem(LAST_WORKSPACE_KEY);
+          if (stored && UUID_REGEX.test(stored.trim())) {
+            candidateWorkspaceId = stored.trim();
+          }
+        } catch {
+          // ignore
+        }
+      }
+
+      if (!candidateWorkspaceId) {
+        candidateWorkspaceId = CANONICAL_FALLBACK_WORKSPACE_ID;
+      }
+
+      if (candidateWorkspaceId) {
+        try {
+          const hydrationData = await loadWorkspaceApi(candidateWorkspaceId, controller.signal);
+          if (currentGen !== activeRequestGenRef.current || controller.signal.aborted) {
+            return;
+          }
+
+          const normalizedCanvas = normalizePersistedCanvas(hydrationData.canvas);
+          const normalizedConvs = normalizePersistedConversations(
+            hydrationData.conversations,
+            hydrationData.activeConversationMessages,
+            normalizedCanvas
+          );
+
+          hasCreatedRef.current = true;
+          setWorkspaceId(candidateWorkspaceId);
+          setWorkspace(hydrationData.workspace);
+          setHydratedCanvas(normalizedCanvas);
+          setHydratedConversations(normalizedConvs);
+
+          if (typeof window !== "undefined" && window.localStorage) {
+            try {
+              window.localStorage.setItem(LAST_WORKSPACE_KEY, candidateWorkspaceId);
+            } catch {}
+          }
+
+          if (typeof window !== "undefined") {
+            const url = new URL(window.location.href);
+            url.searchParams.set("workspace", candidateWorkspaceId);
+            window.history.replaceState(null, "", url.toString());
+          }
+
+          setStatus("ready");
+          return;
+        } catch (err) {
+          // If the request was cancelled/aborted intentionally (e.g., StrictMode remount or active parameter change),
+          // discard immediately and do NOT treat as failure or create a fallback workspace.
+          if (controller.signal.aborted || (err instanceof Error && err.name === "AbortError") || currentGen !== activeRequestGenRef.current) {
+            return;
+          }
+
+          console.warn("[useWorkspaceHydration] Candidate workspace load failed, falling back to new workspace creation:", err);
+          if (typeof window !== "undefined" && window.localStorage) {
+            try {
+              window.localStorage.removeItem(LAST_WORKSPACE_KEY);
+            } catch {}
+          }
+        }
+      }
+
+      // Check abort before creating workspace
+      if (controller.signal.aborted || currentGen !== activeRequestGenRef.current) {
         return;
       }
 
@@ -161,6 +244,12 @@ export function useWorkspaceHydration(rawWorkspaceParam: string | null): Workspa
         setWorkspace(created.workspace);
         setHydratedCanvas({ nodes: [], edges: [], groups: [] });
         setHydratedConversations([]);
+
+        if (typeof window !== "undefined" && window.localStorage) {
+          try {
+            window.localStorage.setItem(LAST_WORKSPACE_KEY, newId);
+          } catch {}
+        }
 
         // Update URL safely without full page reload, preserving other query parameters (e.g. room)
         if (typeof window !== "undefined") {

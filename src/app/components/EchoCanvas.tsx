@@ -269,13 +269,16 @@ const nodeTypes = {
 };
 
 function pickHandles(
-  source: { x: number; y: number },
-  target: { x: number; y: number }
+  source?: { x?: number; y?: number } | null,
+  target?: { x?: number; y?: number } | null
 ): { sourceHandle: string; targetHandle: string } {
-  const dx =
-    target.x + NODE_WIDTH / 2 - (source.x + NODE_WIDTH / 2);
-  const dy =
-    target.y + NODE_HEIGHT / 2 - (source.y + NODE_HEIGHT / 2);
+  const sx = typeof source?.x === "number" ? source.x : 0;
+  const sy = typeof source?.y === "number" ? source.y : 0;
+  const tx = typeof target?.x === "number" ? target.x : 0;
+  const ty = typeof target?.y === "number" ? target.y : 0;
+
+  const dx = tx + NODE_WIDTH / 2 - (sx + NODE_WIDTH / 2);
+  const dy = ty + NODE_HEIGHT / 2 - (sy + NODE_HEIGHT / 2);
 
   if (Math.abs(dy) >= Math.abs(dx)) {
     if (dy >= 0) {
@@ -505,11 +508,21 @@ function EchoCanvasInner({
   }, []);
 
   const generatedNodes: Node<EchoNodeData | EchoGroupData>[] = useMemo(() => {
-    const nodesById = new Map(canvas.nodes.map((node) => [node.id, node]));
+    const getNodePos = (n: any): { x: number; y: number } => {
+      if (n?.position && typeof n.position.x === "number" && typeof n.position.y === "number") {
+        return n.position;
+      }
+      return {
+        x: typeof n?.position?.x === "number" ? n.position.x : typeof n?.positionX === "number" ? n.positionX : 0,
+        y: typeof n?.position?.y === "number" ? n.position.y : typeof n?.positionY === "number" ? n.positionY : 0,
+      };
+    };
+
+    const nodesById = new Map((canvas.nodes ?? []).map((node) => [node.id, node]));
     const groupNodes: Node<EchoGroupData>[] = [];
 
     for (const group of canvas.groups ?? []) {
-      const members = group.memberIds
+      const members = (group.memberIds ?? [])
         .map((memberId) => nodesById.get(memberId))
         .filter((node): node is CanvasNode => Boolean(node));
 
@@ -517,13 +530,13 @@ function EchoCanvasInner({
         continue;
       }
 
-      const minX = Math.min(...members.map((node) => node.position.x));
-      const minY = Math.min(...members.map((node) => node.position.y));
+      const minX = Math.min(...members.map((node) => getNodePos(node).x));
+      const minY = Math.min(...members.map((node) => getNodePos(node).y));
       const maxX = Math.max(
-        ...members.map((node) => node.position.x + NODE_WIDTH)
+        ...members.map((node) => getNodePos(node).x + NODE_WIDTH)
       );
       const maxY = Math.max(
-        ...members.map((node) => node.position.y + NODE_HEIGHT)
+        ...members.map((node) => getNodePos(node).y + NODE_HEIGHT)
       );
 
       groupNodes.push({
@@ -548,19 +561,22 @@ function EchoCanvasInner({
       });
     }
 
-    const echoNodes: Node<EchoNodeData>[] = canvas.nodes.map((node) => ({
-      id: node.id,
-      type: "echo",
-      position: node.position,
-      zIndex: 1,
-      data: {
-        kind: "node",
-        nodeType: node.nodeType,
-        title: node.title,
-        description: node.description,
-        parentPosition: node.position,
-      },
-    }));
+    const echoNodes: Node<EchoNodeData>[] = (canvas.nodes ?? []).map((node) => {
+      const pos = getNodePos(node);
+      return {
+        id: node.id,
+        type: "echo",
+        position: pos,
+        zIndex: 1,
+        data: {
+          kind: "node",
+          nodeType: node.nodeType,
+          title: node.title,
+          description: node.description,
+          parentPosition: pos,
+        },
+      };
+    });
 
     return [...groupNodes, ...echoNodes];
   }, [canvas.groups, canvas.nodes]);

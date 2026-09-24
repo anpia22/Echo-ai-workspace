@@ -87,13 +87,15 @@ export async function createConversationApi(
  */
 export async function loadConversationApi(
   workspaceId: string,
-  conversationId: string
+  conversationId: string,
+  options?: { signal?: AbortSignal }
 ): Promise<{ conversation: ConversationRecord; messages: MessageRecord[] }> {
   const response = await fetch(
     `/api/workspace/${encodeURIComponent(workspaceId)}/conversations/${encodeURIComponent(conversationId)}`,
     {
       method: "GET",
       headers: { "Content-Type": "application/json" },
+      signal: options?.signal,
     }
   );
 
@@ -114,17 +116,57 @@ export async function loadConversationApi(
 }
 
 /**
+ * Loads canvas state for a specific conversation from the server.
+ */
+export async function loadConversationCanvasApi(
+  workspaceId: string,
+  conversationId: string,
+  options?: { signal?: AbortSignal }
+): Promise<{ nodes: any[]; edges: any[]; groups: any[] }> {
+  const response = await fetch(
+    `/api/workspace/${encodeURIComponent(workspaceId)}/conversations/${encodeURIComponent(conversationId)}`,
+    {
+      method: "GET",
+      headers: { "Content-Type": "application/json" },
+      signal: options?.signal,
+    }
+  );
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => ({}));
+    throw new ConversationPersistenceApiError(
+      errorBody?.error?.code || "HTTP_ERROR",
+      errorBody?.error?.message || `Failed to load conversation canvas: HTTP ${response.status}`,
+      response.status
+    );
+  }
+
+  const result = await response.json();
+  const rawCanvas = result.conversation?.metadata?.canvas;
+  if (rawCanvas && typeof rawCanvas === "object") {
+    return {
+      nodes: Array.isArray(rawCanvas.nodes) ? rawCanvas.nodes : [],
+      edges: Array.isArray(rawCanvas.edges) ? rawCanvas.edges : [],
+      groups: Array.isArray(rawCanvas.groups) ? rawCanvas.groups : [],
+    };
+  }
+  return { nodes: [], edges: [], groups: [] };
+}
+
+/**
  * Loads message history for a conversation from the server.
  */
 export async function listConversationMessagesApi(
   workspaceId: string,
-  conversationId: string
+  conversationId: string,
+  options?: { signal?: AbortSignal }
 ): Promise<MessageRecord[]> {
   const response = await fetch(
     `/api/workspace/${encodeURIComponent(workspaceId)}/conversations/${encodeURIComponent(conversationId)}/messages`,
     {
       method: "GET",
       headers: { "Content-Type": "application/json" },
+      signal: options?.signal,
     }
   );
 
@@ -176,4 +218,45 @@ export async function appendMessageApi(
 
   const result = await response.json();
   return result.message;
+}
+
+/**
+ * Updates an existing conversation thread (title and/or metadata).
+ */
+export async function updateConversationApi(
+  workspaceId: string,
+  conversationId: string,
+  payload: { title?: string; metadata?: Record<string, unknown> }
+): Promise<ConversationRecord> {
+  const response = await fetch(
+    `/api/workspace/${encodeURIComponent(workspaceId)}/conversations/${encodeURIComponent(conversationId)}`,
+    {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    }
+  );
+
+  if (!response.ok) {
+    const errorBody = await response.json().catch(() => ({}));
+    throw new ConversationPersistenceApiError(
+      errorBody?.error?.code || "HTTP_ERROR",
+      errorBody?.error?.message || `Failed to update conversation: HTTP ${response.status}`,
+      response.status
+    );
+  }
+
+  const result = await response.json();
+  return result.conversation;
+}
+
+/**
+ * Updates the title of an existing conversation thread.
+ */
+export async function updateConversationTitleApi(
+  workspaceId: string,
+  conversationId: string,
+  title: string
+): Promise<ConversationRecord> {
+  return updateConversationApi(workspaceId, conversationId, { title });
 }

@@ -62,3 +62,63 @@ export async function GET(
     );
   }
 }
+
+export async function PATCH(
+  request: Request,
+  context: { params: Promise<{ workspaceId: string; conversationId: string }> }
+) {
+  try {
+    const { workspaceId, conversationId } = await context.params;
+
+    if (!workspaceId || !UUID_REGEX.test(workspaceId)) {
+      return NextResponse.json(
+        { error: { code: "VALIDATION_ERROR", message: `Invalid workspace ID format: '${workspaceId}'` } },
+        { status: 400 }
+      );
+    }
+
+    if (!conversationId || !UUID_REGEX.test(conversationId)) {
+      return NextResponse.json(
+        { error: { code: "VALIDATION_ERROR", message: `Invalid conversation ID format: '${conversationId}'` } },
+        { status: 400 }
+      );
+    }
+
+    const actor = await resolveServerActor(request);
+    const body = await request.json().catch(() => ({}));
+    const updates: { title?: string; metadata?: Record<string, unknown> } = {};
+
+    if (typeof body.title === "string" && body.title.trim()) {
+      updates.title = body.title.trim();
+    }
+
+    if (body.metadata && typeof body.metadata === "object") {
+      updates.metadata = body.metadata;
+    }
+
+    if (!updates.title && !updates.metadata) {
+      return NextResponse.json(
+        { error: { code: "VALIDATION_ERROR", message: "No valid update fields provided" } },
+        { status: 400 }
+      );
+    }
+
+    const repository = new ConversationRepository();
+    const updated = await repository.updateConversation(actor, workspaceId, conversationId, updates);
+
+    return NextResponse.json({ ok: true, conversation: updated }, { status: 200 });
+  } catch (error) {
+    if (error instanceof PersistenceError) {
+      return NextResponse.json(
+        { error: { code: error.code, message: error.message } },
+        { status: error.toHttpStatus() }
+      );
+    }
+
+    const message = error instanceof Error ? error.message : "Failed to update conversation";
+    return NextResponse.json(
+      { error: { code: "INTERNAL_ERROR", message } },
+      { status: 500 }
+    );
+  }
+}

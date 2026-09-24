@@ -166,9 +166,11 @@ export function useConversationPersistence(workspaceId: string | null) {
     [workspaceId, setSavedWithAutoClear]
   );
 
+  const activeAbortControllerRef = useRef<AbortController | null>(null);
+
   /**
    * Loads message history for an inactive conversation when switched.
-   * Employs strict request-generation token to drop stale out-of-order responses.
+   * Employs strict request-generation token and AbortController to drop stale out-of-order responses.
    */
   const loadConversationMessages = useCallback(
     async (
@@ -179,20 +181,38 @@ export function useConversationPersistence(workspaceId: string | null) {
         return;
       }
 
+      if (activeAbortControllerRef.current) {
+        activeAbortControllerRef.current.abort();
+        activeAbortControllerRef.current = null;
+      }
+
+      const controller = new AbortController();
+      activeAbortControllerRef.current = controller;
+
       const requestId = ++activeRequestIdRef.current;
       activeConversationIdRef.current = conversationId;
 
       try {
-        const messages = await listConversationMessagesApi(workspaceId, conversationId);
+        const messages = await listConversationMessagesApi(workspaceId, conversationId, {
+          signal: controller.signal,
+        });
 
         // Race protection: ignore response if user switched conversations before response returned
-        if (requestId !== activeRequestIdRef.current || activeConversationIdRef.current !== conversationId) {
+        if (
+          controller.signal.aborted ||
+          requestId !== activeRequestIdRef.current ||
+          activeConversationIdRef.current !== conversationId
+        ) {
           return;
         }
 
         onLoaded(conversationId, messages);
-      } catch (err) {
-        if (requestId !== activeRequestIdRef.current) {
+      } catch (err: any) {
+        if (
+          controller.signal.aborted ||
+          requestId !== activeRequestIdRef.current ||
+          err?.name === "AbortError"
+        ) {
           return;
         }
         if (
