@@ -49,10 +49,10 @@ export async function resolveServerActor(req?: Request): Promise<PersistenceActo
     }
   }
 
-  // 2. Development actor fallback: strictly prohibited in production.
-  // In production (NODE_ENV === "production"), a valid verified Supabase Bearer token is strictly required.
-  // No production environment variable may enable or bypass the dev actor fallback.
-  if (process.env.NODE_ENV === "production") {
+  // 2. Development / Demo actor fallback.
+  // In production (NODE_ENV === "production"), a valid verified Supabase Bearer token is strictly required
+  // unless explicitly permitted via ECHO_DEMO_MODE="true".
+  if (process.env.NODE_ENV === "production" && process.env.ECHO_DEMO_MODE !== "true") {
     throw new PersistenceError("UNAUTHORIZED", "Authentication required");
   }
 
