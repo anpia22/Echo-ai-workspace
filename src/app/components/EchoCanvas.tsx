@@ -794,9 +794,11 @@ function EchoCanvasInner({
       >
         <Background color="#27272a" gap={20} />
 
-        <Controls />
+        <Controls className="hidden sm:flex" />
 
         <MiniMap
+          className="hidden md:block"
+          maskColor="rgba(9, 9, 11, 0.75)"
           nodeColor={(node) => {
             if (node.type === "echoGroup") {
               return "#3f3f46";

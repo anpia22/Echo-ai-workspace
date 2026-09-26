@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import type {
   MeetingState,
 } from "../../lib/collaboration/meeting/meetingTypes";
 import { MeetingParticipantTile } from "./MeetingParticipantTile";
 import { MeetingControls } from "./MeetingControls";
+import { MeetingVideoTile } from "./MeetingVideoTile";
 
 export type MeetingDockProps = {
   meetingState: MeetingState;
@@ -48,6 +49,32 @@ export function MeetingDock({
   const [isVideoPanelOpen, setIsVideoPanelOpen] = useState(true);
   const [dismissedError, setDismissedError] = useState<string | null>(null);
 
+  // Spotlight presentation state
+  const [spotlightUserId, setSpotlightUserId] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [dismissedPresenterId, setDismissedPresenterId] = useState<string | null>(null);
+  const spotlightContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Auto-spotlight when active presenter appears
+  useEffect(() => {
+    if (activePresenterId && dismissedPresenterId !== activePresenterId) {
+      setSpotlightUserId(activePresenterId);
+    } else if (!activePresenterId) {
+      setSpotlightUserId(null);
+      setDismissedPresenterId(null);
+    }
+  }, [activePresenterId, dismissedPresenterId]);
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIsFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener("fullscreenchange", handleFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", handleFullscreenChange);
+    };
+  }, []);
+
   const isAnotherUserSharing = Boolean(
     activePresenterId && activePresenterId !== localUserId
   );
@@ -63,12 +90,26 @@ export function MeetingDock({
 
   const totalParticipantCount = 1 + remoteParticipantsList.length;
 
+  const isSpotlightLocal =
+    spotlightUserId === (localUserId || "local") ||
+    (isScreenSharing && Boolean(localUserId) && spotlightUserId === localUserId);
+  const spotlightParticipant = spotlightUserId ? participants.get(spotlightUserId) : null;
+  const spotlightDisplayName = isSpotlightLocal
+    ? `${localDisplayName} (You)`
+    : (spotlightParticipant?.displayName ?? "Participant");
+  const spotlightStream = isSpotlightLocal
+    ? (isScreenSharing && screenStream ? screenStream : localStream)
+    : (spotlightUserId ? (remoteStreams.get(spotlightUserId) ?? null) : null);
+  const isSpotlightSharing = isSpotlightLocal
+    ? isScreenSharing
+    : Boolean(spotlightParticipant?.screenShareState?.isSharing);
+
   // 1. Idle state -> render compact Start Meeting trigger
   if (status === "idle") {
     return (
       <div
         data-testid="meeting-dock-idle"
-        className="pointer-events-auto absolute bottom-6 left-1/2 -translate-x-1/2 z-30"
+        className="pointer-events-auto absolute bottom-4 sm:bottom-6 left-1/2 -translate-x-1/2 z-30"
       >
         <button
           type="button"
@@ -165,7 +206,7 @@ export function MeetingDock({
       {isVideoPanelOpen ? (
         <div
           data-testid="meeting-video-panel"
-          className="pointer-events-auto absolute right-6 top-6 flex max-w-full flex-col gap-2 rounded-3xl border border-zinc-700/50 bg-zinc-900/80 p-3 shadow-2xl backdrop-blur-xl transition-all sm:max-w-2xl"
+          className="pointer-events-auto absolute left-3 right-3 top-3 sm:left-auto sm:right-6 sm:top-6 flex max-w-full flex-col gap-2 rounded-3xl border border-zinc-700/50 bg-zinc-900/80 p-2.5 sm:p-3 shadow-2xl backdrop-blur-xl transition-all sm:max-w-2xl"
         >
           <div className="flex items-center justify-between px-1 text-[11px] font-medium text-zinc-400">
             <span className="flex items-center gap-1.5">
@@ -196,6 +237,7 @@ export function MeetingDock({
               isVideoOn={isCameraEnabled || isScreenSharing}
               isSharing={isScreenSharing}
               connectionState="connected"
+              onExpand={() => setSpotlightUserId(localUserId || "local")}
             />
 
             {/* Remote Participant Tiles */}
@@ -214,6 +256,7 @@ export function MeetingDock({
                 }
                 isSharing={Boolean(participant.screenShareState?.isSharing)}
                 connectionState={participant.connectionState}
+                onExpand={() => setSpotlightUserId(participant.userId)}
               />
             ))}
 
@@ -236,8 +279,95 @@ export function MeetingDock({
         </div>
       ) : null}
 
+      {/* Spotlight Presentation / Video Stage Modal */}
+      {spotlightUserId && spotlightStream ? (
+        <div
+          ref={spotlightContainerRef}
+          data-testid="meeting-spotlight-modal"
+          className="pointer-events-auto fixed inset-2 sm:inset-6 md:inset-8 z-50 flex flex-col overflow-hidden rounded-2xl sm:rounded-3xl border border-zinc-700/60 bg-zinc-950/95 shadow-2xl backdrop-blur-2xl transition-all"
+        >
+          {/* Spotlight Header Bar */}
+          <div className="flex h-12 shrink-0 items-center justify-between border-b border-zinc-800/80 bg-zinc-900/80 px-3 sm:px-4">
+            <div className="flex items-center gap-2 min-w-0">
+              <span className="flex h-2 w-2 rounded-full bg-emerald-400 animate-pulse shrink-0" />
+              <span className="truncate text-xs sm:text-sm font-semibold text-zinc-100">
+                {spotlightDisplayName}
+              </span>
+              {isSpotlightSharing ? (
+                <span className="flex items-center gap-1 rounded bg-indigo-600/90 px-2 py-0.5 text-[10px] font-semibold text-white shrink-0">
+                  <svg className="h-3 w-3" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                  </svg>
+                  Screen Share
+                </span>
+              ) : null}
+            </div>
+
+            <div className="flex items-center gap-1.5 sm:gap-2">
+              {/* Fullscreen Toggle */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (!document.fullscreenElement) {
+                    spotlightContainerRef.current?.requestFullscreen?.();
+                    setIsFullscreen(true);
+                  } else {
+                    document.exitFullscreen?.();
+                    setIsFullscreen(false);
+                  }
+                }}
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-800/80 text-zinc-300 hover:bg-zinc-700 hover:text-white transition"
+                title={isFullscreen ? "Exit Fullscreen" : "Fullscreen"}
+                aria-label="Toggle Fullscreen"
+              >
+                {isFullscreen ? (
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 9L4 4m0 0h5m-5 0v5m11 2l5 5m0 0h-5m5 0v-5m-7-3l5-5m0 0v5m0-5h-5M4 20l5-5m-5 5h5m-5 0v-5" />
+                  </svg>
+                ) : (
+                  <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                  </svg>
+                )}
+              </button>
+
+              {/* Close Spotlight Button */}
+              <button
+                type="button"
+                onClick={() => {
+                  if (activePresenterId === spotlightUserId) {
+                    setDismissedPresenterId(spotlightUserId);
+                  }
+                  setSpotlightUserId(null);
+                  if (document.fullscreenElement) {
+                    document.exitFullscreen?.();
+                    setIsFullscreen(false);
+                  }
+                }}
+                className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-800/80 text-zinc-400 hover:bg-zinc-700 hover:text-white transition"
+                title="Minimize spotlight view"
+                aria-label="Minimize spotlight"
+              >
+                ✕
+              </button>
+            </div>
+          </div>
+
+          {/* Video Stream Stage */}
+          <div className="relative flex-1 w-full bg-black flex items-center justify-center overflow-hidden">
+            <MeetingVideoTile
+              stream={spotlightStream}
+              muted={isSpotlightLocal}
+              mirror={false}
+              ariaLabel={`${spotlightDisplayName}'s presentation`}
+              className="h-full w-full object-contain"
+            />
+          </div>
+        </div>
+      ) : null}
+
       {/* Floating Bottom Meeting Controls Bar */}
-      <div className="pointer-events-auto absolute bottom-6 right-6">
+      <div className="pointer-events-auto absolute bottom-3 sm:bottom-6 left-1/2 -translate-x-1/2 sm:left-auto sm:translate-x-0 sm:right-6 z-30 max-w-[calc(100vw-1.5rem)]">
         <MeetingControls
           isMicEnabled={isMicEnabled}
           isCameraEnabled={isCameraEnabled}

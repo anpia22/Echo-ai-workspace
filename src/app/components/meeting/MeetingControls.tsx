@@ -34,11 +34,11 @@ export function MeetingControls({
   return (
     <div
       data-testid="meeting-controls"
-      className="flex items-center gap-2 rounded-2xl border border-zinc-700/60 bg-zinc-900/90 p-2 shadow-2xl backdrop-blur-md"
+      className="flex items-center gap-1.5 sm:gap-2 rounded-2xl border border-zinc-700/60 bg-zinc-900/90 p-1.5 sm:p-2 shadow-2xl backdrop-blur-md"
     >
       {/* Participant Count Badge */}
       <div
-        className="flex items-center gap-1.5 rounded-xl bg-zinc-800/80 px-2.5 py-1.5 text-xs font-medium text-zinc-300"
+        className="flex items-center gap-1.5 rounded-xl bg-zinc-800/80 px-2 sm:px-2.5 py-1.5 text-xs font-medium text-zinc-300"
         title={`${participantCount} participant${participantCount === 1 ? "" : "s"} in meeting`}
       >
         <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
@@ -67,7 +67,7 @@ export function MeetingControls({
         onClick={onToggleMic}
         disabled={isLeaving}
         title={isMicEnabled ? "Mute microphone" : "Unmute microphone"}
-        className={`flex h-10 w-10 items-center justify-center rounded-xl transition disabled:opacity-50 ${
+        className={`flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl transition disabled:opacity-50 ${
           isMicEnabled
             ? "border border-zinc-700 bg-zinc-800 text-zinc-200 hover:bg-zinc-700"
             : "border border-red-500/60 bg-red-950/60 text-red-400 hover:bg-red-900/60"
@@ -111,7 +111,7 @@ export function MeetingControls({
         onClick={onToggleCamera}
         disabled={isLeaving}
         title={isCameraEnabled ? "Turn off camera" : "Turn on camera"}
-        className={`flex h-10 w-10 items-center justify-center rounded-xl transition disabled:opacity-50 ${
+        className={`flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl transition disabled:opacity-50 ${
           isCameraEnabled
             ? "border border-zinc-700 bg-zinc-800 text-zinc-200 hover:bg-zinc-700"
             : "border border-red-500/60 bg-red-950/60 text-red-400 hover:bg-red-900/60"
@@ -158,7 +158,7 @@ export function MeetingControls({
           screenShareDisabledReason ||
           (isScreenSharing ? "Stop sharing screen" : "Share screen")
         }
-        className={`flex h-10 w-10 items-center justify-center rounded-xl transition ${
+        className={`flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl transition ${
           isScreenSharing
             ? "border border-indigo-500/80 bg-indigo-600 text-white shadow-lg shadow-indigo-500/30 hover:bg-indigo-500"
             : isScreenShareDisabled
@@ -167,7 +167,7 @@ export function MeetingControls({
         }`}
       >
         <svg
-          className="h-5 w-5"
+          className="h-4 w-4 sm:h-5 sm:w-5"
           fill="none"
           viewBox="0 0 24 24"
           stroke="currentColor"
@@ -188,7 +188,7 @@ export function MeetingControls({
         onClick={onToggleVideoPanel}
         disabled={isLeaving}
         title={isVideoPanelOpen ? "Minimize video panel" : "Expand video panel"}
-        className={`flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-700 bg-zinc-800 text-zinc-300 transition hover:bg-zinc-700 disabled:opacity-50`}
+        className="flex h-9 w-9 sm:h-10 sm:w-10 items-center justify-center rounded-xl border border-zinc-700 bg-zinc-800 text-zinc-300 transition hover:bg-zinc-700 disabled:opacity-50"
       >
         {isVideoPanelOpen ? (
           <svg
@@ -222,7 +222,7 @@ export function MeetingControls({
         onClick={onLeave}
         disabled={isLeaving}
         title="Leave meeting"
-        className="flex items-center gap-1.5 rounded-xl bg-red-600 px-3.5 py-2 text-xs font-semibold text-white shadow transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50"
+        className="flex items-center gap-1.5 rounded-xl bg-red-600 px-2.5 sm:px-3.5 py-1.5 sm:py-2 text-xs font-semibold text-white shadow transition hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50"
       >
         <svg
           className="h-4 w-4"

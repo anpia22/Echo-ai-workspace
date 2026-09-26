@@ -92,18 +92,18 @@ export default function PresenceIndicator({
   }
 
   return (
-    <div ref={containerRef} className="relative inline-block text-left">
+    <div ref={containerRef} className="relative inline-block text-left shrink-0">
       <button
         type="button"
         onClick={() => setIsOpen((prev: boolean) => !prev)}
-        className="flex items-center gap-1.5 rounded-xl border border-zinc-700 bg-zinc-900 px-2.5 py-1.5 text-xs font-medium text-zinc-300 transition hover:bg-zinc-800"
+        className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border border-zinc-700 bg-zinc-900 px-2 sm:px-2.5 py-1.5 text-xs font-medium text-zinc-300 transition hover:bg-zinc-800"
         title={`${count} participant${count === 1 ? "" : "s"} in room${followerCount > 0 ? ` · ${formatFollowerCountLabel(followerCount)}` : ""}`}
       >
-        <span className="flex -space-x-1.5 overflow-hidden">
+        <span className="flex shrink-0 -space-x-1.5 overflow-hidden">
           {followItems.slice(0, 3).map((item) => (
             <span
               key={item.userId}
-              className="inline-flex h-4 w-4 items-center justify-center rounded-full text-[9px] font-bold text-white ring-1 ring-zinc-900"
+              className="inline-flex h-4 w-4 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white ring-1 ring-zinc-900"
               style={{ backgroundColor: item.color }}
               title={item.isYou ? `${item.displayName} (You)` : item.displayName}
             >
@@ -111,16 +111,17 @@ export default function PresenceIndicator({
             </span>
           ))}
         </span>
-        <span className="text-zinc-400">
-          👥 {count}
+        <span className="flex shrink-0 items-center gap-1 whitespace-nowrap text-zinc-400">
+          <span>👥</span>
+          <span>{count}</span>
           {followingUserId ? (
-            <span className="ml-1 text-[10px] font-medium text-blue-400">
+            <span className="ml-0.5 text-[10px] font-medium text-blue-400">
               (Following)
             </span>
           ) : null}
           {followerCount > 0 ? (
             <span
-              className="ml-1 text-[10px] font-medium text-emerald-400"
+              className="ml-0.5 text-[10px] font-medium text-emerald-400"
               title={formatFollowerCountLabel(followerCount)}
             >
               ({formatFollowerCountLabel(followerCount)})
@@ -130,7 +131,7 @@ export default function PresenceIndicator({
       </button>
 
       {isOpen ? (
-        <div className="absolute right-0 z-50 mt-1.5 w-72 rounded-xl border border-zinc-800 bg-zinc-900 p-2 shadow-xl">
+        <div className="absolute right-0 z-50 mt-1.5 w-72 max-w-[calc(100vw-2rem)] rounded-xl border border-zinc-800 bg-zinc-900 p-2 shadow-xl">
           <div className="mb-1.5 flex items-center justify-between px-2 py-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">
             <span>In Room ({count})</span>
             {followerCount > 0 ? (

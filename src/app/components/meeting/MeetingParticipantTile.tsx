@@ -15,6 +15,7 @@ export type MeetingParticipantTileProps = {
   isSharing?: boolean;
   connectionState?: MeetingPeerConnectionState;
   isSpeaking?: boolean;
+  onExpand?: () => void;
 };
 
 function getInitials(name: string): string {
@@ -35,6 +36,7 @@ export function MeetingParticipantTile({
   isVideoOn = true,
   isSharing = false,
   connectionState = "connected",
+  onExpand,
 }: MeetingParticipantTileProps) {
   const initials = useMemo(() => getInitials(displayName), [displayName]);
   const hasActiveVideo = Boolean(isVideoOn && stream);
@@ -62,9 +64,10 @@ export function MeetingParticipantTile({
     <div
       data-testid={isLocal ? "local-participant-tile" : `participant-tile-${userId}`}
       data-user-id={userId}
+      onClick={isSharing && onExpand ? onExpand : undefined}
       className={`group relative flex h-28 w-44 shrink-0 flex-col overflow-hidden rounded-xl border bg-zinc-950 shadow-md transition-all sm:h-32 sm:w-48 ${
         isSharing
-          ? "border-indigo-500 ring-2 ring-indigo-500/50 shadow-indigo-500/20"
+          ? "border-indigo-500 ring-2 ring-indigo-500/50 shadow-indigo-500/20 cursor-pointer"
           : "border-zinc-800"
       }`}
     >
@@ -75,7 +78,7 @@ export function MeetingParticipantTile({
           muted={isLocal}
           mirror={isLocal && !isSharing}
           ariaLabel={`${displayName}'s video`}
-          className="h-full w-full"
+          className={`h-full w-full ${isSharing ? "object-contain bg-black" : "object-cover"}`}
         />
       ) : (
         <div className="flex h-full w-full flex-col items-center justify-center bg-gradient-to-b from-zinc-900 to-zinc-950 p-2 text-center">
@@ -183,6 +186,26 @@ export function MeetingParticipantTile({
           ) : null}
         </div>
       </div>
+
+      {/* Expand button overlay */}
+      {hasActiveVideo && onExpand ? (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            onExpand();
+          }}
+          className={`pointer-events-auto absolute bottom-2 right-2 z-10 flex h-6 w-6 items-center justify-center rounded-md bg-zinc-900/90 text-zinc-300 shadow-md backdrop-blur-md transition hover:bg-zinc-800 hover:text-white ${
+            isSharing ? "opacity-100 ring-1 ring-indigo-500/60" : "opacity-0 group-hover:opacity-100"
+          }`}
+          title={isSharing ? "Expand presentation" : "Expand video"}
+          aria-label="Expand view"
+        >
+          <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+          </svg>
+        </button>
+      ) : null}
     </div>
   );
 }

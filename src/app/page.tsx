@@ -2369,9 +2369,9 @@ function Home() {
 
         {/* Header */}
 
-        <header className="flex h-16 min-w-0 items-center justify-between border-b border-zinc-800 px-6">
+        <header className="flex h-16 min-w-0 items-center justify-between border-b border-zinc-800 px-3 sm:px-6">
 
-          <div className="flex min-w-0 items-center gap-4 pr-4">
+          <div className="flex min-w-0 items-center gap-2 sm:gap-4 pr-1 sm:pr-4">
             <button
               onClick={() => setIsHistoryOpen((v) => !v)}
               className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 transition"
@@ -2382,8 +2382,8 @@ function Home() {
               </svg>
             </button>
 
-            <div className="min-w-0">
-              <h1 className="text-xl font-semibold">
+            <div className="min-w-0 max-w-[95px] sm:max-w-xs">
+              <h1 className="text-lg sm:text-xl font-semibold">
                 Echo
               </h1>
 
@@ -2396,7 +2396,7 @@ function Home() {
             </div>
           </div>
 
-          <div className="flex min-w-0 items-center gap-3">
+          <div className="flex min-w-0 items-center gap-1.5 sm:gap-3">
 
             {/* Unified System Status Badge */}
             <SystemStatusBadge 
@@ -2412,11 +2412,13 @@ function Home() {
             {meeting.meeting.status === "in-meeting" ? (
               <div
                 data-testid="header-meeting-badge"
-                className="flex items-center gap-1.5 rounded-xl border border-indigo-500/40 bg-indigo-950/40 px-2.5 py-1 text-xs text-indigo-300"
+                className="flex shrink-0 items-center gap-1.5 whitespace-nowrap rounded-xl border border-indigo-500/40 bg-indigo-950/40 px-2 sm:px-2.5 py-1 text-xs text-indigo-300"
                 title={`${1 + meeting.meeting.participants.size} in meeting`}
               >
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="font-medium">In Meeting</span>
+                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400 animate-pulse" />
+                <span className="font-medium whitespace-nowrap">
+                  In Meeting
+                </span>
               </div>
             ) : null}
 
@@ -2777,7 +2779,7 @@ function Home() {
                         if (loading || isListening || !transcript.trim()) return;
                         void analyzeTranscript();
                       }}
-                      placeholder={isListening ? "Listening..." : loading ? "Echo is thinking..." : "Ask Echo... (Cmd+K)"}
+                      placeholder={isListening ? "Listening..." : loading ? "Echo is thinking..." : "Ask Echo..."}
                       rows={Math.min(4, Math.max(1, transcript.split('\n').length))}
                       className={`max-h-32 min-h-[44px] w-full resize-none bg-transparent px-3 py-3 text-sm outline-none placeholder:text-zinc-500 disabled:opacity-60 disabled:cursor-not-allowed ${
                         isListening ? "text-red-400" : "text-zinc-200"
