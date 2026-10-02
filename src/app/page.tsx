@@ -10,6 +10,7 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import EchoCanvas, { type ViewportApi } from "./components/EchoCanvas";
 import RoomControls from "./components/RoomControls";
+import ThemeToggle from "./components/theme/ThemeToggle";
 import { applyCanvasActions } from "./lib/applyCanvasActions";
 import { createCanvasSnapshot } from "./lib/collaboration/canvasSnapshot";
 import type { ViewportState } from "./lib/collaboration/viewportEvents";
@@ -463,7 +464,7 @@ function SystemStatusBadge({
     return (
       <div
         data-testid="system-persistence-error"
-        className="flex cursor-default items-center gap-1.5 rounded-lg border border-rose-500/40 bg-rose-950/40 px-2 py-1 text-xs text-rose-400"
+        className="flex cursor-default items-center gap-1.5 rounded-lg border border-rose-300 bg-rose-50 px-2 py-1 text-xs text-rose-600 dark:border-rose-500/40 dark:bg-rose-950/40 dark:text-rose-400"
         title="Save failed — changes may not be persisted"
         aria-label="System save error"
       >
@@ -480,7 +481,7 @@ function SystemStatusBadge({
     return (
       <div
         data-testid="system-persistence-conflict"
-        className="flex cursor-default items-center gap-1.5 rounded-lg border border-amber-500/40 bg-amber-950/40 px-2 py-1 text-xs text-amber-400"
+        className="flex cursor-default items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-2 py-1 text-xs text-amber-700 dark:border-amber-500/40 dark:bg-amber-950/40 dark:text-amber-400"
         title="Sync conflict detected"
         aria-label="System conflict"
       >
@@ -497,11 +498,11 @@ function SystemStatusBadge({
     return (
       <div
         data-testid="system-persistence-saving"
-        className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-zinc-400"
+        className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-zinc-600 dark:text-zinc-400"
         title="Saving changes…"
         aria-label="Saving changes"
       >
-        <span className="h-3 w-3 animate-spin rounded-full border border-zinc-600 border-t-zinc-300" />
+        <span className="h-3 w-3 animate-spin rounded-full border border-zinc-400 border-t-zinc-700 dark:border-zinc-600 dark:border-t-zinc-300" />
         <span className="hidden sm:inline">Saving</span>
       </div>
     );
@@ -511,7 +512,7 @@ function SystemStatusBadge({
     return (
       <div
         data-testid="system-persistence-saved"
-        className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-emerald-400"
+        className="flex items-center gap-1.5 rounded-lg px-2 py-1 text-xs text-emerald-600 dark:text-emerald-400"
         title="All changes saved"
         aria-label="All changes saved"
       >
@@ -2364,17 +2365,17 @@ function Home() {
   }
 
   return (
-    <div className="h-screen overflow-hidden bg-zinc-950 text-white">
+    <div className="h-screen overflow-hidden bg-slate-50 dark:bg-zinc-950 text-zinc-900 dark:text-white transition-colors duration-200">
       <div className="flex h-full min-w-0 flex-col">
 
         {/* Header */}
 
-        <header className="flex h-16 min-w-0 items-center justify-between border-b border-zinc-800 px-3 sm:px-6">
+        <header className="flex h-16 min-w-0 items-center justify-between border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 px-3 sm:px-6 backdrop-blur-md">
 
           <div className="flex min-w-0 items-center gap-2 sm:gap-4 pr-1 sm:pr-4">
             <button
               onClick={() => setIsHistoryOpen((v) => !v)}
-              className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 transition"
+              className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 transition"
               title="Toggle History"
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -2383,12 +2384,12 @@ function Home() {
             </button>
 
             <div className="min-w-0 max-w-[95px] sm:max-w-xs">
-              <h1 className="text-lg sm:text-xl font-semibold">
+              <h1 className="text-lg sm:text-xl font-semibold text-zinc-900 dark:text-white">
                 Echo
               </h1>
 
               <p
-                className="truncate text-xs text-zinc-500"
+                className="truncate text-xs text-zinc-500 dark:text-zinc-400"
                 title={conversationTitle}
               >
                 {workspaceHydration.workspace?.title ? `${workspaceHydration.workspace.title} • ` : ""}{conversationTitle}
@@ -2445,7 +2446,7 @@ function Home() {
             ) : (
               <div
                 data-testid="header-ai-status"
-                className="flex items-center gap-1.5 text-xs text-zinc-400"
+                className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400"
                 title="Echo AI is ready"
               >
                 <span className="h-2 w-2 rounded-full bg-emerald-500" />
@@ -2453,9 +2454,11 @@ function Home() {
               </div>
             )}
 
+            <ThemeToggle />
+
             <button
               onClick={() => setIsConversationOpen((v) => !v)}
-              className="ml-2 flex h-8 w-8 items-center justify-center rounded-lg text-zinc-400 hover:bg-zinc-800 hover:text-zinc-200 transition"
+              className="ml-1 flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 transition"
               title="Toggle Conversation"
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
@@ -2473,9 +2476,9 @@ function Home() {
 
           {/* History Sidebar */}
 
-          <aside className={`flex shrink-0 flex-col overflow-hidden bg-zinc-950 transition-all duration-300 ${isHistoryOpen ? "absolute inset-y-0 left-0 z-40 w-64 md:static md:z-auto border-r border-zinc-800 shadow-2xl md:shadow-none" : "w-0 border-r-0"}`}>
+          <aside className={`flex shrink-0 flex-col overflow-hidden bg-white dark:bg-zinc-950 transition-all duration-300 ${isHistoryOpen ? "absolute inset-y-0 left-0 z-40 w-64 md:static md:z-auto border-r border-zinc-200 dark:border-zinc-800 shadow-2xl md:shadow-none" : "w-0 border-r-0"}`}>
             <div className="flex h-full w-64 flex-col">
-              <div className="border-b border-zinc-800 p-4">
+              <div className="border-b border-zinc-200 dark:border-zinc-800 p-4">
 
               <input
                 type="search"
@@ -2486,12 +2489,12 @@ function Home() {
                   )
                 }
                 placeholder="Search conversations..."
-                className="mb-3 w-full rounded-xl border border-zinc-700 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 outline-none placeholder:text-zinc-600"
+                className="mb-3 w-full rounded-xl border border-zinc-300 bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-900 px-3 py-2 text-sm text-zinc-900 dark:text-zinc-200 outline-none placeholder:text-zinc-400 dark:placeholder:text-zinc-600 focus:border-indigo-500 dark:focus:border-zinc-500"
               />
 
               <button
                 onClick={createNewConversation}
-                className="w-full rounded-xl border border-zinc-700 bg-zinc-900 px-4 py-3 text-sm font-medium transition hover:bg-zinc-800"
+                className="w-full rounded-xl border border-zinc-300 bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 px-4 py-3 text-sm font-medium text-zinc-900 dark:text-zinc-200 transition hover:bg-zinc-200 dark:hover:bg-zinc-800"
               >
                 New Conversation
               </button>
@@ -2502,16 +2505,16 @@ function Home() {
 
             <div className="flex-1 overflow-y-auto p-3">
 
-              <div className="mb-3 px-2 text-xs font-medium uppercase tracking-wider text-zinc-600">
+              <div className="mb-3 px-2 text-xs font-medium uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
                 Conversations
               </div>
 
               {conversations.length === 0 ? (
-                <div className="px-2 py-8 text-center text-sm text-zinc-600">
+                <div className="px-2 py-8 text-center text-sm text-zinc-500">
                   No conversations yet.
                 </div>
               ) : filteredConversations.length === 0 ? (
-                <div className="px-2 py-8 text-center text-sm text-zinc-600">
+                <div className="px-2 py-8 text-center text-sm text-zinc-500">
                   No conversations found
                 </div>
               ) : (
@@ -2529,8 +2532,8 @@ function Home() {
                         key={conversation.id}
                         className={`min-w-0 overflow-hidden rounded-lg border-l-2 px-3 py-3 transition ${conversation.id ===
                           conversationId
-                          ? "border-zinc-200 bg-zinc-800"
-                          : "border-transparent hover:bg-zinc-900"
+                          ? "border-indigo-600 bg-indigo-50/70 text-indigo-950 dark:border-zinc-200 dark:bg-zinc-800 dark:text-white"
+                          : "border-transparent hover:bg-zinc-100 dark:hover:bg-zinc-900 text-zinc-800 dark:text-zinc-200"
                           }`}
                       >
 
@@ -2565,7 +2568,7 @@ function Home() {
                                 conversation.id
                               )
                             }
-                            className="w-full min-w-0 rounded-md border border-zinc-700 bg-zinc-950 px-2 py-1 text-sm text-zinc-200 outline-none"
+                            className="w-full min-w-0 rounded-md border border-zinc-300 bg-white dark:border-zinc-700 dark:bg-zinc-950 px-2 py-1 text-sm text-zinc-900 dark:text-zinc-200 outline-none"
                           />
                         ) : (
                           <button
@@ -2577,7 +2580,7 @@ function Home() {
                                 conversation
                               )
                             }
-                            className="block w-full min-w-0 truncate text-left text-sm font-medium text-zinc-200"
+                            className="block w-full min-w-0 truncate text-left text-sm font-medium text-inherit"
                           >
                             {getConversationDisplayName(conversation)}
                           </button>
@@ -2594,7 +2597,7 @@ function Home() {
 
                         <div className="mt-2 flex items-center justify-between gap-2">
 
-                          <div className="text-xs text-zinc-500">
+                          <div className="text-xs text-zinc-400 dark:text-zinc-500">
                             {formatRelativeTimestamp(
                               conversation.updatedAt
                             )}
@@ -2611,7 +2614,7 @@ function Home() {
                                   conversation
                                 );
                               }}
-                              className="text-xs text-zinc-500 transition hover:text-zinc-200"
+                              className="text-xs text-zinc-500 transition hover:text-zinc-900 dark:hover:text-zinc-200"
                             >
                               Rename
                             </button>
@@ -2625,7 +2628,7 @@ function Home() {
                                   conversation.id
                                 );
                               }}
-                              className="text-xs text-zinc-500 transition hover:text-red-400"
+                              className="text-xs text-zinc-500 transition hover:text-red-500"
                             >
                               Delete
                             </button>
@@ -2685,13 +2688,13 @@ function Home() {
               {loading ? (
                 <div
                   data-testid="canvas-ai-status"
-                  className="pointer-events-none absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2.5 rounded-full border border-indigo-500/40 bg-zinc-950/85 px-4 py-1.5 shadow-2xl backdrop-blur-md transition-all duration-300"
+                  className="pointer-events-none absolute top-4 left-1/2 -translate-x-1/2 z-20 flex items-center gap-2.5 rounded-full border border-indigo-500/40 bg-white/90 dark:bg-zinc-950/85 px-4 py-1.5 shadow-xl dark:shadow-2xl backdrop-blur-md transition-all duration-300"
                 >
                   <span className="relative flex h-2 w-2">
                     <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-400 opacity-75"></span>
                     <span className="relative inline-flex h-2 w-2 rounded-full bg-indigo-500"></span>
                   </span>
-                  <span className="text-xs font-medium text-zinc-200">
+                  <span className="text-xs font-medium text-zinc-800 dark:text-zinc-200">
                     {slowThinking ? "Echo is reasoning deeply…" : "Echo is analyzing…"}
                   </span>
                 </div>
@@ -2699,14 +2702,14 @@ function Home() {
 
               {isEmptyWorkspace ? (
                 <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center p-8">
-                  <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-3xl border border-zinc-800/50 bg-zinc-900/40 shadow-2xl backdrop-blur-md">
-                    <span className="h-8 w-8 animate-pulse rounded-full bg-gradient-to-tr from-zinc-500 to-white shadow-[0_0_20px_rgba(255,255,255,0.2)]"></span>
+                  <div className="mb-6 flex h-20 w-20 items-center justify-center rounded-3xl border border-zinc-200/80 bg-white/90 shadow-xl dark:border-zinc-800/50 dark:bg-zinc-900/40 dark:shadow-2xl backdrop-blur-md">
+                    <span className="h-8 w-8 animate-pulse rounded-full bg-gradient-to-tr from-indigo-500 to-purple-600 dark:from-zinc-500 dark:to-white shadow-[0_0_20px_rgba(99,102,241,0.35)] dark:shadow-[0_0_20px_rgba(255,255,255,0.2)]"></span>
                   </div>
                   <div className="max-w-md text-center">
-                    <h3 className="text-2xl font-semibold tracking-tight text-white/90">
+                    <h3 className="text-2xl font-semibold tracking-tight text-zinc-900 dark:text-white/90">
                       Start thinking with Echo
                     </h3>
-                    <p className="mt-3 text-[15px] leading-relaxed text-zinc-500">
+                    <p className="mt-3 text-[15px] leading-relaxed text-zinc-600 dark:text-zinc-400">
                       Describe a problem, idea, decision, or question. Echo will automatically build a structured canvas as you type or talk.
                     </p>
                   </div>
@@ -2723,7 +2726,7 @@ function Home() {
                           setTranscript(promptText);
                           composerInputRef.current?.focus();
                         }}
-                        className="rounded-xl border border-zinc-800/80 bg-zinc-900/60 px-3 py-1.5 text-xs text-zinc-400 hover:border-zinc-700 hover:bg-zinc-800/80 hover:text-zinc-200 transition-all shadow-sm backdrop-blur-sm"
+                        className="rounded-xl border border-zinc-200 dark:border-zinc-800/80 bg-white/90 dark:bg-zinc-900/60 px-3.5 py-2 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:border-indigo-400 dark:hover:border-zinc-700 hover:bg-white dark:hover:bg-zinc-800/80 hover:text-indigo-600 dark:hover:text-zinc-100 transition-all shadow-sm backdrop-blur-sm"
                       >
                         {promptText} →
                       </button>
@@ -2762,10 +2765,10 @@ function Home() {
 
             <div
               data-testid="composer-dock"
-              className="shrink-0 w-full border-t border-zinc-800/40 bg-zinc-950/80 px-4 py-2.5 sm:py-3 flex justify-center items-center z-10 backdrop-blur-sm"
+              className="shrink-0 w-full border-t border-zinc-200/80 dark:border-zinc-800/40 bg-white/80 dark:bg-zinc-950/80 px-4 py-2.5 sm:py-3 flex justify-center items-center z-10 backdrop-blur-md"
             >
               <div className="w-full max-w-3xl">
-                <div className="flex flex-col overflow-hidden rounded-2xl border border-zinc-700/50 bg-zinc-900/80 p-2 shadow-2xl backdrop-blur-xl transition-all focus-within:border-zinc-500/50 focus-within:bg-zinc-900/95">
+                <div className="flex flex-col overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-700/50 bg-white/95 dark:bg-zinc-900/80 p-2 shadow-xl dark:shadow-2xl backdrop-blur-xl transition-all focus-within:border-indigo-400 dark:focus-within:border-zinc-500/50 focus-within:bg-white dark:focus-within:bg-zinc-900/95">
                   <div className="relative flex items-end gap-2">
                     <textarea
                       ref={composerInputRef}
@@ -2781,8 +2784,8 @@ function Home() {
                       }}
                       placeholder={isListening ? "Listening..." : loading ? "Echo is thinking..." : "Ask Echo..."}
                       rows={Math.min(4, Math.max(1, transcript.split('\n').length))}
-                      className={`max-h-32 min-h-[44px] w-full resize-none bg-transparent px-3 py-3 text-sm outline-none placeholder:text-zinc-500 disabled:opacity-60 disabled:cursor-not-allowed ${
-                        isListening ? "text-red-400" : "text-zinc-200"
+                      className={`max-h-32 min-h-[44px] w-full resize-none bg-transparent px-3 py-3 text-sm outline-none placeholder:text-zinc-400 dark:placeholder:text-zinc-500 disabled:opacity-60 disabled:cursor-not-allowed ${
+                        isListening ? "text-red-500 dark:text-red-400" : "text-zinc-900 dark:text-zinc-200"
                       }`}
                     />
 
@@ -2794,7 +2797,7 @@ function Home() {
                         className={`flex h-9 w-9 items-center justify-center rounded-xl transition-all disabled:cursor-not-allowed disabled:opacity-50 ${
                           isListening
                             ? "bg-red-500 text-white animate-pulse"
-                            : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700 hover:text-zinc-200"
+                            : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 hover:text-zinc-900 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700 dark:hover:text-zinc-200"
                         }`}
                         title={loading ? "Echo is thinking..." : isListening ? "Stop listening" : "Start voice input"}
                       >
@@ -2804,7 +2807,7 @@ function Home() {
                       <button
                         onClick={analyzeTranscript}
                         disabled={loading || isListening || !transcript.trim()}
-                        className="flex h-9 w-9 items-center justify-center rounded-xl bg-white text-black transition-all hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-zinc-800 disabled:text-zinc-600"
+                        className="flex h-9 w-9 items-center justify-center rounded-xl bg-zinc-900 text-white transition-all hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-zinc-100 disabled:text-zinc-400 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-600"
                         title={loading ? "Echo is thinking..." : "Send message (Enter)"}
                       >
                         {loading ? (
@@ -2828,12 +2831,12 @@ function Home() {
                         value={voiceLanguage}
                         onChange={(event) => setVoiceLanguage(event.target.value)}
                         disabled={isListening || loading}
-                        className="rounded-md border border-zinc-800/60 bg-transparent px-2 py-1 text-xs text-zinc-500 outline-none transition hover:border-zinc-700 hover:text-zinc-400 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="rounded-md border border-zinc-200 dark:border-zinc-800/60 bg-transparent px-2 py-1 text-xs text-zinc-600 dark:text-zinc-500 outline-none transition hover:border-zinc-300 dark:hover:border-zinc-700 hover:text-zinc-900 dark:hover:text-zinc-400 disabled:cursor-not-allowed disabled:opacity-50"
                       >
                         <option value="en-US">English</option>
                         <option value="hi-IN">Hindi</option>
                       </select>
-                      <kbd className="hidden sm:inline-block rounded border border-zinc-800 bg-zinc-950/60 px-1.5 py-0.5 text-[10px] font-mono text-zinc-500">
+                      <kbd className="hidden sm:inline-block rounded border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-950/60 px-1.5 py-0.5 text-[10px] font-mono text-zinc-500">
                         ⌘K
                       </kbd>
                     </div>
@@ -2841,11 +2844,11 @@ function Home() {
                     {loading ? (
                       <div data-testid="composer-thinking" className="flex items-center gap-2">
                         <span className="flex gap-1">
-                          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-amber-400" style={{ animationDelay: "0ms" }}></span>
-                          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-amber-400" style={{ animationDelay: "150ms" }}></span>
-                          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-amber-400" style={{ animationDelay: "300ms" }}></span>
+                          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-amber-500 dark:bg-amber-400" style={{ animationDelay: "0ms" }}></span>
+                          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-amber-500 dark:bg-amber-400" style={{ animationDelay: "150ms" }}></span>
+                          <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-amber-500 dark:bg-amber-400" style={{ animationDelay: "300ms" }}></span>
                         </span>
-                        <span className="text-xs font-medium text-amber-300/90">
+                        <span className="text-xs font-medium text-amber-600 dark:text-amber-300/90">
                           {slowThinking ? "Echo is reasoning deeply…" : "Echo is thinking…"}
                         </span>
                       </div>
@@ -2853,12 +2856,12 @@ function Home() {
                       <span
                         className={`min-w-0 flex-1 text-right text-xs leading-snug transition-colors ${
                           voiceFeedback.kind === "error"
-                            ? "text-red-400 font-medium"
+                            ? "text-red-500 dark:text-red-400 font-medium"
                             : voiceFeedback.kind === "info"
-                            ? "text-emerald-400"
+                            ? "text-emerald-600 dark:text-emerald-400"
                             : voiceFeedback.kind === "listening"
-                            ? "text-red-400 animate-pulse font-medium"
-                            : "text-zinc-500"
+                            ? "text-red-500 dark:text-red-400 animate-pulse font-medium"
+                            : "text-zinc-400 dark:text-zinc-500"
                         }`}
                       >
                         {voiceFeedback.kind === "listening"
@@ -2877,14 +2880,14 @@ function Home() {
 
           {/* Conversation */}
 
-          <aside className={`flex shrink-0 flex-col overflow-hidden bg-zinc-950 transition-all duration-300 ${isConversationOpen ? "absolute inset-y-0 right-0 z-40 w-full sm:w-96 lg:static lg:z-auto border-l border-zinc-800 shadow-2xl lg:shadow-none" : "w-0 border-l-0"}`}>
+          <aside className={`flex shrink-0 flex-col overflow-hidden bg-white dark:bg-zinc-950 transition-all duration-300 ${isConversationOpen ? "absolute inset-y-0 right-0 z-40 w-full sm:w-96 lg:static lg:z-auto border-l border-zinc-200 dark:border-zinc-800 shadow-2xl lg:shadow-none" : "w-0 border-l-0"}`}>
             <div className="flex h-full w-full sm:w-96 flex-col">
-              <div className="flex items-center justify-between border-b border-zinc-800 p-5">
+              <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 p-5">
                 <div>
-                  <h2 className="font-medium">
+                  <h2 className="font-medium text-zinc-900 dark:text-white">
                     Conversation
                   </h2>
-                  <p className="mt-1 text-sm text-zinc-500">
+                  <p className="mt-1 text-sm text-zinc-500 dark:text-zinc-400">
                     Talk to Echo and let AI build
                     the canvas.
                   </p>
@@ -2892,7 +2895,7 @@ function Home() {
                 <button
                   type="button"
                   onClick={() => setIsConversationOpen(false)}
-                  className="lg:hidden flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-800 hover:text-zinc-200 transition"
+                  className="lg:hidden flex h-7 w-7 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 transition"
                   title="Close conversation panel"
                 >
                   ✕
@@ -2908,15 +2911,15 @@ function Home() {
                 {messages.length === 0 ? (
                   <div className="flex h-full items-center justify-center">
                     <div className="max-w-xs text-center">
-                      <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-800 bg-zinc-900/80 text-zinc-400 shadow-sm">
-                        <svg className="h-5 w-5 text-zinc-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+                      <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-100 dark:bg-zinc-900/80 text-zinc-500 dark:text-zinc-400 shadow-sm">
+                        <svg className="h-5 w-5 text-zinc-600 dark:text-zinc-300" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
                           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" strokeLinecap="round" strokeLinejoin="round" />
                         </svg>
                       </div>
-                      <p className="text-sm font-medium text-zinc-200">
+                      <p className="text-sm font-medium text-zinc-900 dark:text-zinc-200">
                         Start thinking with Echo
                       </p>
-                      <p className="mt-1.5 text-xs leading-relaxed text-zinc-500">
+                      <p className="mt-1.5 text-xs leading-relaxed text-zinc-600 dark:text-zinc-400">
                         Describe a problem, idea, decision, or question using the composer below or by speaking to Echo.
                       </p>
                     </div>
@@ -2937,12 +2940,12 @@ function Home() {
                       <div
                         className={
                           message.role === "user"
-                            ? "max-w-[85%] rounded-2xl rounded-br-md bg-white px-4 py-3 text-sm text-black"
-                            : "max-w-[85%] rounded-2xl rounded-bl-md border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-zinc-200"
+                            ? "max-w-[85%] rounded-2xl rounded-br-md bg-zinc-900 text-white shadow-sm dark:bg-white dark:text-black px-4 py-3 text-sm"
+                            : "max-w-[85%] rounded-2xl rounded-bl-md border border-zinc-200 bg-zinc-50 text-zinc-900 shadow-sm dark:border-zinc-800 dark:bg-zinc-900 px-4 py-3 text-sm dark:text-zinc-200"
                         }
                       >
 
-                        <div className="mb-1 text-[10px] font-medium uppercase tracking-wider opacity-50">
+                        <div className="mb-1 text-[10px] font-medium uppercase tracking-wider opacity-60">
                           {message.role === "user"
                             ? "You"
                             : "Echo"}
@@ -2967,7 +2970,7 @@ function Home() {
                     aria-busy="true"
                     className="flex justify-start"
                   >
-                    <div className="max-w-[85%] rounded-2xl rounded-bl-md border border-zinc-800 bg-zinc-900 px-4 py-3 text-sm text-zinc-400">
+                    <div className="max-w-[85%] rounded-2xl rounded-bl-md border border-zinc-200 bg-zinc-50 text-zinc-600 dark:border-zinc-800 dark:bg-zinc-900 px-4 py-3 text-sm dark:text-zinc-400">
                       {slowThinking
                         ? "Echo is still thinking…"
                         : "Echo is thinking..."}

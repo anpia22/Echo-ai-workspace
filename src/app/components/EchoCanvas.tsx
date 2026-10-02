@@ -38,6 +38,7 @@ import {
   type ViewportState,
 } from "../lib/collaboration/viewportEvents";
 import RemoteCursors from "./RemoteCursors";
+import { useTheme } from "./theme/ThemeProvider";
 
 type CanvasNode = {
   id: string;
@@ -118,14 +119,78 @@ const GROUP_PAD_X = 28;
 const GROUP_PAD_Y_TOP = 44;
 const GROUP_PAD_Y_BOTTOM = 28;
 
-const handleStyle = {
+const getHandleStyle = (isLight: boolean) => ({
   width: 8,
   height: 8,
-  background: "#3f3f46",
-  border: "1px solid #71717a",
-};
+  background: isLight ? "#94a3b8" : "#3f3f46",
+  border: isLight ? "1px solid #cbd5e1" : "1px solid #71717a",
+});
 
-const getNodeStyle = (nodeType?: string) => {
+const getNodeStyle = (nodeType?: string, isLight: boolean = false) => {
+  if (isLight) {
+    switch (nodeType) {
+      case "problem":
+        return {
+          background: "linear-gradient(145deg, #ffffff 0%, #fef2f2 100%)",
+          border: "1px solid rgba(239, 68, 68, 0.4)",
+          borderTop: "2px solid #ef4444",
+          color: "#991b1b",
+          titleColor: "#7f1d1d",
+          descColor: "#991b1b",
+        };
+
+      case "solution":
+        return {
+          background: "linear-gradient(145deg, #ffffff 0%, #f0fdf4 100%)",
+          border: "1px solid rgba(34, 197, 94, 0.4)",
+          borderTop: "2px solid #22c55e",
+          color: "#166534",
+          titleColor: "#14532d",
+          descColor: "#166534",
+        };
+
+      case "decision":
+        return {
+          background: "linear-gradient(145deg, #ffffff 0%, #fefce8 100%)",
+          border: "1px solid rgba(234, 179, 8, 0.4)",
+          borderTop: "2px solid #eab308",
+          color: "#854d0e",
+          titleColor: "#713f12",
+          descColor: "#854d0e",
+        };
+
+      case "task":
+        return {
+          background: "linear-gradient(145deg, #ffffff 0%, #eff6ff 100%)",
+          border: "1px solid rgba(59, 130, 246, 0.4)",
+          borderTop: "2px solid #3b82f6",
+          color: "#1d4ed8",
+          titleColor: "#1e3a8a",
+          descColor: "#1e40af",
+        };
+
+      case "question":
+        return {
+          background: "linear-gradient(145deg, #ffffff 0%, #faf5ff 100%)",
+          border: "1px solid rgba(168, 85, 247, 0.4)",
+          borderTop: "2px solid #a855f7",
+          color: "#7e22ce",
+          titleColor: "#581c87",
+          descColor: "#6b21a8",
+        };
+
+      default:
+        return {
+          background: "linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)",
+          border: "1px solid rgba(203, 213, 225, 0.9)",
+          borderTop: "2px solid #94a3b8",
+          color: "#334155",
+          titleColor: "#0f172a",
+          descColor: "#475569",
+        };
+    }
+  }
+
   switch (nodeType) {
     case "problem":
       return {
@@ -133,6 +198,8 @@ const getNodeStyle = (nodeType?: string) => {
         border: "1px solid rgba(239, 68, 68, 0.3)",
         borderTop: "1px solid rgba(239, 68, 68, 0.6)",
         color: "#fca5a5",
+        titleColor: "#ffffff",
+        descColor: "#d4d4d8",
       };
 
     case "solution":
@@ -141,6 +208,8 @@ const getNodeStyle = (nodeType?: string) => {
         border: "1px solid rgba(34, 197, 94, 0.3)",
         borderTop: "1px solid rgba(34, 197, 94, 0.6)",
         color: "#86efac",
+        titleColor: "#ffffff",
+        descColor: "#d4d4d8",
       };
 
     case "decision":
@@ -149,6 +218,8 @@ const getNodeStyle = (nodeType?: string) => {
         border: "1px solid rgba(234, 179, 8, 0.3)",
         borderTop: "1px solid rgba(234, 179, 8, 0.6)",
         color: "#fde047",
+        titleColor: "#ffffff",
+        descColor: "#d4d4d8",
       };
 
     case "task":
@@ -157,6 +228,8 @@ const getNodeStyle = (nodeType?: string) => {
         border: "1px solid rgba(59, 130, 246, 0.3)",
         borderTop: "1px solid rgba(59, 130, 246, 0.6)",
         color: "#93c5fd",
+        titleColor: "#ffffff",
+        descColor: "#d4d4d8",
       };
 
     case "question":
@@ -165,6 +238,8 @@ const getNodeStyle = (nodeType?: string) => {
         border: "1px solid rgba(168, 85, 247, 0.3)",
         borderTop: "1px solid rgba(168, 85, 247, 0.6)",
         color: "#d8b4fe",
+        titleColor: "#ffffff",
+        descColor: "#d4d4d8",
       };
 
     default:
@@ -173,6 +248,8 @@ const getNodeStyle = (nodeType?: string) => {
         border: "1px solid rgba(82, 82, 91, 0.3)",
         borderTop: "1px solid rgba(82, 82, 91, 0.6)",
         color: "#e4e4e7",
+        titleColor: "#ffffff",
+        descColor: "#d4d4d8",
       };
   }
 };
@@ -197,7 +274,11 @@ const getNodeGlyph = (nodeType?: string) => {
 };
 
 function EchoNode({ data, selected }: NodeProps<Node<EchoNodeData>>) {
+  const { resolvedTheme } = useTheme();
+  const isLight = resolvedTheme === "light";
   const isSelected = Boolean(selected);
+  const nodeStyle = getNodeStyle(data.nodeType, isLight);
+  const handleStyle = getHandleStyle(isLight);
 
   return (
     <div
@@ -205,16 +286,24 @@ function EchoNode({ data, selected }: NodeProps<Node<EchoNodeData>>) {
       data-selected={isSelected ? "true" : "false"}
       className={`relative flex flex-col transition-all duration-200 hover:-translate-y-0.5 hover:shadow-2xl ${
         isSelected
-          ? "ring-2 ring-white/90 shadow-[0_0_24px_rgba(255,255,255,0.22)] scale-[1.01]"
+          ? isLight
+            ? "ring-2 ring-indigo-500 shadow-[0_0_20px_rgba(99,102,241,0.3)] scale-[1.01]"
+            : "ring-2 ring-white/90 shadow-[0_0_24px_rgba(255,255,255,0.22)] scale-[1.01]"
+          : isLight
+          ? "hover:border-zinc-400"
           : "hover:border-white/30"
       }`}
       style={{
-        ...getNodeStyle(data.nodeType),
+        ...nodeStyle,
         borderRadius: "20px",
         padding: "18px 20px",
         width: NODE_WIDTH,
         minHeight: 120,
-        boxShadow: isSelected
+        boxShadow: isLight
+          ? isSelected
+            ? "0 14px 28px rgba(0,0,0,0.12), inset 0 1px 0 rgba(255,255,255,0.8)"
+            : "0 8px 24px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04), inset 0 1px 0 rgba(255,255,255,0.8)"
+          : isSelected
           ? "0 16px 36px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.15)"
           : "0 12px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)",
         backdropFilter: "blur(12px)",
@@ -231,18 +320,24 @@ function EchoNode({ data, selected }: NodeProps<Node<EchoNodeData>>) {
       <Handle type="source" position={Position.Left} id="s-left" style={handleStyle} isConnectable={false} />
 
       <div className="mb-2 flex items-center justify-between">
-        <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest opacity-75">
+        <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest opacity-80">
           <span className="text-[11px] leading-none opacity-90">{getNodeGlyph(data.nodeType)}</span>
           <span>{data.nodeType}</span>
         </span>
       </div>
 
-      <div className="text-[15px] font-semibold leading-snug tracking-tight text-white/90">
+      <div
+        className="text-[15px] font-semibold leading-snug tracking-tight"
+        style={{ color: nodeStyle.titleColor }}
+      >
         {data.title}
       </div>
 
       {data.description ? (
-        <div className="mt-2.5 text-xs font-medium leading-relaxed opacity-70">
+        <div
+          className="mt-2.5 text-xs font-medium leading-relaxed opacity-75"
+          style={{ color: nodeStyle.descColor }}
+        >
           {data.description}
         </div>
       ) : null}
@@ -253,10 +348,10 @@ function EchoNode({ data, selected }: NodeProps<Node<EchoNodeData>>) {
 function EchoGroup({ data }: NodeProps<Node<EchoGroupData>>) {
   return (
     <div
-      className="h-full w-full rounded-[24px] border-2 border-dashed border-zinc-700/50 bg-zinc-900/20 backdrop-blur-[2px] transition-all duration-500"
+      className="h-full w-full rounded-[24px] border-2 border-dashed border-zinc-300 dark:border-zinc-700/50 bg-slate-100/40 dark:bg-zinc-900/20 backdrop-blur-[2px] transition-all duration-500"
       style={{ pointerEvents: "none" }}
     >
-      <div className="px-4 py-3 text-xs font-bold uppercase tracking-widest text-zinc-500">
+      <div className="px-4 py-3 text-xs font-bold uppercase tracking-widest text-zinc-600 dark:text-zinc-500">
         {data.title}
       </div>
     </div>
@@ -308,6 +403,8 @@ function EchoCanvasInner({
   isLeader,
   roomId,
 }: EchoCanvasProps) {
+  const { resolvedTheme } = useTheme();
+  const isLight = resolvedTheme === "light";
   const {
     screenToFlowPosition,
     getViewport,
@@ -654,19 +751,21 @@ function EchoCanvasInner({
           stroke: strokeColor,
         },
         labelStyle: {
-          fill: "#d4d4d8",
+          fill: isLight ? "#334155" : "#d4d4d8",
           fontSize: 11,
           fontWeight: 500,
         },
         labelBgStyle: {
-          fill: "#09090b",
-          fillOpacity: 0.92,
+          fill: isLight ? "#ffffff" : "#09090b",
+          stroke: isLight ? "#cbd5e1" : "#27272a",
+          strokeWidth: 1,
+          fillOpacity: 0.96,
         },
         labelBgPadding: [8, 4] as [number, number],
         labelBgBorderRadius: 6,
       };
     });
-  }, [canvas.edges, canvas.nodes]);
+  }, [canvas.edges, canvas.nodes, isLight]);
 
   const [
     nodes,
@@ -775,7 +874,7 @@ function EchoCanvasInner({
 
   return (
     <div
-      className="h-full w-full bg-zinc-950"
+      className="h-full w-full bg-slate-100/70 dark:bg-zinc-950 transition-colors duration-200"
       onPointerMove={handlePointerMove}
     >
       <ReactFlow
@@ -791,17 +890,18 @@ function EchoCanvasInner({
         maxZoom={2}
         nodesConnectable={false}
         elementsSelectable
+        colorMode={resolvedTheme}
       >
-        <Background color="#27272a" gap={20} />
+        <Background color={isLight ? "#cbd5e1" : "#27272a"} gap={20} />
 
         <Controls className="hidden sm:flex" />
 
         <MiniMap
           className="hidden md:block"
-          maskColor="rgba(9, 9, 11, 0.75)"
+          maskColor={isLight ? "rgba(241, 245, 249, 0.75)" : "rgba(9, 9, 11, 0.75)"}
           nodeColor={(node) => {
             if (node.type === "echoGroup") {
-              return "#3f3f46";
+              return isLight ? "#cbd5e1" : "#3f3f46";
             }
 
             const nodeType = (node.data as EchoNodeData | undefined)?.nodeType;
@@ -826,7 +926,7 @@ function EchoCanvasInner({
               return "#a855f7";
             }
 
-            return "#71717a";
+            return isLight ? "#94a3b8" : "#71717a";
           }}
         />
 

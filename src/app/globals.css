@@ -1,8 +1,31 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8fafc;
+  --foreground: #0f172a;
+  --rf-minimap-bg: #ffffff;
+  --rf-minimap-border: #e2e8f0;
+  --rf-minimap-mask: rgba(241, 245, 249, 0.75);
+  --rf-controls-bg: #ffffff;
+  --rf-controls-border: #e2e8f0;
+  --rf-controls-color: #64748b;
+  --rf-controls-hover: #f1f5f9;
+  --rf-controls-hover-color: #0f172a;
+}
+
+.dark {
+  --background: #09090b;
+  --foreground: #ededed;
+  --rf-minimap-bg: #18181b;
+  --rf-minimap-border: #27272a;
+  --rf-minimap-mask: rgba(9, 9, 11, 0.75);
+  --rf-controls-bg: #18181b;
+  --rf-controls-border: #27272a;
+  --rf-controls-color: #a1a1aa;
+  --rf-controls-hover: #27272a;
+  --rf-controls-hover-color: #ffffff;
 }
 
 @theme inline {
@@ -12,47 +35,40 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
 
-/* React Flow Dark Theme & Mobile Responsive Overrides */
+/* React Flow Theme & Mobile Responsive Overrides */
 .react-flow__minimap {
-  background-color: #18181b !important;
-  border: 1px solid #27272a !important;
+  background-color: var(--rf-minimap-bg) !important;
+  border: 1px solid var(--rf-minimap-border) !important;
   border-radius: 0.75rem !important;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15) !important;
   overflow: hidden !important;
 }
 
 .react-flow__minimap-mask {
-  fill: rgba(9, 9, 11, 0.75) !important;
-  stroke: #3f3f46 !important;
+  fill: var(--rf-minimap-mask) !important;
+  stroke: var(--rf-minimap-border) !important;
   stroke-width: 1px !important;
 }
 
 .react-flow__controls {
-  border: 1px solid #27272a !important;
+  border: 1px solid var(--rf-controls-border) !important;
   border-radius: 0.75rem !important;
-  background-color: #18181b !important;
-  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.5) !important;
+  background-color: var(--rf-controls-bg) !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.15) !important;
   overflow: hidden !important;
 }
 
 .react-flow__controls-button {
-  background-color: #18181b !important;
-  border-bottom: 1px solid #27272a !important;
-  color: #a1a1aa !important;
-  fill: #a1a1aa !important;
+  background-color: var(--rf-controls-bg) !important;
+  border-bottom: 1px solid var(--rf-controls-border) !important;
+  color: var(--rf-controls-color) !important;
+  fill: var(--rf-controls-color) !important;
 }
 
 .react-flow__controls-button:last-child {
@@ -60,9 +76,9 @@ body {
 }
 
 .react-flow__controls-button:hover {
-  background-color: #27272a !important;
-  fill: #ffffff !important;
-  color: #ffffff !important;
+  background-color: var(--rf-controls-hover) !important;
+  fill: var(--rf-controls-hover-color) !important;
+  color: var(--rf-controls-hover-color) !important;
 }
 
 .react-flow__controls-button svg {
@@ -86,4 +102,280 @@ body {
     display: none !important;
   }
 }
+
+/* Echo Marketing Motion & Flow Keyframes */
+@keyframes echo-pulse {
+  0%, 100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.95;
+  }
+}
+
+@keyframes echo-float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes echo-beam {
+  0% {
+    stroke-dashoffset: 24;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes echo-glow {
+  0%, 100% {
+    box-shadow: 0 0 15px -2px rgba(99, 102, 241, 0.25), 0 0 30px -4px rgba(168, 85, 247, 0.15);
+    border-color: rgba(99, 102, 241, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 28px 2px rgba(99, 102, 241, 0.5), 0 0 50px 0px rgba(168, 85, 247, 0.3);
+    border-color: rgba(168, 85, 247, 0.7);
+  }
+}
+
+@keyframes ambient-glow {
+  0%, 100% {
+    transform: scale(1) translate(0, 0);
+    opacity: 0.25;
+  }
+  50% {
+    transform: scale(1.12) translate(12px, -10px);
+    opacity: 0.45;
+  }
+}
+
+@keyframes echo-shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+.animate-echo-pulse {
+  animation: echo-pulse 2.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-echo-float {
+  animation: echo-float 4.5s ease-in-out infinite;
+}
+
+.animate-echo-float-slow {
+  animation: echo-float 7s ease-in-out infinite;
+}
+
+.animate-echo-float-fast {
+  animation: echo-float 3s ease-in-out infinite;
+}
+
+.animate-echo-beam {
+  stroke-dasharray: 6 6;
+  animation: echo-beam 1.1s linear infinite;
+}
+
+.animate-echo-glow {
+  animation: echo-glow 3s ease-in-out infinite;
+}
+
+.animate-ambient-glow {
+  animation: ambient-glow 7s ease-in-out infinite alternate;
+}
+
+.animate-echo-shimmer {
+  animation: echo-shimmer 2.5s infinite;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-echo-pulse,
+  .animate-echo-float,
+  .animate-echo-float-slow,
+  .animate-echo-float-fast,
+  .animate-echo-beam,
+  .animate-echo-glow,
+  .animate-ambient-glow,
+  .animate-echo-shimmer,
+  .animate-fade-in {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
+/* Echo CTA Button Styling Across Modes */
+html.light .echo-cta-btn {
+  background-color: #0f172a !important;
+  color: #ffffff !important;
+}
+
+html.dark .echo-cta-btn {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+}
+
+/* Marketing Pages Light Mode Overrides */
+html.light .marketing-content {
+  color: #0f172a;
+}
+
+html.light .marketing-content h1,
+html.light .marketing-content h2,
+html.light .marketing-content h3,
+html.light .marketing-content h4,
+html.light .marketing-content .text-white {
+  color: #0f172a;
+}
+
+html.light .marketing-content .text-zinc-200,
+html.light .marketing-content .text-zinc-300 {
+  color: #1e293b;
+}
+
+html.light .marketing-content .text-zinc-400 {
+  color: #475569;
+}
+
+html.light .marketing-content .text-zinc-500 {
+  color: #64748b;
+}
+
+html.light .marketing-content div[class*="bg-zinc-900"],
+html.light .marketing-content div[class*="bg-zinc-950"],
+html.light .marketing-content section[class*="bg-zinc-900"],
+html.light .marketing-content article[class*="bg-zinc-900"] {
+  background-color: rgba(255, 255, 255, 0.94);
+  border-color: #e2e8f0;
+  box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05);
+}
+
+html.light .marketing-content .border-zinc-800,
+html.light .marketing-content .border-zinc-700,
+html.light .marketing-content div[class*="border-zinc-800"],
+html.light .marketing-content div[class*="border-zinc-700"] {
+  border-color: #e2e8f0;
+}
+
+html.light .marketing-content a.group[class*="bg-zinc-900"] {
+  background-color: rgba(255, 255, 255, 0.94);
+  border-color: #e2e8f0;
+}
+
+html.light .marketing-content .bg-zinc-800 {
+  background-color: #f1f5f9;
+  color: #0f172a;
+}
+
+html.light .marketing-content .via-zinc-800,
+html.light .marketing-content .via-zinc-700 {
+  --tw-gradient-via: #cbd5e1 !important;
+}
+
+html.light .marketing-content .from-zinc-700,
+html.light .marketing-content .from-zinc-800 {
+  --tw-gradient-from: #94a3b8 !important;
+}
+
+/* Secondary Action Buttons & Links Across Themes */
+html.light .echo-secondary-btn,
+html.light .marketing-content a[class*="rounded-xl"][class*="inline-flex"]:not(.echo-cta-btn),
+html.light .marketing-content button[class*="rounded-xl"][class*="inline-flex"]:not(.echo-cta-btn) {
+  background-color: #ffffff !important;
+  color: #1e293b !important;
+  border-color: #cbd5e1 !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.08) !important;
+}
+
+html.light .echo-secondary-btn:hover,
+html.light .marketing-content a[class*="rounded-xl"][class*="inline-flex"]:not(.echo-cta-btn):hover,
+html.light .marketing-content button[class*="rounded-xl"][class*="inline-flex"]:not(.echo-cta-btn):hover {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+  border-color: #94a3b8 !important;
+}
+
+html.light .echo-secondary-btn svg,
+html.light .marketing-content a[class*="rounded-xl"][class*="inline-flex"]:not(.echo-cta-btn) svg,
+html.light .marketing-content button[class*="rounded-xl"][class*="inline-flex"]:not(.echo-cta-btn) svg {
+  color: #64748b !important;
+}
+
+html.light .echo-secondary-btn:hover svg,
+html.light .marketing-content a[class*="rounded-xl"][class*="inline-flex"]:not(.echo-cta-btn):hover svg,
+html.light .marketing-content button[class*="rounded-xl"][class*="inline-flex"]:not(.echo-cta-btn):hover svg {
+  color: #0f172a !important;
+}
+
+/* Secondary Pill Badges in Light Mode */
+html.light .marketing-content div[class*="rounded-full"][class*="inline-flex"] {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  color: #475569 !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.04) !important;
+}
+
+/* Scenario & Trigger Badges Across Themes */
+.echo-scenario-badge {
+  display: inline-block;
+  border-radius: 0.5rem;
+  padding: 0.25rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  line-height: 1.25rem;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+html.light .echo-scenario-badge,
+html.light .marketing-content .echo-scenario-badge {
+  background-color: #f1f5f9 !important;
+  color: #334155 !important;
+  border: 1px solid #cbd5e1 !important;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.04) !important;
+}
+
+html.light .echo-scenario-badge:hover,
+html.light .marketing-content .echo-scenario-badge:hover {
+  background-color: #e2e8f0 !important;
+  color: #0f172a !important;
+  border-color: #94a3b8 !important;
+}
+
+html.dark .echo-scenario-badge,
+:not(html.light) .echo-scenario-badge {
+  background-color: rgba(39, 39, 42, 0.6) !important;
+  color: #d4d4d8 !important;
+  border: 1px solid rgba(63, 63, 70, 0.6) !important;
+}
+
+html.dark .echo-scenario-badge:hover,
+:not(html.light) .echo-scenario-badge:hover {
+  background-color: rgba(63, 63, 70, 0.8) !important;
+  color: #ffffff !important;
+  border-color: rgba(82, 82, 91, 0.8) !important;
+}
+
+
+
 

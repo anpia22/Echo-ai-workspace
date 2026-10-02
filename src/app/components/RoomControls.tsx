@@ -160,7 +160,7 @@ export default function RoomControls({
         onClick={() => {
           void copyRoomLink();
         }}
-        className="flex items-center gap-1.5 rounded-xl border border-zinc-700 bg-zinc-900 px-2.5 sm:px-3 py-1.5 text-xs font-medium text-zinc-300 transition hover:bg-zinc-800"
+        className="flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2.5 sm:px-3 py-1.5 text-xs font-medium text-zinc-700 dark:text-zinc-300 shadow-sm transition hover:bg-zinc-100 dark:hover:bg-zinc-800"
         title={copyLabel}
         aria-label={copyLabel}
       >
@@ -217,7 +217,7 @@ export default function RoomControls({
 
       {followInterruptedNotice ? (
         <span
-          className="flex items-center gap-1.5 rounded-xl border border-zinc-700 bg-zinc-900 px-2.5 py-1 text-xs text-zinc-400 transition"
+          className="flex items-center gap-1.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 px-2.5 py-1 text-xs text-zinc-600 dark:text-zinc-400 shadow-sm transition"
           role="status"
           aria-live="polite"
         >
