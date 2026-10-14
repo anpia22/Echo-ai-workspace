@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { withSeo } from "@/lib/seo";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -12,18 +13,32 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: {
-    default: "Echo — The AI Workspace That Thinks With You",
-    template: "%s | Echo",
-  },
-  description:
-    "Echo is an AI workspace that helps you think, organize ideas, analyze information, and turn conversations into a visual workspace.",
+const defaultTitle = "Echo — The AI Workspace That Thinks With You";
+const defaultDescription =
+  "Echo is an AI workspace that helps you think, organize ideas, analyze information, and turn conversations into a visual workspace.";
+
+// Home is a client page, so its title lives here as `title.default`.
+// An override replaces that default only; the "%s | Echo" template stays for other routes.
+const home = withSeo("/", {
+  title: { absolute: defaultTitle },
+  description: defaultDescription,
   openGraph: {
-    title: "Echo — The AI Workspace That Thinks With You",
-    description:
-      "Echo is an AI workspace that helps you think, organize ideas, analyze information, and turn conversations into a visual workspace.",
+    title: defaultTitle,
+    description: defaultDescription,
     type: "website",
+  },
+});
+
+const homeTitle =
+  home.title && typeof home.title === "object" && "absolute" in home.title && home.title.absolute
+    ? home.title.absolute
+    : defaultTitle;
+
+export const metadata: Metadata = {
+  ...home,
+  title: {
+    default: homeTitle,
+    template: "%s | Echo",
   },
 };
 

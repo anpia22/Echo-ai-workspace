@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { withSeo } from "@/lib/seo";
 import OpenEchoButton from "../../components/marketing/OpenEchoButton";
 import { FadeIn, Stagger } from "../../components/marketing/motion";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = withSeo("/about", {
   title: "About Echo",
   description:
     "Learn why Echo was built: to eliminate fragmentation between conversational AI and visual thinking by unifying them into one connected workspace.",
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
       "Learn why Echo was built: to eliminate fragmentation between conversational AI and visual thinking by unifying them into one connected workspace.",
     type: "website",
   },
-};
+});
 
 // ─── Tiny inline decorative components ───────────────────────────────────────
 

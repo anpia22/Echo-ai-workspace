@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { withSeo } from "@/lib/seo";
 import OpenEchoButton from "../../components/marketing/OpenEchoButton";
 import { FadeIn, Stagger } from "../../components/marketing/motion";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = withSeo("/demo", {
   title: "Echo Demo",
   description:
     "Interactive walkthrough demonstrating Echo's AI dialogue, infinite spatial canvas, live collaboration, WebRTC meetings, screen presentation, and viewport following.",
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
       "Interactive walkthrough demonstrating Echo's AI dialogue, infinite spatial canvas, live collaboration, WebRTC meetings, screen presentation, and viewport following.",
     type: "website",
   },
-};
+});
 
 // ─── Shared decorators ────────────────────────────────────────────────────────
 

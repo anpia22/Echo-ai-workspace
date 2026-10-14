@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { withSeo } from "@/lib/seo";
 import OpenEchoButton from "../../components/marketing/OpenEchoButton";
 import { FadeIn } from "../../components/marketing/motion";
 
-export const metadata: Metadata = {
+export const metadata: Metadata = withSeo("/how-it-works", {
   title: "How Echo Works",
   description:
     "Explore how Echo turns conversation into structured visual thinking on a spatial canvas through bidirectional AI reasoning and persistent context.",
@@ -13,7 +14,7 @@ export const metadata: Metadata = {
       "Explore how Echo turns conversation into structured visual thinking on a spatial canvas through bidirectional AI reasoning and persistent context.",
     type: "website",
   },
-};
+});
 
 // ─── Shared decorators ────────────────────────────────────────────────────────
 

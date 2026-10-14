@@ -41,6 +41,28 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* Balanced headlines overflow the viewport on narrow screens and clip mid-word. */
+@media (max-width: 640px) {
+  .text-balance {
+    text-wrap: wrap;
+  }
+}
+
+/* "Create Room" is a frozen control; keep the header on one line on phones. */
+@media (max-width: 639px) {
+  .echo-header-room > button {
+    padding-inline: 0.5rem;
+    font-size: 0;
+    line-height: 0;
+  }
+
+  .echo-header-room > button::after {
+    content: "Room";
+    font-size: 0.75rem;
+    line-height: 1rem;
+  }
+}
+
 /* React Flow Theme & Mobile Responsive Overrides */
 .react-flow__minimap {
   background-color: var(--rf-minimap-bg) !important;

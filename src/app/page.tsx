@@ -599,9 +599,18 @@ function Home() {
     return () => window.removeEventListener("keydown", handleKeyDown);
   }, []);
 
-  // Phase 14 Layout States
-  const [isHistoryOpen, setIsHistoryOpen] = useState(true);
-  const [isConversationOpen, setIsConversationOpen] = useState(true);
+  // Panels start closed so the first paint matches the server.
+  // Desktop opens them after mount; phones and tablets keep the canvas usable.
+  const [isHistoryOpen, setIsHistoryOpen] = useState(false);
+  const [isConversationOpen, setIsConversationOpen] = useState(false);
+  const panelsSizedRef = useRef(false);
+
+  useEffect(() => {
+    if (panelsSizedRef.current) return;
+    panelsSizedRef.current = true;
+    setIsHistoryOpen(window.matchMedia("(min-width: 768px)").matches);
+    setIsConversationOpen(window.matchMedia("(min-width: 1024px)").matches);
+  }, []);
 
   const [canvas, setCanvas] = useState<CanvasState>(emptyCanvas);
   const canvasRef = useRef(canvas);
@@ -893,6 +902,8 @@ function Home() {
   const canvasAbortControllerRef =
     useRef<AbortController | null>(null);
 
+  const bootstrappedWorkspaceRef = useRef<string | null>(null);
+
   const slowResponseTimerRef =
     useRef<ReturnType<typeof setTimeout> | null>(
       null
@@ -917,9 +928,16 @@ function Home() {
   /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => {
     // Wait until workspace hydration completes
-    if (workspaceHydration.status !== "ready") {
+    if (workspaceHydration.status !== "ready" || !workspaceHydration.workspaceId) {
       return;
     }
+
+    // Hydration deps can change identity after the first ready pass.
+    // Creating a conversation on every pass leaves duplicate empty threads.
+    if (bootstrappedWorkspaceRef.current === workspaceHydration.workspaceId) {
+      return;
+    }
+    bootstrappedWorkspaceRef.current = workspaceHydration.workspaceId;
 
     // Phase 13.5: Initialize persistence revision from hydrated workspace
     if (workspaceHydration.workspace?.revision != null) {
@@ -1053,6 +1071,10 @@ function Home() {
           const latestConversation =
             savedConversations[0];
 
+          activeConversationIdRef.current = latestConversation.id;
+          canvasOwnerConversationIdRef.current = latestConversation.id;
+          currentWorkspaceIdRef.current = workspaceHydration.workspaceId;
+
           setConversationId(
             latestConversation.id
           );
@@ -1079,6 +1101,11 @@ function Home() {
       // No conversation exists yet
       const newConversation =
         createConversation();
+
+      activeConversationIdRef.current = newConversation.id;
+      canvasOwnerConversationIdRef.current = newConversation.id;
+      currentWorkspaceIdRef.current = workspaceHydration.workspaceId;
+      setConversations([newConversation]);
 
       setConversationId(newConversation.id);
 
@@ -2319,7 +2346,7 @@ function Home() {
 
   if (workspaceHydration.status === "loading") {
     return (
-      <div className="flex h-screen w-screen items-center justify-center bg-zinc-950 text-white">
+      <div className="flex h-dvh w-full items-center justify-center bg-zinc-950 text-white">
         <div className="flex flex-col items-center gap-4">
           <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
           <p className="text-sm font-medium text-zinc-400">Loading Echo Workspace…</p>
@@ -2330,7 +2357,7 @@ function Home() {
 
   if (workspaceHydration.status === "error") {
     return (
-      <div className="flex h-screen w-screen items-center justify-center bg-zinc-950 p-6 text-white">
+      <div className="flex h-dvh w-full items-center justify-center bg-zinc-950 p-6 text-white">
         <div className="max-w-md rounded-2xl border border-zinc-800 bg-zinc-900/60 p-6 text-center backdrop-blur">
           <div className="mb-3 text-3xl">⚠️</div>
           <h2 className="text-lg font-semibold text-zinc-100">
@@ -2365,16 +2392,24 @@ function Home() {
   }
 
   return (
-    <div className="h-screen overflow-hidden bg-slate-50 dark:bg-zinc-950 text-zinc-900 dark:text-white transition-colors duration-200">
+    <div className="h-dvh overflow-hidden bg-slate-50 dark:bg-zinc-950 text-zinc-900 dark:text-white transition-colors duration-200">
       <div className="flex h-full min-w-0 flex-col">
 
         {/* Header */}
 
-        <header className="flex h-16 min-w-0 items-center justify-between border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 px-3 sm:px-6 backdrop-blur-md">
+        <header className="flex h-14 sm:h-16 min-w-0 items-center justify-between gap-2 overflow-hidden border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 px-3 sm:px-6 backdrop-blur-md">
 
           <div className="flex min-w-0 items-center gap-2 sm:gap-4 pr-1 sm:pr-4">
             <button
-              onClick={() => setIsHistoryOpen((v) => !v)}
+              onClick={() =>
+                setIsHistoryOpen((open) => {
+                  const next = !open;
+                  if (next && window.matchMedia("(max-width: 1023px)").matches) {
+                    setIsConversationOpen(false);
+                  }
+                  return next;
+                })
+              }
               className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 transition"
               title="Toggle History"
             >
@@ -2405,10 +2440,12 @@ function Home() {
               conversationStatus={conversationPersistenceStatus} 
             />
 
-            <RoomControls
-              connection={roomConnection}
-              followInterruptedNotice={followInterruptedNotice}
-            />
+            <div className="echo-header-room shrink-0">
+              <RoomControls
+                connection={roomConnection}
+                followInterruptedNotice={followInterruptedNotice}
+              />
+            </div>
 
             {meeting.meeting.status === "in-meeting" ? (
               <div
@@ -2417,7 +2454,7 @@ function Home() {
                 title={`${1 + meeting.meeting.participants.size} in meeting`}
               >
                 <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-emerald-400 animate-pulse" />
-                <span className="font-medium whitespace-nowrap">
+                <span className="hidden sm:inline font-medium whitespace-nowrap">
                   In Meeting
                 </span>
               </div>
@@ -2430,7 +2467,7 @@ function Home() {
                 title="Echo is processing your request"
               >
                 <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
-                <span className="font-medium">
+                <span className="hidden sm:inline font-medium">
                   {slowThinking ? "Echo Reasoning…" : "Echo Thinking…"}
                 </span>
               </div>
@@ -2441,7 +2478,7 @@ function Home() {
                 title="Listening to your microphone"
               >
                 <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-                <span className="font-medium">Listening…</span>
+                <span className="hidden sm:inline font-medium">Listening…</span>
               </div>
             ) : (
               <div
@@ -2457,7 +2494,15 @@ function Home() {
             <ThemeToggle />
 
             <button
-              onClick={() => setIsConversationOpen((v) => !v)}
+              onClick={() =>
+                setIsConversationOpen((open) => {
+                  const next = !open;
+                  if (next && window.matchMedia("(max-width: 1023px)").matches) {
+                    setIsHistoryOpen(false);
+                  }
+                  return next;
+                })
+              }
               className="ml-1 flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 transition"
               title="Toggle Conversation"
             >
@@ -2473,6 +2518,15 @@ function Home() {
         {/* Workspace */}
 
         <div className="relative flex min-h-0 min-w-0 flex-1 overflow-hidden">
+
+          {isHistoryOpen ? (
+            <button
+              type="button"
+              className="absolute inset-0 z-30 bg-zinc-950/40 md:hidden"
+              aria-label="Close conversation history"
+              onClick={() => setIsHistoryOpen(false)}
+            />
+          ) : null}
 
           {/* History Sidebar */}
 
@@ -2765,7 +2819,7 @@ function Home() {
 
             <div
               data-testid="composer-dock"
-              className="shrink-0 w-full border-t border-zinc-200/80 dark:border-zinc-800/40 bg-white/80 dark:bg-zinc-950/80 px-4 py-2.5 sm:py-3 flex justify-center items-center z-10 backdrop-blur-md"
+              className="relative z-50 shrink-0 w-full border-t border-zinc-200/80 dark:border-zinc-800/40 bg-white/80 dark:bg-zinc-950/80 px-3 sm:px-4 py-2.5 sm:py-3 flex justify-center items-center backdrop-blur-md"
             >
               <div className="w-full max-w-3xl">
                 <div className="flex flex-col overflow-hidden rounded-2xl border border-zinc-200 dark:border-zinc-700/50 bg-white/95 dark:bg-zinc-900/80 p-2 shadow-xl dark:shadow-2xl backdrop-blur-xl transition-all focus-within:border-indigo-400 dark:focus-within:border-zinc-500/50 focus-within:bg-white dark:focus-within:bg-zinc-900/95">
@@ -2880,7 +2934,7 @@ function Home() {
 
           {/* Conversation */}
 
-          <aside className={`flex shrink-0 flex-col overflow-hidden bg-white dark:bg-zinc-950 transition-all duration-300 ${isConversationOpen ? "absolute inset-y-0 right-0 z-40 w-full sm:w-96 lg:static lg:z-auto border-l border-zinc-200 dark:border-zinc-800 shadow-2xl lg:shadow-none" : "w-0 border-l-0"}`}>
+          <aside className={`flex shrink-0 flex-col overflow-hidden bg-white dark:bg-zinc-950 transition-all duration-300 ${isConversationOpen ? "absolute inset-y-0 right-0 z-30 w-full sm:w-96 lg:static lg:z-auto border-l border-zinc-200 dark:border-zinc-800 shadow-2xl lg:shadow-none" : "w-0 border-l-0"}`}>
             <div className="flex h-full w-full sm:w-96 flex-col">
               <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 p-5">
                 <div>
@@ -2906,7 +2960,7 @@ function Home() {
 
               {/* Messages */}
 
-              <div className="flex-1 space-y-4 overflow-y-auto p-5">
+              <div className="flex-1 space-y-4 overflow-y-auto p-5 pb-44 lg:pb-5">
 
                 {messages.length === 0 ? (
                   <div className="flex h-full items-center justify-center">

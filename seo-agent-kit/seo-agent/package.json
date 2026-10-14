@@ -1,0 +1,17 @@
+{
+  "name": "seo-agent",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Autonomous AI agent that rewrites page titles/meta descriptions from Google Search Console data, measures results and rolls back losers.",
+  "scripts": {
+    "run": "node src/run.mjs",
+    "dry-run": "DRY_RUN=1 node src/run.mjs"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "dependencies": {
+    "googleapis": "^150.0.0"
+  }
+}

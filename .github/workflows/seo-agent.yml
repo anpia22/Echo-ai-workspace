@@ -1,0 +1,52 @@
+name: SEO agent
+
+on:
+  schedule:
+    - cron: '30 2 * * 1'   # every Monday 08:00 IST
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run (show suggestions, change nothing)'
+        type: boolean
+        default: true
+
+permissions:
+  contents: write
+
+concurrency: seo-agent
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install
+        working-directory: seo-agent
+        run: npm install --no-audit --no-fund
+
+      - name: Run agent
+        working-directory: seo-agent
+        env:
+          GSC_PROPERTY: ${{ vars.GSC_PROPERTY }}
+          SITE_URL: ${{ vars.SITE_URL }}
+          GOOGLE_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_SERVICE_ACCOUNT_JSON }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          DRY_RUN: ${{ (github.event_name == 'workflow_dispatch' && inputs.dry_run) && '1' || '0' }}
+        run: npm run run | tee ../seo-agent-log.txt
+
+      - name: Commit changes (triggers your normal deploy)
+        run: |
+          if git diff --quiet seo/; then
+            echo "No metadata changes this week."
+            exit 0
+          fi
+          git config user.name "seo-agent"
+          git config user.email "seo-agent@users.noreply.github.com"
+          git add seo/meta-overrides.json seo/history.json
+          git commit -m "seo-agent: update titles/meta descriptions" -m "$(head -c 60000 seo-agent-log.txt)"
+          git push
