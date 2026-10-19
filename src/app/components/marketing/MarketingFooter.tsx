@@ -7,6 +7,8 @@ const FOOTER_LINKS = [
   { href: "/use-cases", label: "Use Cases" },
   { href: "/demo", label: "Demo" },
   { href: "/blog", label: "Blog" },
+  { href: "/privacy", label: "Privacy" },
+  { href: "/terms", label: "Terms" },
 ];
 
 export default function MarketingFooter() {

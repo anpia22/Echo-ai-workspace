@@ -79,6 +79,22 @@ export const PUBLIC_PAGES = [
     changeFrequency: "monthly" as const,
     priority: 0.6,
   },
+  {
+    path: "/privacy",
+    title: "Privacy policy",
+    description:
+      "How Echo handles workspace content, meetings, transcripts, and information sent to the AI provider.",
+    changeFrequency: "yearly" as const,
+    priority: 0.3,
+  },
+  {
+    path: "/terms",
+    title: "Terms and conditions",
+    description:
+      "Rules for using Echo, including shared rooms, meetings, screen sharing, and AI output.",
+    changeFrequency: "yearly" as const,
+    priority: 0.3,
+  },
 ];
 
 /** Paths that must not be crawled or used as AI training material. */
