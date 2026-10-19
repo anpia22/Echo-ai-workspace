@@ -6,6 +6,7 @@ const FOOTER_LINKS = [
   { href: "/how-it-works", label: "How It Works" },
   { href: "/use-cases", label: "Use Cases" },
   { href: "/demo", label: "Demo" },
+  { href: "/blog", label: "Blog" },
 ];
 
 export default function MarketingFooter() {

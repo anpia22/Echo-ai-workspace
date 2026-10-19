@@ -47,6 +47,38 @@ export const PUBLIC_PAGES = [
     changeFrequency: "monthly" as const,
     priority: 0.7,
   },
+  {
+    path: "/blog",
+    title: "Blog",
+    description:
+      "Notes on AI workspaces, live meetings, screen presence, and collaborative visual thinking.",
+    changeFrequency: "weekly" as const,
+    priority: 0.7,
+  },
+  {
+    path: "/blog/ai-workspace-for-live-meetings",
+    title: "AI workspace for live meetings",
+    description:
+      "Why an AI workspace belongs inside the meeting so conversation and the canvas stay in one room.",
+    changeFrequency: "monthly" as const,
+    priority: 0.6,
+  },
+  {
+    path: "/blog/screen-presence-collaborative-meetings",
+    title: "Screen presence in collaborative meetings",
+    description:
+      "How screen presence, screen sharing, and a single presenter keep a collaborative meeting on one workspace.",
+    changeFrequency: "monthly" as const,
+    priority: 0.6,
+  },
+  {
+    path: "/blog/visual-ai-workspace-from-conversation",
+    title: "Visual AI workspace",
+    description:
+      "How a visual AI workspace turns meeting conversation into a canvas the team can keep editing.",
+    changeFrequency: "monthly" as const,
+    priority: 0.6,
+  },
 ];
 
 /** Paths that must not be crawled or used as AI training material. */

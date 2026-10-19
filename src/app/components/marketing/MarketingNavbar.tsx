@@ -11,6 +11,7 @@ const NAV_LINKS = [
   { href: "/how-it-works", label: "How It Works" },
   { href: "/use-cases", label: "Use Cases" },
   { href: "/demo", label: "Demo" },
+  { href: "/blog", label: "Blog" },
 ];
 
 export default function MarketingNavbar() {
@@ -54,7 +55,10 @@ export default function MarketingNavbar() {
           aria-label="Marketing Navigation"
         >
           {NAV_LINKS.map((link) => {
-            const isActive = pathname === link.href;
+            const isActive =
+              link.href === "/blog"
+                ? pathname.startsWith("/blog")
+                : pathname === link.href;
             return (
               <Link
                 key={link.href}
@@ -126,7 +130,10 @@ export default function MarketingNavbar() {
       >
         <nav className="flex flex-col space-y-1">
           {NAV_LINKS.map((link) => {
-            const isActive = pathname === link.href;
+            const isActive =
+              link.href === "/blog"
+                ? pathname.startsWith("/blog")
+                : pathname === link.href;
             return (
               <Link
                 key={link.href}
