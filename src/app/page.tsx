@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
 } from "react";
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import EchoCanvas, { type ViewportApi } from "./components/EchoCanvas";
 import RoomControls from "./components/RoomControls";
@@ -2699,6 +2700,18 @@ function Home() {
                 </div>
               )}
 
+            </div>
+
+            <div className="border-t border-zinc-200 p-3 dark:border-zinc-800">
+              <Link
+                href="/about"
+                className="flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-900 dark:hover:text-white"
+              >
+                About Echo
+                <span aria-hidden="true" className="text-zinc-400">
+                  →
+                </span>
+              </Link>
             </div>
             </div>
 
