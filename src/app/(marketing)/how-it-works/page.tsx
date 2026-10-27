@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { withSeo } from "@/lib/seo";
+import { ECHO_FAQ } from "@/lib/geo";
 import OpenEchoButton from "../../components/marketing/OpenEchoButton";
+import FaqSection from "../../components/seo/FaqSection";
 import { FadeIn } from "../../components/marketing/motion";
 
 export const metadata: Metadata = withSeo("/how-it-works", {
@@ -656,6 +658,10 @@ export default function HowItWorksPage() {
         }
         visual={<ContinuationVisual />}
       />
+
+      <Divider />
+
+      <FaqSection items={ECHO_FAQ} />
 
       <Divider />
 

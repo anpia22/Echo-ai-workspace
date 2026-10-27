@@ -75,7 +75,7 @@ export default function BlogIndexPage() {
                   {post.excerpt}
                 </p>
                 <ul className="mt-4 flex flex-wrap gap-2">
-                  {post.keywords.slice(0, 3).map((keyword) => (
+                  {post.keywords.slice(0, 5).map((keyword) => (
                     <li
                       key={keyword}
                       className="rounded-full border border-zinc-200 px-2.5 py-0.5 text-[11px] font-medium text-zinc-500 dark:border-zinc-700 dark:text-zinc-400"

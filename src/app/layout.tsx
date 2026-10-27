@@ -43,6 +43,15 @@ export const metadata: Metadata = {
 };
 
 import { ThemeProvider } from "./components/theme/ThemeProvider";
+import JsonLd from "./components/seo/JsonLd";
+import {
+  organizationJsonLd,
+  softwareApplicationJsonLd,
+  websiteJsonLd,
+} from "@/lib/geo";
+
+// Static (no headers()) so the root layout doesn't force every route to render dynamically.
+const staticSiteUrl = (process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL)?.replace(/\/$/, "");
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
@@ -59,6 +68,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         />
       </head>
       <body className="min-h-full flex flex-col transition-colors duration-200">
+        <JsonLd data={organizationJsonLd(staticSiteUrl)} />
+        <JsonLd data={websiteJsonLd(staticSiteUrl)} />
+        <JsonLd data={softwareApplicationJsonLd(staticSiteUrl)} />
         <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>

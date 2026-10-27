@@ -80,6 +80,22 @@ export const PUBLIC_PAGES = [
     priority: 0.6,
   },
   {
+    path: "/blog/future-of-remote-meetings-ai-workspace-screen-sharing",
+    title: "The Future of Remote Meetings: AI Workspaces & Screen Sharing",
+    description:
+      "How next-generation AI workspaces, integrated screen sharing, and real-time collaboration eliminate meeting fatigue for remote teams.",
+    changeFrequency: "monthly" as const,
+    priority: 0.6,
+  },
+  {
+    path: "/blog/spatial-ai-canvas-screen-meetings-collaboration",
+    title: "Beyond Static Slides: Real-Time AI Canvas & Live Screen Meetings",
+    description:
+      "How spatial AI canvas technology, real-time screen sharing, and interactive meetings transform brainstorming and team collaboration.",
+    changeFrequency: "monthly" as const,
+    priority: 0.6,
+  },
+  {
     path: "/privacy",
     title: "Privacy policy",
     description:

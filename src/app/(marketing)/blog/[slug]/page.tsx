@@ -5,7 +5,9 @@ import { notFound } from "next/navigation";
 import { withSeo } from "@/lib/seo";
 import { BLOG_POSTS, formatBlogDate, getBlogPost } from "@/lib/blog";
 import { getSiteUrl } from "@/lib/site";
+import { breadcrumbJsonLd } from "@/lib/geo";
 import OpenEchoButton from "../../../components/marketing/OpenEchoButton";
+import JsonLd from "../../../components/seo/JsonLd";
 
 type PageProps = {
   params: Promise<{ slug: string }>;
@@ -53,6 +55,14 @@ const RELATED: Record<string, { href: string; label: string }[]> = {
     { href: "/use-cases", label: "Use cases" },
     { href: "/blog/ai-workspace-for-live-meetings", label: "AI workspace for meetings" },
   ],
+  "future-of-remote-meetings-ai-workspace-screen-sharing": [
+    { href: "/demo", label: "Echo demo" },
+    { href: "/blog/spatial-ai-canvas-screen-meetings-collaboration", label: "Spatial AI canvas & screen meetings" },
+  ],
+  "spatial-ai-canvas-screen-meetings-collaboration": [
+    { href: "/how-it-works", label: "How Echo works" },
+    { href: "/blog/future-of-remote-meetings-ai-workspace-screen-sharing", label: "Future of remote meetings" },
+  ],
 };
 
 export default async function BlogPostPage({ params }: PageProps) {
@@ -70,18 +80,26 @@ export default async function BlogPostPage({ params }: PageProps) {
     datePublished: post.publishedAt,
     dateModified: post.publishedAt,
     keywords: post.keywords.join(", "),
-    author: { "@type": "Organization", name: "Echo" },
-    publisher: { "@type": "Organization", name: "Echo" },
+    author: { "@type": "Organization", name: "Echo", url: siteUrl },
+    publisher: {
+      "@type": "Organization",
+      name: "Echo",
+      url: siteUrl,
+      logo: { "@type": "ImageObject", url: `${siteUrl}/favicon.ico` },
+    },
     mainEntityOfPage: `${siteUrl}/blog/${post.slug}`,
     image: `${siteUrl}${post.image}`,
   };
+  const breadcrumbs = breadcrumbJsonLd([
+    { name: "Home", url: siteUrl },
+    { name: "Blog", url: `${siteUrl}/blog` },
+    { name: post.title, url: `${siteUrl}/blog/${post.slug}` },
+  ]);
 
   return (
     <article className="mx-auto flex w-full max-w-3xl flex-col gap-10">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
+      <JsonLd data={jsonLd} />
+      <JsonLd data={breadcrumbs} />
 
       <header className="flex flex-col gap-4">
         <p className="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-500">
