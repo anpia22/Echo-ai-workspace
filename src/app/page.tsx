@@ -2413,13 +2413,15 @@ function Home() {
               }
               className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 transition"
               title="Toggle History"
+              aria-label="Toggle conversation history"
+              aria-expanded={isHistoryOpen}
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M4 6h16M4 12h16M4 18h7" strokeLinecap="round" strokeLinejoin="round"/>
               </svg>
             </button>
 
-            <div className="min-w-0 max-w-[95px] sm:max-w-xs">
+            <div className="min-w-0 max-w-[120px] sm:max-w-xs">
               <h1 className="text-lg sm:text-xl font-semibold text-zinc-900 dark:text-white">
                 Echo
               </h1>
@@ -2481,16 +2483,7 @@ function Home() {
                 <span className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
                 <span className="hidden sm:inline font-medium">Listening…</span>
               </div>
-            ) : (
-              <div
-                data-testid="header-ai-status"
-                className="flex items-center gap-1.5 text-xs text-zinc-500 dark:text-zinc-400"
-                title="Echo AI is ready"
-              >
-                <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                <span className="hidden sm:inline">AI Ready</span>
-              </div>
-            )}
+            ) : null}
 
             <ThemeToggle />
 
@@ -2506,6 +2499,8 @@ function Home() {
               }
               className="ml-1 flex h-8 w-8 items-center justify-center rounded-lg text-zinc-500 hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-200 transition"
               title="Toggle Conversation"
+              aria-label="Toggle conversation panel"
+              aria-expanded={isConversationOpen}
             >
               <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                 <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" strokeLinecap="round" strokeLinejoin="round"/>
@@ -2523,7 +2518,7 @@ function Home() {
           {isHistoryOpen ? (
             <button
               type="button"
-              className="absolute inset-0 z-30 bg-zinc-950/40 md:hidden"
+              className="absolute inset-0 z-[55] bg-zinc-950/40 md:hidden"
               aria-label="Close conversation history"
               onClick={() => setIsHistoryOpen(false)}
             />
@@ -2531,7 +2526,7 @@ function Home() {
 
           {/* History Sidebar */}
 
-          <aside className={`flex shrink-0 flex-col overflow-hidden bg-white dark:bg-zinc-950 transition-all duration-300 ${isHistoryOpen ? "absolute inset-y-0 left-0 z-40 w-64 md:static md:z-auto border-r border-zinc-200 dark:border-zinc-800 shadow-2xl md:shadow-none" : "w-0 border-r-0"}`}>
+          <aside className={`flex shrink-0 flex-col overflow-hidden bg-white dark:bg-zinc-950 transition-all duration-300 ${isHistoryOpen ? "absolute inset-y-0 left-0 z-[60] w-64 md:static md:z-auto border-r border-zinc-200 dark:border-zinc-800 shadow-2xl md:shadow-none" : "w-0 border-r-0"}`}>
             <div className="flex h-full w-64 flex-col">
               <div className="border-b border-zinc-200 dark:border-zinc-800 p-4">
 
@@ -2702,17 +2697,31 @@ function Home() {
 
             </div>
 
-            <div className="border-t border-zinc-200 p-3 dark:border-zinc-800">
-              <Link
-                href="/about"
-                className="flex items-center justify-between rounded-lg px-3 py-2.5 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-900 dark:hover:text-white"
-              >
-                About Echo
-                <span aria-hidden="true" className="text-zinc-400">
-                  →
-                </span>
-              </Link>
-            </div>
+            <nav
+              aria-label="About Echo"
+              className="border-t border-zinc-200 p-3 dark:border-zinc-800"
+            >
+              <div className="mb-1 px-2 text-xs font-medium uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
+                Learn about Echo
+              </div>
+              <div className="grid grid-cols-2 gap-1">
+                {[
+                  { href: "/about", label: "About" },
+                  { href: "/how-it-works", label: "How it works" },
+                  { href: "/use-cases", label: "Use cases" },
+                  { href: "/demo", label: "Demo" },
+                  { href: "/blog", label: "Blog" },
+                ].map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="rounded-lg px-2 py-2 text-sm font-medium text-zinc-700 transition hover:bg-zinc-100 hover:text-zinc-900 dark:text-zinc-300 dark:hover:bg-zinc-900 dark:hover:text-white"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </div>
+            </nav>
             </div>
 
           </aside>
@@ -2867,12 +2876,23 @@ function Home() {
                             : "bg-zinc-100 text-zinc-600 hover:bg-zinc-200 hover:text-zinc-900 dark:bg-zinc-800 dark:text-zinc-400 dark:hover:bg-zinc-700 dark:hover:text-zinc-200"
                         }`}
                         title={loading ? "Echo is thinking..." : isListening ? "Stop listening" : "Start voice input"}
+                        aria-label={isListening ? "Stop voice input" : "Start voice input"}
                       >
-                        {isListening ? "⏹" : "🎙️"}
+                        {isListening ? (
+                          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                            <rect x="6" y="6" width="12" height="12" rx="2" />
+                          </svg>
+                        ) : (
+                          <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                            <rect x="9" y="3" width="6" height="12" rx="3" />
+                            <path d="M5 11a7 7 0 0 0 14 0M12 18v3" />
+                          </svg>
+                        )}
                       </button>
 
                       <button
                         onClick={analyzeTranscript}
+                        aria-label="Send message"
                         disabled={loading || isListening || !transcript.trim()}
                         className="flex h-9 w-9 items-center justify-center rounded-xl bg-zinc-900 text-white transition-all hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-zinc-100 disabled:text-zinc-400 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-600"
                         title={loading ? "Echo is thinking..." : "Send message (Enter)"}
@@ -2897,6 +2917,8 @@ function Home() {
                       <select
                         value={voiceLanguage}
                         onChange={(event) => setVoiceLanguage(event.target.value)}
+                        aria-label="Voice input language"
+                        title="Voice input language"
                         disabled={isListening || loading}
                         className="rounded-md border border-zinc-200 dark:border-zinc-800/60 bg-transparent px-2 py-1 text-xs text-zinc-600 dark:text-zinc-500 outline-none transition hover:border-zinc-300 dark:hover:border-zinc-700 hover:text-zinc-900 dark:hover:text-zinc-400 disabled:cursor-not-allowed disabled:opacity-50"
                       >
@@ -2947,7 +2969,7 @@ function Home() {
 
           {/* Conversation */}
 
-          <aside className={`flex shrink-0 flex-col overflow-hidden bg-white dark:bg-zinc-950 transition-all duration-300 ${isConversationOpen ? "absolute inset-y-0 right-0 z-30 w-full sm:w-96 lg:static lg:z-auto border-l border-zinc-200 dark:border-zinc-800 shadow-2xl lg:shadow-none" : "w-0 border-l-0"}`}>
+          <aside className={`flex shrink-0 flex-col overflow-hidden bg-white dark:bg-zinc-950 transition-all duration-300 ${isConversationOpen ? "absolute inset-y-0 right-0 z-[60] w-full sm:w-96 lg:static lg:z-auto border-l border-zinc-200 dark:border-zinc-800 shadow-2xl lg:shadow-none" : "w-0 border-l-0"}`}>
             <div className="flex h-full w-full sm:w-96 flex-col">
               <div className="flex items-center justify-between border-b border-zinc-200 dark:border-zinc-800 p-5">
                 <div>

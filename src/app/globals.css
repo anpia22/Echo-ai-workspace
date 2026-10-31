@@ -38,7 +38,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }
 
 /* Balanced headlines overflow the viewport on narrow screens and clip mid-word. */
@@ -117,11 +117,14 @@ body {
   color: #71717a !important;
 }
 
-/* Hide minimap and controls completely on mobile/portrait tablet screens to avoid collision and crowding */
+/* Hide the minimap on small screens; keep zoom controls, lifted above the composer */
 @media (max-width: 768px) {
-  .react-flow__minimap,
-  .react-flow__controls {
+  .react-flow__minimap {
     display: none !important;
+  }
+
+  .react-flow__controls {
+    margin: 0 0 12px 12px !important;
   }
 }
 
@@ -244,6 +247,62 @@ body {
   .animate-fade-in {
     animation: none !important;
     transform: none !important;
+  }
+}
+
+/* Marketing environment: one fixed backdrop so scrolling feels like moving across a canvas */
+.echo-env {
+  background-image:
+    radial-gradient(60rem 36rem at 15% -5%, rgba(99, 102, 241, 0.14), transparent 60%),
+    radial-gradient(48rem 32rem at 90% 45%, rgba(139, 92, 246, 0.09), transparent 65%),
+    radial-gradient(rgba(113, 113, 122, 0.22) 1px, transparent 1px);
+  background-size: auto, auto, 28px 28px;
+  animation: env-drift 70s ease-in-out infinite alternate;
+}
+
+html.light .echo-env {
+  background-image:
+    radial-gradient(60rem 36rem at 15% -5%, rgba(99, 102, 241, 0.09), transparent 60%),
+    radial-gradient(48rem 32rem at 90% 45%, rgba(139, 92, 246, 0.06), transparent 65%),
+    radial-gradient(rgba(100, 116, 139, 0.2) 1px, transparent 1px);
+}
+
+@keyframes env-drift {
+  from {
+    background-position: 0 0, 0 0, 0 0;
+  }
+  to {
+    background-position: 40px 30px, -30px 20px, 28px 28px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .echo-env {
+    animation: none;
+  }
+}
+
+/* Dark marketing: lift dim captions to readable contrast */
+.dark .marketing-content .text-zinc-500:not([class*="dark:text"]),
+.dark .marketing-content .text-zinc-600:not([class*="dark:text"]) {
+  color: #a1a1aa;
+}
+
+/* Keyboard focus and touch targets across marketing chrome */
+.echo-marketing a:focus-visible,
+.echo-marketing button:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+  border-radius: 0.5rem;
+}
+
+@media (pointer: coarse) {
+  .echo-marketing header a,
+  .echo-marketing header button,
+  .echo-marketing footer a {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
   }
 }
 

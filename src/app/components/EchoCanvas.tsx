@@ -179,6 +179,16 @@ const getNodeStyle = (nodeType?: string, isLight: boolean = false) => {
           descColor: "#6b21a8",
         };
 
+      case "idea":
+        return {
+          background: "linear-gradient(145deg, #ffffff 0%, #eef2ff 100%)",
+          border: "1px solid rgba(99, 102, 241, 0.4)",
+          borderTop: "2px solid #6366f1",
+          color: "#4338ca",
+          titleColor: "#312e81",
+          descColor: "#4338ca",
+        };
+
       default:
         return {
           background: "linear-gradient(145deg, #ffffff 0%, #f8fafc 100%)",
@@ -242,6 +252,16 @@ const getNodeStyle = (nodeType?: string, isLight: boolean = false) => {
         descColor: "#d4d4d8",
       };
 
+    case "idea":
+      return {
+        background: "linear-gradient(145deg, rgba(25,27,52,0.8) 0%, rgba(12,12,28,0.9) 100%)",
+        border: "1px solid rgba(99, 102, 241, 0.3)",
+        borderTop: "1px solid rgba(99, 102, 241, 0.6)",
+        color: "#a5b4fc",
+        titleColor: "#ffffff",
+        descColor: "#d4d4d8",
+      };
+
     default:
       return {
         background: "linear-gradient(145deg, rgba(24,24,27,0.8) 0%, rgba(9,9,11,0.9) 100%)",
@@ -257,7 +277,7 @@ const getNodeStyle = (nodeType?: string, isLight: boolean = false) => {
 const getNodeGlyph = (nodeType?: string) => {
   switch (nodeType) {
     case "problem":
-      return "⚠️";
+      return "▲";
     case "solution":
       return "✓";
     case "decision":
@@ -295,8 +315,8 @@ function EchoNode({ data, selected }: NodeProps<Node<EchoNodeData>>) {
       }`}
       style={{
         ...nodeStyle,
-        borderRadius: "20px",
-        padding: "18px 20px",
+        borderRadius: "14px",
+        padding: "16px 18px",
         width: NODE_WIDTH,
         minHeight: 120,
         boxShadow: isLight
@@ -306,8 +326,6 @@ function EchoNode({ data, selected }: NodeProps<Node<EchoNodeData>>) {
           : isSelected
           ? "0 16px 36px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.15)"
           : "0 12px 32px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.05)",
-        backdropFilter: "blur(12px)",
-        WebkitBackdropFilter: "blur(12px)",
       }}
     >
       <Handle type="target" position={Position.Top} id="t-top" style={handleStyle} isConnectable={false} />
@@ -320,7 +338,7 @@ function EchoNode({ data, selected }: NodeProps<Node<EchoNodeData>>) {
       <Handle type="source" position={Position.Left} id="s-left" style={handleStyle} isConnectable={false} />
 
       <div className="mb-2 flex items-center justify-between">
-        <span className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest opacity-80">
+        <span className="flex items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest">
           <span className="text-[11px] leading-none opacity-90">{getNodeGlyph(data.nodeType)}</span>
           <span>{data.nodeType}</span>
         </span>
@@ -335,7 +353,7 @@ function EchoNode({ data, selected }: NodeProps<Node<EchoNodeData>>) {
 
       {data.description ? (
         <div
-          className="mt-2.5 text-xs font-medium leading-relaxed opacity-75"
+          className="mt-2 text-[13px] font-normal leading-relaxed"
           style={{ color: nodeStyle.descColor }}
         >
           {data.description}
@@ -348,10 +366,10 @@ function EchoNode({ data, selected }: NodeProps<Node<EchoNodeData>>) {
 function EchoGroup({ data }: NodeProps<Node<EchoGroupData>>) {
   return (
     <div
-      className="h-full w-full rounded-[24px] border-2 border-dashed border-zinc-300 dark:border-zinc-700/50 bg-slate-100/40 dark:bg-zinc-900/20 backdrop-blur-[2px] transition-all duration-500"
+      className="h-full w-full rounded-[20px] border-2 border-dashed border-indigo-300/70 dark:border-indigo-400/30 bg-indigo-50/50 dark:bg-indigo-500/[0.06] transition-all duration-500"
       style={{ pointerEvents: "none" }}
     >
-      <div className="px-4 py-3 text-xs font-bold uppercase tracking-widest text-zinc-600 dark:text-zinc-500">
+      <div className="m-3 inline-block rounded-full bg-indigo-100 dark:bg-indigo-500/20 px-3 py-1 text-xs font-semibold uppercase tracking-widest text-indigo-700 dark:text-indigo-200">
         {data.title}
       </div>
     </div>
@@ -885,7 +903,7 @@ function EchoCanvasInner({
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
         fitView
-        fitViewOptions={{ padding: 0.24 }}
+        fitViewOptions={{ padding: 0.12 }}
         minZoom={0.2}
         maxZoom={2}
         nodesConnectable={false}
@@ -894,7 +912,7 @@ function EchoCanvasInner({
       >
         <Background color={isLight ? "#cbd5e1" : "#27272a"} gap={20} />
 
-        <Controls className="hidden sm:flex" />
+        <Controls showInteractive={false} />
 
         <MiniMap
           className="hidden md:block"
@@ -924,6 +942,10 @@ function EchoCanvasInner({
 
             if (nodeType === "question") {
               return "#a855f7";
+            }
+
+            if (nodeType === "idea") {
+              return "#6366f1";
             }
 
             return isLight ? "#94a3b8" : "#71717a";

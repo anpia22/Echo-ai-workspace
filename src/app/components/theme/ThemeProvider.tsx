@@ -22,7 +22,7 @@ function getSystemTheme(): ResolvedTheme {
 }
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<ThemePreference>("system");
+  const [theme, setThemeState] = useState<ThemePreference>("dark");
   const [systemTheme, setSystemTheme] = useState<ResolvedTheme>("dark");
   const [mounted, setMounted] = useState(false);
 
