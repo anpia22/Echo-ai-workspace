@@ -56,6 +56,14 @@ export const PUBLIC_PAGES = [
     priority: 0.7,
   },
   {
+    path: "/blog/what-problem-does-ai-solve-context-fragmentation",
+    title: "What Problem Does AI Actually Solve? Context Fragmentation in Modern Work",
+    description:
+      "How context-aware AI workspaces eliminate meeting amnesia and solve the multi-billion dollar context fragmentation crisis.",
+    changeFrequency: "monthly" as const,
+    priority: 0.7,
+  },
+  {
     path: "/blog/ai-workspace-for-live-meetings",
     title: "AI workspace for live meetings",
     description:
