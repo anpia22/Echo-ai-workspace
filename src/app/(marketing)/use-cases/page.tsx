@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { withSeo } from "@/lib/seo";
-import OpenEchoButton from "../../components/marketing/OpenEchoButton";
-import { FadeIn, Stagger } from "../../components/marketing/motion";
+import UseCaseTabs, { type UseCaseTab } from "../../components/marketing/UseCaseTabs";
+import { CtaBand, GradientText, PageHero, SectionHeader } from "../../components/marketing/ui";
+import { Stagger } from "../../components/marketing/motion";
 
 export const metadata: Metadata = withSeo("/use-cases", {
   title: "Use Cases",
@@ -15,25 +15,6 @@ export const metadata: Metadata = withSeo("/use-cases", {
     type: "website",
   },
 });
-
-// ─── Shared decorators ────────────────────────────────────────────────────────
-
-function SectionLabel({ children, className = "" }: { children: string; className?: string }) {
-  return (
-    <span className={`text-xs font-semibold uppercase tracking-[0.15em] text-zinc-500 ${className}`}>
-      {children}
-    </span>
-  );
-}
-
-function Divider() {
-  return (
-    <div
-      aria-hidden="true"
-      className="h-px bg-gradient-to-r from-transparent via-zinc-800 to-transparent"
-    />
-  );
-}
 
 // ─── Section 2: Thinking Modes Overview Map ───────────────────────────────────
 
@@ -114,7 +95,7 @@ function OverviewMap() {
             {modes.map((mode) => (
               <div
                 key={mode.name}
-                className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-4 text-center backdrop-blur-sm hover:-translate-y-1.5 hover:border-indigo-400 dark:hover:border-indigo-500/40 hover:bg-zinc-50 dark:hover:bg-zinc-900/80 hover:shadow-xl hover:shadow-indigo-500/10 transition-all duration-300 shadow-sm dark:shadow-none"
+                className="rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-4 text-center backdrop-blur-sm hover:-translate-y-1.5 hover:border-indigo-400 dark:hover:border-indigo-500/40 hover:bg-zinc-50 dark:hover:bg-zinc-900/80 hover:shadow-xl hover:shadow-indigo-500/10 transition-all duration-300 shadow-sm dark:shadow-none"
               >
                 <span className="block text-xs font-semibold uppercase tracking-wider text-zinc-900 dark:text-zinc-200">
                   {mode.name}
@@ -131,7 +112,7 @@ function OverviewMap() {
       {/* Mobile: Vertical Flow List */}
       <div className="block sm:hidden space-y-3">
         <div className="rounded-xl border border-zinc-200 dark:border-zinc-700 bg-white dark:bg-zinc-900 p-3.5 text-center shadow-md">
-          <span className="text-[10px] font-semibold uppercase tracking-[0.2em] text-indigo-600 dark:text-zinc-400 block mb-0.5">
+          <span className="text-xs font-semibold uppercase tracking-[0.2em] text-indigo-600 dark:text-zinc-400 block mb-0.5">
             One Workspace
           </span>
           <span className="text-xs font-semibold text-zinc-900 dark:text-white">
@@ -147,12 +128,12 @@ function OverviewMap() {
           {modes.map((mode) => (
             <div
               key={mode.name}
-              className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 p-3 text-center shadow-sm"
+              className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/60 p-3 text-center shadow-sm"
             >
               <span className="block text-xs font-semibold uppercase tracking-wider text-zinc-900 dark:text-zinc-200">
                 {mode.name}
               </span>
-              <span className="block text-[10px] text-zinc-500 dark:text-zinc-400 mt-1">
+              <span className="block text-xs text-zinc-500 dark:text-zinc-400 mt-1">
                 {mode.desc}
               </span>
             </div>
@@ -163,82 +144,15 @@ function OverviewMap() {
   );
 }
 
-// ─── Editorial Mode Wrapper ───────────────────────────────────────────────────
-
-interface ModeSectionProps {
-  number: string;
-  eyebrow: string;
-  heading: string;
-  description: string;
-  promptsTitle: string;
-  prompts: string[];
-  visual: React.ReactNode;
-  flip?: boolean;
-}
-
-function ModeSection({
-  number,
-  eyebrow,
-  heading,
-  description,
-  promptsTitle,
-  prompts,
-  visual,
-  flip = false,
-}: ModeSectionProps) {
-  return (
-    <section className="py-20 sm:py-28">
-      <div
-        className={`flex flex-col gap-12 md:gap-16 md:flex-row items-center ${
-          flip ? "md:flex-row-reverse" : ""
-        }`}
-      >
-        <FadeIn direction="up" className="flex-1 min-w-0">
-          <div className="flex items-center gap-3 mb-4">
-            <span className="text-xs font-mono text-zinc-500 font-medium select-none">{number}</span>
-            <div className="h-px w-6 bg-zinc-800" aria-hidden="true" />
-            <SectionLabel>{eyebrow}</SectionLabel>
-          </div>
-
-          <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-zinc-900 dark:text-white leading-snug mb-5 text-balance">
-            {heading}
-          </h2>
-
-          <p className="text-zinc-600 dark:text-zinc-400 leading-relaxed text-base mb-6 text-pretty">
-            {description}
-          </p>
-
-          <div className="rounded-xl border border-zinc-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-900/30 p-4 shadow-sm">
-            <span className="text-[10px] uppercase tracking-widest text-zinc-500 dark:text-zinc-400 font-semibold block mb-2.5">
-              {promptsTitle}
-            </span>
-            <ul className="space-y-2 text-xs text-zinc-700 dark:text-zinc-300">
-              {prompts.map((prompt, idx) => (
-                <li key={idx} className="flex items-start gap-2">
-                  <span className="mt-1 h-1 w-1 rounded-full bg-zinc-400 dark:bg-zinc-600 flex-shrink-0" />
-                  <span className="italic text-zinc-700 dark:text-zinc-300">&ldquo;{prompt}&rdquo;</span>
-                </li>
-              ))}
-            </ul>
-          </div>
-        </FadeIn>
-
-        <FadeIn direction="up" delay={120} className="flex-shrink-0 w-full md:w-auto md:max-w-xs lg:max-w-sm xl:max-w-md flex justify-center">
-          {visual}
-        </FadeIn>
-      </div>
-    </section>
-  );
-}
 
 // ─── Mode 01: Explore Visual ──────────────────────────────────────────────────
 
 function ExploreVisual() {
   return (
-    <div aria-hidden="true" className="w-full max-w-sm rounded-2xl border border-zinc-800 bg-zinc-950 p-4 select-none shadow-xl hover:border-indigo-500/40 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300">
+    <div aria-hidden="true" className="w-full max-w-sm rounded-2xl border border-zinc-700/70 bg-zinc-950 p-4 select-none shadow-xl hover:border-indigo-500/40 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300">
       <div className="flex items-center gap-2 mb-3 pb-2 border-b border-zinc-800/60">
         <div className="h-2 w-2 rounded-full bg-indigo-400 animate-pulse" />
-        <span className="text-[10px] uppercase tracking-wider text-indigo-400 font-semibold">
+        <span className="text-xs uppercase tracking-wider text-indigo-400 font-semibold">
           Exploratory Mapping
         </span>
       </div>
@@ -305,7 +219,7 @@ function ExploreVisual() {
       </svg>
 
       <div className="mt-2 text-center">
-        <span className="text-[10px] text-zinc-500">Give surrounding relationships somewhere to live</span>
+        <span className="text-xs text-zinc-500">Give surrounding relationships somewhere to live</span>
       </div>
     </div>
   );
@@ -315,10 +229,10 @@ function ExploreVisual() {
 
 function PlanVisual() {
   return (
-    <div aria-hidden="true" className="w-full max-w-sm rounded-2xl border border-zinc-800 bg-zinc-950 p-4 select-none shadow-xl hover:border-indigo-500/40 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300">
+    <div aria-hidden="true" className="w-full max-w-sm rounded-2xl border border-zinc-700/70 bg-zinc-950 p-4 select-none shadow-xl hover:border-indigo-500/40 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300">
       <div className="flex items-center gap-2 mb-3 pb-2 border-b border-zinc-800/60">
         <div className="h-2 w-2 rounded-full bg-indigo-400 animate-pulse" />
-        <span className="text-[10px] uppercase tracking-wider text-indigo-400 font-semibold">
+        <span className="text-xs uppercase tracking-wider text-indigo-400 font-semibold">
           Sequential Breakdown
         </span>
       </div>
@@ -375,7 +289,7 @@ function PlanVisual() {
       </svg>
 
       <div className="mt-2 text-center">
-        <span className="text-[10px] text-zinc-500">Break work apart and visualize the sequential path</span>
+        <span className="text-xs text-zinc-500">Break work apart and visualize the sequential path</span>
       </div>
     </div>
   );
@@ -385,10 +299,10 @@ function PlanVisual() {
 
 function DecideVisual() {
   return (
-    <div aria-hidden="true" className="w-full max-w-sm rounded-2xl border border-zinc-800 bg-zinc-950 p-4 select-none shadow-xl hover:border-indigo-500/40 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300">
+    <div aria-hidden="true" className="w-full max-w-sm rounded-2xl border border-zinc-700/70 bg-zinc-950 p-4 select-none shadow-xl hover:border-indigo-500/40 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300">
       <div className="flex items-center gap-2 mb-3 pb-2 border-b border-zinc-800/60">
         <div className="h-2 w-2 rounded-full bg-indigo-400 animate-pulse" />
-        <span className="text-[10px] uppercase tracking-wider text-indigo-400 font-semibold">
+        <span className="text-xs uppercase tracking-wider text-indigo-400 font-semibold">
           Option & Trade-off Matrix
         </span>
       </div>
@@ -441,7 +355,7 @@ function DecideVisual() {
       </svg>
 
       <div className="mt-2 text-center">
-        <span className="text-[10px] text-zinc-500">The human decides; Echo organizes the reasoning</span>
+        <span className="text-xs text-zinc-500">The human decides; Echo organizes the reasoning</span>
       </div>
     </div>
   );
@@ -451,10 +365,10 @@ function DecideVisual() {
 
 function CreateVisual() {
   return (
-    <div aria-hidden="true" className="w-full max-w-sm rounded-2xl border border-zinc-800 bg-zinc-950 p-4 select-none shadow-xl hover:border-indigo-500/40 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300">
+    <div aria-hidden="true" className="w-full max-w-sm rounded-2xl border border-zinc-700/70 bg-zinc-950 p-4 select-none shadow-xl hover:border-indigo-500/40 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300">
       <div className="flex items-center gap-2 mb-3 pb-2 border-b border-zinc-800/60">
         <div className="h-2 w-2 rounded-full bg-indigo-400 animate-pulse" />
-        <span className="text-[10px] uppercase tracking-wider text-indigo-400 font-semibold">
+        <span className="text-xs uppercase tracking-wider text-indigo-400 font-semibold">
           Iterative Formulation
         </span>
       </div>
@@ -532,307 +446,102 @@ function CreateVisual() {
       </svg>
 
       <div className="mt-2 text-center">
-        <span className="text-[10px] text-zinc-500">Start rough, shape it through dialogue, and watch it take form</span>
+        <span className="text-xs text-zinc-500">Start rough, shape it through dialogue, and watch it take form</span>
       </div>
     </div>
   );
 }
 
-// ─── Section 7: Use Case Summary Grid ─────────────────────────────────────────
 
-const SUMMARY_CARDS = [
+const TABS: UseCaseTab[] = [
   {
-    title: "Explore",
-    focus: "Questions, relationships, unfamiliar territory.",
-    body: "Unpack messy problems, map knowns and unknowns, and find how scattered thoughts relate to each other.",
-    triggers: ["Investigating new domains", "Analyzing complex systems", "Connecting disparate research"],
-    iconBoxClass:
-      "border-teal-200/80 bg-teal-50 text-teal-600 dark:border-teal-800/60 dark:bg-teal-950/40 dark:text-teal-400 group-hover:border-teal-400 group-hover:bg-teal-100/70 dark:group-hover:border-teal-500/50 dark:group-hover:bg-teal-900/60",
-    cardHoverClass:
-      "hover:border-teal-300 dark:hover:border-teal-500/40 hover:shadow-[0_12px_35px_-5px_rgba(20,184,166,0.18)]",
-    titleHoverClass:
-      "group-hover:text-teal-700 dark:group-hover:text-teal-300",
-    icon: (
-      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <circle cx="12" cy="12" r="10" />
-        <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" />
-      </svg>
-    ),
+    id: "explore",
+    label: "Explore",
+    tagline: "Questions & relationships",
+    heading: "Start with a question and map what surrounds it",
+    description:
+      "When diving into unfamiliar territory or untangling a complex problem, start with what you know. Talk through the questions, map the uncertainties, and let the canvas show how disparate thoughts connect.",
+    prompts: [
+      "What are the hidden assumptions behind this approach?",
+      "How do these three disparate pieces of research connect?",
+      "Where are the biggest gaps in our current understanding?",
+    ],
+    visual: <ExploreVisual />,
   },
   {
-    title: "Plan",
-    focus: "Projects, goals, structure, dependencies.",
-    body: "Break large ambitions down into sequential steps, map requirements, and identify what needs to happen first.",
-    triggers: ["Sequencing project phases", "Breaking down complex goals", "Mapping technical dependencies"],
-    iconBoxClass:
-      "border-blue-200/80 bg-blue-50 text-blue-600 dark:border-blue-800/60 dark:bg-blue-950/40 dark:text-blue-400 group-hover:border-blue-400 group-hover:bg-blue-100/70 dark:group-hover:border-blue-500/50 dark:group-hover:bg-blue-900/60",
-    cardHoverClass:
-      "hover:border-blue-300 dark:hover:border-blue-500/40 hover:shadow-[0_12px_35px_-5px_rgba(59,130,246,0.18)]",
-    titleHoverClass:
-      "group-hover:text-blue-700 dark:group-hover:text-blue-300",
-    icon: (
-      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <line x1="8" y1="6" x2="21" y2="6" />
-        <line x1="8" y1="12" x2="21" y2="12" />
-        <line x1="8" y1="18" x2="21" y2="18" />
-        <line x1="3" y1="6" x2="3.01" y2="6" strokeWidth="2.5" />
-        <line x1="3" y1="12" x2="3.01" y2="12" strokeWidth="2.5" />
-        <line x1="3" y1="18" x2="3.01" y2="18" strokeWidth="2.5" />
-      </svg>
-    ),
+    id: "plan",
+    label: "Plan",
+    tagline: "Sequence & dependencies",
+    heading: "Move from a rough idea to a structured path",
+    description:
+      "Turn an ambition into a structured sequence. Break the work apart into manageable phases, map dependencies, and see how the pieces relate spatially without losing the context of the conversation that shaped them.",
+    prompts: [
+      "Break this launch initiative into three distinct phases.",
+      "What needs to happen before this milestone can begin?",
+      "Group these tasks by dependency and surface the critical path.",
+    ],
+    visual: <PlanVisual />,
   },
   {
-    title: "Decide",
-    focus: "Options, criteria, trade-offs, reasoning.",
-    body: "Lay alternatives side-by-side to weigh pros, cons, and downstream consequences without losing the context of why.",
-    triggers: ["Architecture evaluations", "Prioritizing competing paths", "Documenting decision rationale"],
-    iconBoxClass:
-      "border-purple-200/80 bg-purple-50 text-purple-600 dark:border-purple-800/60 dark:bg-purple-950/40 dark:text-purple-400 group-hover:border-purple-400 group-hover:bg-purple-100/70 dark:group-hover:border-purple-500/50 dark:group-hover:bg-purple-900/60",
-    cardHoverClass:
-      "hover:border-purple-300 dark:hover:border-purple-500/40 hover:shadow-[0_12px_35px_-5px_rgba(168,85,247,0.18)]",
-    titleHoverClass:
-      "group-hover:text-purple-700 dark:group-hover:text-purple-300",
-    icon: (
-      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <line x1="6" y1="3" x2="6" y2="15" />
-        <circle cx="18" cy="6" r="3" />
-        <circle cx="6" cy="18" r="3" />
-        <path d="M18 9a9 9 0 0 1-9 9" />
-      </svg>
-    ),
+    id: "decide",
+    label: "Decide",
+    tagline: "Options & trade-offs",
+    heading: "Make trade-offs visible when choosing a direction",
+    description:
+      "When multiple paths seem possible, put the options somewhere you can actually compare them. Surface criteria, weigh downstream consequences, and keep the reasoning visible. You make the call; Echo provides the visual clarity.",
+    prompts: [
+      "Compare Option A (speed) vs Option B (maintainability).",
+      "What are the downstream consequences of each choice?",
+      "What criteria matter most for this architectural decision?",
+    ],
+    visual: <DecideVisual />,
   },
   {
-    title: "Create",
-    focus: "Ideas, concepts, outlines, problem-solving.",
-    body: "Iterate freely between open dialogue and spatial layout, giving ideas room to develop before locking them down.",
-    triggers: ["Drafting frameworks", "Designing workshop agendas", "Brainstorming product concepts"],
-    iconBoxClass:
-      "border-amber-200/80 bg-amber-50 text-amber-600 dark:border-amber-800/60 dark:bg-amber-950/40 dark:text-amber-400 group-hover:border-amber-400 group-hover:bg-amber-100/70 dark:group-hover:border-amber-500/50 dark:group-hover:bg-amber-900/60",
-    cardHoverClass:
-      "hover:border-amber-300 dark:hover:border-amber-500/40 hover:shadow-[0_12px_35px_-5px_rgba(245,158,11,0.18)]",
-    titleHoverClass:
-      "group-hover:text-amber-700 dark:group-hover:text-amber-300",
-    icon: (
-      <svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-        <path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83" />
-      </svg>
-    ),
+    id: "create",
+    label: "Create",
+    tagline: "Concepts & iteration",
+    heading: "Let concepts take form through spatial iteration",
+    description:
+      "Start with rough fragments. Talk through the idea, shape it, move pieces around, and let the workspace become part of the creative process. Develop architectures, outlines, or presentations without premature constraints.",
+    prompts: [
+      "Help me structure a technical workshop on distributed state.",
+      "Outline a modular design system from these initial sketches.",
+      "What would a simpler version of this user journey look like?",
+    ],
+    visual: <CreateVisual />,
   },
 ];
 
-function SummaryGrid() {
-  return (
-    <div className="py-20 sm:py-28">
-      <FadeIn direction="up" className="text-center max-w-xl mx-auto mb-14">
-        <SectionLabel>Quick Reference</SectionLabel>
-        <h2 className="text-3xl sm:text-4xl font-semibold tracking-tight text-zinc-900 dark:text-white mt-2 mb-4 text-balance">
-          Four Ways to Think with Echo
-        </h2>
-        <p className="text-zinc-600 dark:text-zinc-400 text-base leading-relaxed text-balance">
-          Echo adapts to the shape of the thinking you need to do, giving thoughts room to develop naturally.
-        </p>
-      </FadeIn>
-
-      <Stagger className="grid grid-cols-1 sm:grid-cols-2 gap-6" step={80}>
-        {SUMMARY_CARDS.map((card) => (
-          <div
-            key={card.title}
-            className={`group rounded-2xl border border-zinc-200 dark:border-zinc-800/80 bg-white dark:bg-zinc-900/30 p-6 sm:p-7 flex flex-col justify-between hover:-translate-y-1.5 transition-all duration-300 shadow-sm dark:shadow-none ${card.cardHoverClass}`}
-          >
-            <div>
-              <div className="flex items-center gap-3 mb-4">
-                <div
-                  className={`h-10 w-10 rounded-xl border flex items-center justify-center group-hover:scale-110 transition-all duration-300 shadow-xs ${card.iconBoxClass}`}
-                >
-                  {card.icon}
-                </div>
-                <div>
-                  <h3
-                    className={`text-lg font-semibold text-zinc-900 dark:text-white tracking-tight transition-colors ${card.titleHoverClass}`}
-                  >
-                    {card.title}
-                  </h3>
-                  <span className="text-xs text-zinc-500 dark:text-zinc-400 block">
-                    {card.focus}
-                  </span>
-                </div>
-              </div>
-
-              <p className="text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed mb-5">
-                {card.body}
-              </p>
-            </div>
-
-            <div className="pt-4 border-t border-zinc-200 dark:border-zinc-800/60">
-              <span className="text-[11px] uppercase tracking-wider text-zinc-500 dark:text-zinc-400 block mb-2 font-semibold">
-                Common scenarios
-              </span>
-              <div className="flex flex-wrap gap-2">
-                {card.triggers.map((trigger) => (
-                  <span
-                    key={trigger}
-                    className="echo-scenario-badge"
-                  >
-                    {trigger}
-                  </span>
-                ))}
-              </div>
-            </div>
-          </div>
-        ))}
-      </Stagger>
-    </div>
-  );
-}
-
-
-// ─── Main Page ────────────────────────────────────────────────────────────────
-
 export default function UseCasesPage() {
   return (
-    <div className="w-full max-w-5xl mx-auto">
-
-      {/* ─── SECTION 1: HERO ─────────────────────────────────────────── */}
-      <section className="pt-4 pb-16 sm:pb-20 text-center">
-        <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 dark:border-zinc-800 bg-slate-100/90 dark:bg-zinc-900/60 px-3 py-1 text-xs text-zinc-700 dark:text-zinc-400 mb-6 shadow-2xs">
-          <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" aria-hidden="true" />
-          Use Cases
-        </div>
-
-        <h1 className="text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tight text-zinc-900 dark:text-white leading-[1.12] mb-6 max-w-3xl mx-auto text-balance">
-          Different Problems.{" "}
-          <span className="block mt-1 sm:mt-2">One Space to Think Through Them.</span>
-        </h1>
-
-        <p className="text-base sm:text-lg text-zinc-600 dark:text-zinc-400 leading-relaxed mb-10 max-w-xl mx-auto text-balance">
-          Some ideas need exploring. Some need a plan. Some need a decision.
-          Others need room to become something new. Echo brings conversation
-          and visual thinking into one workspace.
-        </p>
-
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-16">
-          <OpenEchoButton className="text-sm px-6 py-3" />
-          <Link
-            href="/how-it-works"
-            className="echo-secondary-btn inline-flex items-center gap-1.5 text-sm font-medium text-zinc-700 hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-white transition-all px-4 py-2.5 rounded-xl border border-zinc-300 hover:border-zinc-400 bg-white hover:bg-zinc-50 dark:border-zinc-800/80 dark:hover:border-zinc-700 dark:bg-zinc-900/40 dark:hover:bg-zinc-900/80 shadow-sm"
-          >
-            <span>See how it works</span>
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" className="text-zinc-400 dark:text-zinc-500">
-              <path d="M2.5 6h7m-3.5-3.5L9.5 6 6 9.5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </Link>
-        </div>
-
-        {/* ─── SECTION 2: OVERVIEW MAP ───────────────────────────────── */}
+    <div className="mx-auto w-full max-w-6xl">
+      <PageHero
+        badge="Use cases"
+        title={
+          <>
+            Different problems. <GradientText>One space</GradientText> to think through them.
+          </>
+        }
+        subtitle="Some ideas need exploring. Some need a plan. Some need a decision. Others need room to become something new. Echo brings conversation and visual thinking into one workspace."
+        secondary={{ href: "/how-it-works", label: "See how it works" }}
+      >
         <OverviewMap />
+      </PageHero>
+
+      <section className="py-14 sm:py-20">
+        <SectionHeader
+          eyebrow="Four ways to think"
+          title="Pick the shape of your problem"
+          subtitle="Echo adapts to the thinking you need to do, giving thoughts room to develop naturally."
+        />
+        <UseCaseTabs tabs={TABS} />
       </section>
 
-      <Divider />
-
-      {/* ─── SECTION 3: EXPLORE ──────────────────────────────────────── */}
-      <ModeSection
-        number="01"
-        eyebrow="Explore"
-        heading="Start with a Question and Map What Surrounds It"
-        description="When diving into unfamiliar territory or untangling a complex problem, start with what you know. Talk through the questions, map the uncertainties, and let the canvas show how disparate thoughts connect."
-        promptsTitle="Realistic Explorations"
-        prompts={[
-          "What are the hidden assumptions behind this approach?",
-          "How do these three disparate pieces of research connect?",
-          "Where are the biggest gaps in our current understanding?",
-        ]}
-        visual={<ExploreVisual />}
+      <CtaBand
+        title="Whatever you're working through, give the thinking space"
+        subtitle="Start with the idea. Talk it through. Give it somewhere to take shape."
+        secondary={{ href: "/how-it-works", label: "See how it works" }}
       />
-
-      <Divider />
-
-      {/* ─── SECTION 4: PLAN ─────────────────────────────────────────── */}
-      <ModeSection
-        number="02"
-        eyebrow="Plan"
-        heading="Move from a Rough Idea to a Structured Path"
-        description="Turn an ambition into a structured sequence. Break the work apart into manageable phases, map dependencies, and see how the pieces relate spatially without losing the context of the conversation that shaped them."
-        promptsTitle="Realistic Planning"
-        prompts={[
-          "Break this launch initiative into three distinct phases.",
-          "What needs to happen before this milestone can begin?",
-          "Group these tasks by dependency and surface the critical path.",
-        ]}
-        visual={<PlanVisual />}
-        flip
-      />
-
-      <Divider />
-
-      {/* ─── SECTION 5: DECIDE ────────────────────────────────────────── */}
-      <ModeSection
-        number="03"
-        eyebrow="Decide"
-        heading="Make Trade-offs Visible When Choosing a Direction"
-        description="When multiple paths seem possible, put the options somewhere you can actually compare them. Surface criteria, weigh downstream consequences, and keep the reasoning visible. You make the call; Echo provides the visual clarity."
-        promptsTitle="Realistic Decisions"
-        prompts={[
-          "Compare Option A (speed) vs Option B (maintainability).",
-          "What are the downstream consequences of each choice?",
-          "What criteria matter most for this architectural decision?",
-        ]}
-        visual={<DecideVisual />}
-      />
-
-      <Divider />
-
-      {/* ─── SECTION 6: CREATE ───────────────────────────────────────── */}
-      <ModeSection
-        number="04"
-        eyebrow="Create"
-        heading="Let Concepts Take Form Through Spatial Iteration"
-        description="Start with rough fragments. Talk through the idea, shape it, move pieces around, and let the workspace become part of the creative process. Develop architectures, outlines, or presentations without premature constraints."
-        promptsTitle="Realistic Creation"
-        prompts={[
-          "Help me structure a technical workshop on distributed state.",
-          "Outline a modular design system from these initial sketches.",
-          "What would a simpler version of this user journey look like?",
-        ]}
-        visual={<CreateVisual />}
-        flip
-      />
-
-      <Divider />
-
-      {/* ─── SECTION 7: SUMMARY GRID ─────────────────────────────────── */}
-      <SummaryGrid />
-
-      <Divider />
-
-      {/* ─── SECTION 8: CLOSING CTA ──────────────────────────────────── */}
-      <section className="py-20 sm:py-28 text-center">
-        <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 dark:border-zinc-800 bg-slate-100/90 dark:bg-zinc-900/60 px-3 py-1 text-xs text-zinc-700 dark:text-zinc-400 mb-6 shadow-2xs">
-          <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
-          Ready When You Are
-        </div>
-
-        <h2 className="text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight text-zinc-900 dark:text-white mb-4 text-balance">
-          Whatever You&apos;re Working Through, Give the Thinking Space
-        </h2>
-
-        <p className="text-zinc-600 dark:text-zinc-400 text-base sm:text-lg max-w-md mx-auto leading-relaxed mb-10 text-balance">
-          Start with the idea. Talk it through. Give it somewhere to take shape.
-        </p>
-
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-          <OpenEchoButton className="text-sm px-6 py-3" />
-          <Link
-            href="/how-it-works"
-            className="echo-secondary-btn inline-flex items-center gap-1.5 text-sm font-medium text-zinc-700 hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-white transition-all px-4 py-2.5 rounded-xl border border-zinc-300 hover:border-zinc-400 bg-white hover:bg-zinc-50 dark:border-zinc-800/80 dark:hover:border-zinc-700 dark:bg-zinc-900/40 dark:hover:bg-zinc-900/80 shadow-sm"
-          >
-            <span>See how it works</span>
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" className="text-zinc-400 dark:text-zinc-500">
-              <path d="M2.5 6h7m-3.5-3.5L9.5 6 6 9.5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </Link>
-        </div>
-      </section>
-
     </div>
   );
 }

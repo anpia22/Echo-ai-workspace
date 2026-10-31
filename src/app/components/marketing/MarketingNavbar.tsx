@@ -34,8 +34,8 @@ export default function MarketingNavbar() {
   }, [mobileMenuOpen]);
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-zinc-200/80 dark:border-zinc-800/80 bg-white/80 dark:bg-zinc-950/80 backdrop-blur-md transition-colors duration-200">
-      <div className="mx-auto flex h-16 min-w-0 max-w-7xl items-center justify-between gap-3 px-4 sm:px-6 lg:px-8">
+    <header className="sticky top-0 z-50 w-full px-3 pt-3 sm:px-6">
+      <div className="mx-auto flex h-14 min-w-0 max-w-6xl items-center justify-between gap-3 rounded-2xl border border-zinc-200/80 bg-white/75 px-3 shadow-sm backdrop-blur-xl dark:border-zinc-700/50 dark:bg-zinc-950/70 sm:px-4">
         {/* Left: Brand Wordmark */}
         <Link
           href="/"
@@ -122,10 +122,10 @@ export default function MarketingNavbar() {
 
       {/* Mobile Navigation Dropdown */}
       <div
-        className={`overflow-hidden transition-all duration-300 ease-in-out md:hidden bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl motion-reduce:transition-none ${
+        className={`overflow-hidden transition-all duration-300 ease-in-out md:hidden mx-auto mt-2 max-w-6xl rounded-2xl bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl motion-reduce:transition-none ${
           mobileMenuOpen
-            ? "max-h-96 opacity-100 px-4 pt-2 pb-6 border-b border-zinc-200 dark:border-zinc-800"
-            : "max-h-0 opacity-0 px-4 py-0 border-transparent pointer-events-none"
+            ? "max-h-96 opacity-100 px-4 pt-2 pb-6 border border-zinc-200 dark:border-zinc-800"
+            : "max-h-0 opacity-0 px-4 py-0 border border-transparent pointer-events-none"
         }`}
       >
         <nav className="flex flex-col space-y-1">

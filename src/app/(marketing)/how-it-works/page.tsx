@@ -1,10 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { withSeo } from "@/lib/seo";
 import { ECHO_FAQ } from "@/lib/geo";
-import OpenEchoButton from "../../components/marketing/OpenEchoButton";
 import FaqSection from "../../components/seo/FaqSection";
-import { FadeIn } from "../../components/marketing/motion";
+import { CtaBand, GradientText, PageHero, SectionHeader, StepRow } from "../../components/marketing/ui";
 
 export const metadata: Metadata = withSeo("/how-it-works", {
   title: "How Echo Works",
@@ -17,27 +15,6 @@ export const metadata: Metadata = withSeo("/how-it-works", {
     type: "website",
   },
 });
-
-// ─── Shared decorators ────────────────────────────────────────────────────────
-
-function SectionLabel({ children, className = "" }: { children: string; className?: string }) {
-  return (
-    <span className={`text-xs font-semibold uppercase tracking-[0.15em] text-zinc-500 ${className}`}>
-      {children}
-    </span>
-  );
-}
-
-function Divider() {
-  return (
-    <div
-      aria-hidden="true"
-      className="h-px bg-gradient-to-r from-transparent via-zinc-800 to-transparent"
-    />
-  );
-}
-
-// ─── Hero process flow ────────────────────────────────────────────────────────
 
 const FLOW_STAGES = [
   { label: "Thought", sub: "Where it starts" },
@@ -60,7 +37,7 @@ function HeroFlow() {
               className={`flex flex-col items-center justify-center text-center rounded-2xl border px-5 py-4 w-36 md:w-40 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-xl ${
                 i === 2
                   ? "border-indigo-500/50 bg-zinc-900/90 shadow-xl shadow-indigo-500/20 ring-1 ring-indigo-500/30 animate-echo-pulse"
-                  : "border-zinc-800 bg-zinc-900/40 hover:border-zinc-700"
+                  : "border-zinc-700/70 bg-zinc-900/60 hover:border-zinc-700"
               }`}
             >
               <span
@@ -70,7 +47,7 @@ function HeroFlow() {
               >
                 {stage.label}
               </span>
-              <span className="block text-[10px] text-zinc-500 mt-1">
+              <span className="block text-xs text-zinc-500 mt-1">
                 {stage.sub}
               </span>
             </div>
@@ -94,7 +71,7 @@ function HeroFlow() {
               className={`w-full max-w-xs rounded-2xl border px-5 py-4 text-center transition-all duration-300 hover:border-zinc-700 ${
                 i === 2
                   ? "border-indigo-500/50 bg-zinc-900/90 shadow-xl shadow-indigo-500/20 ring-1 ring-indigo-500/30 animate-echo-pulse"
-                  : "border-zinc-800 bg-zinc-900/40"
+                  : "border-zinc-700/70 bg-zinc-900/60"
               }`}
             >
               <span
@@ -104,7 +81,7 @@ function HeroFlow() {
               >
                 {stage.label}
               </span>
-              <span className="block text-[10px] text-zinc-500 mt-1">
+              <span className="block text-xs text-zinc-500 mt-1">
                 {stage.sub}
               </span>
             </div>
@@ -125,53 +102,13 @@ function HeroFlow() {
 
 // ─── Step wrapper ─────────────────────────────────────────────────────────────
 
-interface StepProps {
-  number: string;
-  eyebrow: string;
-  heading: string;
-  body: React.ReactNode;
-  visual: React.ReactNode;
-  flip?: boolean;
-}
-
-function Step({ number, eyebrow, heading, body, visual, flip = false }: StepProps) {
-  return (
-    <section className="py-20 sm:py-28">
-      <div
-        className={`flex flex-col gap-12 md:gap-16 md:flex-row items-center ${
-          flip ? "md:flex-row-reverse" : ""
-        }`}
-      >
-        <FadeIn direction="up" className="flex-1 min-w-0">
-          <div className="flex items-center gap-3 mb-4">
-            <span className="text-xs font-mono text-zinc-500 font-medium select-none">{number}</span>
-            <div className="h-px w-6 bg-zinc-800" aria-hidden="true" />
-            <SectionLabel>{eyebrow}</SectionLabel>
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-semibold tracking-tight text-zinc-900 dark:text-white leading-snug mb-5 text-balance">
-            {heading}
-          </h2>
-          <div className="text-zinc-600 dark:text-zinc-400 leading-relaxed space-y-4 text-base text-pretty">
-            {body}
-          </div>
-        </FadeIn>
-
-        <FadeIn direction="up" delay={120} className="flex-shrink-0 w-full md:w-auto md:max-w-xs lg:max-w-sm xl:max-w-md flex justify-center">
-          {visual}
-        </FadeIn>
-      </div>
-    </section>
-  );
-}
-
-// ─── Step 01 visual ───────────────────────────────────────────────────────────
 
 function ThoughtVisual() {
   return (
-    <div aria-hidden="true" className="w-full max-w-xs rounded-2xl border border-zinc-800 bg-zinc-900/50 p-6 select-none">
+    <div aria-hidden="true" className="w-full max-w-xs rounded-2xl border border-zinc-700/70 bg-zinc-900/50 p-6 select-none">
       <div className="flex items-center gap-2 mb-5">
         <div className="h-2 w-2 rounded-full bg-zinc-700" />
-        <span className="text-[10px] uppercase tracking-widest text-zinc-600">New idea</span>
+        <span className="text-xs uppercase tracking-widest text-zinc-600">New idea</span>
       </div>
       {[
         { text: "How do these pieces fit together?", dim: false },
@@ -180,7 +117,7 @@ function ThoughtVisual() {
       ].map((line, i) => (
         <div
           key={i}
-          className={`text-sm leading-relaxed mb-3 pl-3 border-l border-zinc-800 ${
+          className={`text-sm leading-relaxed mb-3 pl-3 border-l border-zinc-700/70 ${
             line.dim ? "text-zinc-600" : "text-zinc-300"
           }`}
         >
@@ -189,7 +126,7 @@ function ThoughtVisual() {
       ))}
       <div className="mt-5 flex items-center gap-1.5">
         <div className="h-px flex-1 bg-zinc-800" />
-        <span className="text-[10px] text-zinc-700">Any starting point works</span>
+        <span className="text-xs text-zinc-700">Any starting point works</span>
       </div>
     </div>
   );
@@ -205,7 +142,7 @@ function ConversationVisual() {
   ];
   return (
     <div aria-hidden="true" className="w-full max-w-xs space-y-3 select-none">
-      <div className="text-[10px] uppercase tracking-widest text-zinc-700 mb-4 pl-1">
+      <div className="text-xs uppercase tracking-widest text-zinc-700 mb-4 pl-1">
         Illustrative conversation
       </div>
       {messages.map((msg, i) => (
@@ -219,7 +156,7 @@ function ConversationVisual() {
             className={`max-w-[80%] rounded-xl px-3.5 py-2.5 text-xs leading-relaxed ${
               msg.role === "you"
                 ? "bg-zinc-800 text-zinc-200"
-                : "border border-zinc-800 bg-zinc-900/60 text-zinc-300"
+                : "border border-zinc-700/70 bg-zinc-900/60 text-zinc-300"
             }`}
           >
             {msg.text}
@@ -246,14 +183,14 @@ function StructureVisual() {
   return (
     <div aria-hidden="true" className="w-full max-w-xs select-none">
       <div className="mb-5">
-        <span className="text-[10px] uppercase tracking-widest text-zinc-600 block mb-2.5 font-semibold">
+        <span className="text-xs uppercase tracking-widest text-zinc-600 block mb-2.5 font-semibold">
           Scattered ideas
         </span>
         <div className="flex flex-wrap gap-2">
           {["Idea A", "Idea B", "Idea C", "Idea D"].map((label) => (
             <div
               key={label}
-              className="rounded-lg border border-zinc-800 bg-zinc-900/40 px-3 py-1.5 text-xs text-zinc-400"
+              className="rounded-lg border border-zinc-700/70 bg-zinc-900/60 px-3 py-1.5 text-xs text-zinc-400"
             >
               {label}
             </div>
@@ -263,8 +200,8 @@ function StructureVisual() {
 
       <div className="flex items-center gap-2.5 my-4">
         <div className="flex-1 h-px bg-zinc-800/80" />
-        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-zinc-800 bg-zinc-900/60">
-          <span className="text-[10px] text-zinc-400 font-medium">Echo helps organize</span>
+        <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full border border-zinc-700/70 bg-zinc-900/60">
+          <span className="text-xs text-zinc-400 font-medium">Echo helps organize</span>
           <svg width="7" height="9" viewBox="0 0 7 9" fill="currentColor" className="text-zinc-500">
             <path d="M3.5 9L0 4h2.5V0h2v4H7L3.5 9z" />
           </svg>
@@ -273,10 +210,10 @@ function StructureVisual() {
       </div>
 
       <div>
-        <span className="text-[10px] uppercase tracking-widest text-zinc-600 block mb-2.5 font-semibold">
+        <span className="text-xs uppercase tracking-widest text-zinc-600 block mb-2.5 font-semibold">
           Connected structure
         </span>
-        <div className="rounded-2xl border border-zinc-800/80 bg-zinc-900/20 p-2">
+        <div className="rounded-2xl border border-zinc-700/60 bg-zinc-900/20 p-2">
           <svg
             className="w-full h-auto block"
             viewBox="0 0 280 160"
@@ -364,17 +301,17 @@ function StructureVisual() {
 
 function CanvasVisual() {
   return (
-    <div aria-hidden="true" className="w-full max-w-sm rounded-2xl border border-zinc-800 bg-zinc-950 overflow-hidden select-none shadow-xl">
-      <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-800/60 bg-zinc-900/40">
+    <div aria-hidden="true" className="w-full max-w-sm rounded-2xl border border-zinc-700/70 bg-zinc-950 overflow-hidden select-none shadow-xl">
+      <div className="flex items-center gap-2 px-4 py-3 border-b border-zinc-800/60 bg-zinc-900/60">
         <div className="flex gap-1.5">
           <div className="h-2.5 w-2.5 rounded-full bg-zinc-800" />
           <div className="h-2.5 w-2.5 rounded-full bg-zinc-800" />
           <div className="h-2.5 w-2.5 rounded-full bg-zinc-800" />
         </div>
-        <div className="flex-1 mx-3 h-5 rounded-md bg-zinc-900/80 border border-zinc-800/80 flex items-center px-2">
-          <span className="text-[9px] text-zinc-600 font-mono">echo://canvas/preview</span>
+        <div className="flex-1 mx-3 h-5 rounded-md bg-zinc-900/80 border border-zinc-700/60 flex items-center px-2">
+          <span className="text-[11px] text-zinc-600 font-mono">echo://canvas/preview</span>
         </div>
-        <div className="text-[10px] text-zinc-600 font-medium">Canvas</div>
+        <div className="text-xs text-zinc-600 font-medium">Canvas</div>
       </div>
 
       <div className="relative p-3 bg-zinc-950">
@@ -452,12 +389,12 @@ function CanvasVisual() {
         </svg>
       </div>
 
-      <div className="px-4 py-2 border-t border-zinc-800/60 flex items-center justify-between bg-zinc-900/40">
+      <div className="px-4 py-2 border-t border-zinc-800/60 flex items-center justify-between bg-zinc-900/60">
         <div className="flex items-center gap-2">
           <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
-          <span className="text-[10px] text-zinc-400 font-medium">Real-time canvas view</span>
+          <span className="text-xs text-zinc-400 font-medium">Real-time canvas view</span>
         </div>
-        <span className="text-[10px] text-indigo-400">Live sync</span>
+        <span className="text-xs text-indigo-400">Live sync</span>
       </div>
     </div>
   );
@@ -468,8 +405,8 @@ function CanvasVisual() {
 function ContinuationVisual() {
   return (
     <div aria-hidden="true" className="w-full max-w-xs space-y-3 select-none">
-      <div className="rounded-xl border border-zinc-800 bg-zinc-900/40 p-4">
-        <div className="text-[10px] uppercase tracking-widest text-zinc-700 mb-2">Your workspace</div>
+      <div className="rounded-xl border border-zinc-700/70 bg-zinc-900/60 p-4">
+        <div className="text-xs uppercase tracking-widest text-zinc-700 mb-2">Your workspace</div>
         <div className="flex flex-col gap-2">
           <div className="flex items-start gap-2">
             <div className="mt-1 h-1.5 w-1.5 rounded-full bg-zinc-600 flex-shrink-0" />
@@ -488,18 +425,18 @@ function ContinuationVisual() {
 
       <div className="flex items-center gap-2">
         <div className="flex-1 h-px bg-zinc-800" />
-        <span className="text-[10px] text-zinc-700 whitespace-nowrap">Continue the thinking</span>
+        <span className="text-xs text-zinc-700 whitespace-nowrap">Continue the thinking</span>
         <div className="flex-1 h-px bg-zinc-800" />
       </div>
 
       <div className="rounded-xl border border-zinc-700 bg-zinc-900/60 p-4">
-        <div className="text-[10px] uppercase tracking-widest text-zinc-600 mb-2">New thought</div>
+        <div className="text-xs uppercase tracking-widest text-zinc-600 mb-2">New thought</div>
         <div className="flex items-start gap-2">
           <div className="mt-1 h-1.5 w-1.5 rounded-full bg-emerald-500 flex-shrink-0" />
           <span className="text-xs text-zinc-300 leading-relaxed">What happens next with the decision?</span>
         </div>
         <div className="mt-3 h-px bg-zinc-800" />
-        <div className="mt-2 text-[10px] text-zinc-700">Adds to the existing workspace</div>
+        <div className="mt-2 text-xs text-zinc-700">Adds to the existing workspace</div>
       </div>
     </div>
   );
@@ -509,193 +446,102 @@ function ContinuationVisual() {
 
 export default function HowItWorksPage() {
   return (
-    <div className="w-full max-w-5xl mx-auto">
-
-      {/* ─── SECTION 1: HERO ─────────────────────────────────────────── */}
-      <section className="pt-4 pb-20 sm:pb-24 text-center">
-        <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 dark:border-zinc-800 bg-slate-100/90 dark:bg-zinc-900/60 px-3 py-1 text-xs text-zinc-700 dark:text-zinc-400 mb-6 shadow-2xs">
-          <span className="h-1.5 w-1.5 rounded-full bg-indigo-500" aria-hidden="true" />
-          How It Works
-        </div>
-
-        <h1 className="text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tight text-zinc-900 dark:text-white leading-[1.12] mb-6 max-w-3xl mx-auto text-balance">
-          From a Thought to a Workspace
-        </h1>
-
-        <p className="text-base sm:text-lg text-zinc-600 dark:text-zinc-400 leading-relaxed mb-10 max-w-xl mx-auto text-balance">
-          Start with a thought. Talk it through with Echo. Then give those ideas
-          a visual place to develop.
-        </p>
-
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-14">
-          <OpenEchoButton className="text-sm px-6 py-3" />
-          <Link
-            href="/use-cases"
-            className="echo-secondary-btn inline-flex items-center gap-1.5 text-sm font-medium text-zinc-700 hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-white transition-all px-4 py-2.5 rounded-xl border border-zinc-300 hover:border-zinc-400 bg-white hover:bg-zinc-50 dark:border-zinc-800/80 dark:hover:border-zinc-700 dark:bg-zinc-900/40 dark:hover:bg-zinc-900/80 shadow-sm"
-          >
-            <span>Explore use cases</span>
-            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" className="text-zinc-400 dark:text-zinc-500">
-              <path d="M2.5 6h7m-3.5-3.5L9.5 6 6 9.5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-          </Link>
-        </div>
-
+    <div className="mx-auto w-full max-w-6xl">
+      <PageHero
+        badge="How it works"
+        title={
+          <>
+            From a thought to a <GradientText>workspace</GradientText>
+          </>
+        }
+        subtitle="Start with a thought. Talk it through with Echo. Then give those ideas a visual place to develop."
+        secondary={{ href: "/use-cases", label: "Explore use cases" }}
+      >
         <HeroFlow />
+      </PageHero>
+
+      <section className="py-14 sm:py-20">
+        <SectionHeader
+          eyebrow="Five steps"
+          title="One continuous loop of thinking"
+          subtitle="No setup and no template to fill in. You begin with whatever you have."
+        />
+        <div className="flex flex-col gap-5">
+          <StepRow
+            number="01"
+            title="Bring the rough idea"
+            body={
+              <>
+                <p>
+                  You don&apos;t need a perfectly structured prompt. Start with a question, a problem, a decision — anything you&apos;re trying to think through.
+                </p>
+                <p>Echo is designed to work from the beginning of a thought, not just its finished form. Any starting point works.</p>
+              </>
+            }
+            visual={<ThoughtVisual />}
+          />
+          <StepRow
+            number="02"
+            title="Let conversation shape the idea"
+            body={
+              <>
+                <p>
+                  Explore the idea through natural conversation. Ask questions, push back, change direction — Echo responds and helps the thinking develop.
+                </p>
+                <p>The conversation is the starting material. It&apos;s how the idea gets clearer before it becomes something you can see.</p>
+              </>
+            }
+            visual={<ConversationVisual />}
+            flip
+          />
+          <StepRow
+            number="03"
+            title="Turn conversation into structure"
+            body={
+              <>
+                <p>As the idea becomes clearer, Echo can help organize the thinking into connected relationships, groups, and directions.</p>
+                <p>Scattered ideas start to take shape — not through automation, but through the thinking you do together.</p>
+              </>
+            }
+            visual={<StructureVisual />}
+          />
+          <StepRow
+            number="04"
+            title="Give the thinking a visual place"
+            body={
+              <>
+                <p>
+                  The canvas lets you see how ideas connect spatially. Concepts, options, and decisions can be laid out and explored visually — beyond what a linear conversation thread can show.
+                </p>
+                <p>This is where conversation and visual thinking come together in one shared space.</p>
+              </>
+            }
+            visual={<CanvasVisual />}
+            flip
+          />
+          <StepRow
+            number="05"
+            title="Return to ideas where you left them"
+            body={
+              <>
+                <p>
+                  The workspace gives your ideas a place to keep developing. Conversation and visual thinking stay connected in one space, so the context of what you were exploring doesn&apos;t get scattered.
+                </p>
+                <p>Pick up where you left off, add a new thought, or explore a different direction — all within the same workspace.</p>
+              </>
+            }
+            visual={<ContinuationVisual />}
+          />
+        </div>
       </section>
-
-      <Divider />
-
-      {/* ─── STEP 01 ─────────────────────────────────────────────────── */}
-      <Step
-        number="01"
-        eyebrow="Start with a thought"
-        heading="Bring the Rough Idea"
-        body={
-          <>
-            <p>
-              You don&apos;t need a perfectly structured prompt. Start with a
-              question, a problem, a decision — anything you&apos;re trying to think
-              through.
-            </p>
-            <p>
-              Echo is designed to work from the beginning of a thought, not just
-              its finished form. Any starting point works.
-            </p>
-          </>
-        }
-        visual={<ThoughtVisual />}
-      />
-
-      <Divider />
-
-      {/* ─── STEP 02 ─────────────────────────────────────────────────── */}
-      <Step
-        number="02"
-        eyebrow="Talk it through"
-        heading="Let Conversation Shape the Idea"
-        body={
-          <>
-            <p>
-              Explore the idea through natural conversation. Ask questions, push
-              back, change direction — Echo responds and helps the thinking
-              develop.
-            </p>
-            <p>
-              The conversation is the starting material. It&apos;s how the idea gets
-              clearer before it becomes something you can see.
-            </p>
-          </>
-        }
-        visual={<ConversationVisual />}
-        flip
-      />
-
-      <Divider />
-
-      {/* ─── STEP 03 ─────────────────────────────────────────────────── */}
-      <Step
-        number="03"
-        eyebrow="Shape the thinking"
-        heading="Turn Conversation into Structure"
-        body={
-          <>
-            <p>
-              As the idea becomes clearer, Echo can help organize the thinking
-              into connected relationships, groups, and directions.
-            </p>
-            <p>
-              Scattered ideas start to take shape — not through automation, but
-              through the thinking you do together.
-            </p>
-          </>
-        }
-        visual={<StructureVisual />}
-      />
-
-      <Divider />
-
-      {/* ─── STEP 04 ─────────────────────────────────────────────────── */}
-      <Step
-        number="04"
-        eyebrow="See it on the canvas"
-        heading="Give the Thinking a Visual Place"
-        body={
-          <>
-            <p>
-              The canvas lets you see how ideas connect spatially. Concepts,
-              options, and decisions can be laid out and explored visually —
-              beyond what a linear conversation thread can show.
-            </p>
-            <p>
-              This is where conversation and visual thinking come together in one
-              shared space.
-            </p>
-          </>
-        }
-        visual={<CanvasVisual />}
-        flip
-      />
-
-      <Divider />
-
-      {/* ─── STEP 05 ─────────────────────────────────────────────────── */}
-      <Step
-        number="05"
-        eyebrow="Keep thinking"
-        heading="Return to Ideas Exactly Where You Left Them"
-        body={
-          <>
-            <p>
-              The workspace gives your ideas a place to keep developing.
-              Conversation and visual thinking stay connected in one space, so
-              the context of what you were exploring doesn&apos;t get scattered.
-            </p>
-            <p>
-              Pick up where you left off, add a new thought, or explore a
-              different direction — all within the same workspace.
-            </p>
-          </>
-        }
-        visual={<ContinuationVisual />}
-      />
-
-      <Divider />
 
       <FaqSection items={ECHO_FAQ} />
 
-      <Divider />
-
-      {/* ─── CLOSING CTA ─────────────────────────────────────── */}
-      <section className="py-20 sm:py-28 text-center">
-        <FadeIn scale className="max-w-2xl mx-auto">
-          <div className="inline-flex items-center gap-2 rounded-full border border-zinc-200 dark:border-zinc-800 bg-slate-100/90 dark:bg-zinc-900/60 px-3 py-1 text-xs text-zinc-700 dark:text-zinc-400 mb-6 shadow-2xs">
-            <span className="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
-            Ready When You Are
-          </div>
-
-          <h2 className="text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight text-zinc-900 dark:text-white mb-4 text-balance">
-            Ready to Think with Echo?
-          </h2>
-
-          <p className="text-zinc-600 dark:text-zinc-400 text-base sm:text-lg max-w-md mx-auto leading-relaxed mb-10 text-balance">
-            Start with an idea and give it a workspace.
-          </p>
-
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <OpenEchoButton className="text-sm px-6 py-3" />
-            <Link
-              href="/use-cases"
-              className="echo-secondary-btn inline-flex items-center gap-1.5 text-sm font-medium text-zinc-700 hover:text-zinc-950 dark:text-zinc-300 dark:hover:text-white transition-all px-4 py-2.5 rounded-xl border border-zinc-300 hover:border-zinc-400 bg-white hover:bg-zinc-50 dark:border-zinc-800/80 dark:hover:border-zinc-700 dark:bg-zinc-900/40 dark:hover:bg-zinc-900/80 shadow-sm"
-            >
-              <span>Explore use cases</span>
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" className="text-zinc-400 dark:text-zinc-500">
-                <path d="M2.5 6h7m-3.5-3.5L9.5 6 6 9.5" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </Link>
-          </div>
-        </FadeIn>
-      </section>
-
+      <CtaBand
+        title="Ready to think with Echo?"
+        subtitle="Start with an idea and give it a workspace."
+        secondary={{ href: "/use-cases", label: "Explore use cases" }}
+      />
     </div>
   );
 }

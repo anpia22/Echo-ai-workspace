@@ -2,24 +2,34 @@
 
 import React, { useEffect, useRef, useState } from "react";
 
-export function useInView(options: IntersectionObserverInit = { threshold: 0.1, rootMargin: "0px 0px -40px 0px" }) {
+type RevealState = "visible" | "hidden" | "shown";
+
+/**
+ * Content is visible by default (SSR, no-JS, print, previews). After mount,
+ * only elements that start below the fold are hidden, then revealed when they
+ * scroll into view. Elements already on screen never flash.
+ */
+export function useReveal(
+  options: IntersectionObserverInit = { threshold: 0.1, rootMargin: "0px 0px -40px 0px" }
+) {
   const ref = useRef<HTMLDivElement | null>(null);
-  const [isInView, setIsInView] = useState(false);
+  const [state, setState] = useState<RevealState>("visible");
 
   useEffect(() => {
-    // If user prefers reduced motion, trigger immediately
-    if (typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
-      setIsInView(true);
-      return;
-    }
-
     const element = ref.current;
     if (!element) return;
 
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+
+    const rect = element.getBoundingClientRect();
+    if (rect.top < window.innerHeight) return;
+
+    setState("hidden");
+
     const observer = new IntersectionObserver(([entry]) => {
       if (entry.isIntersecting) {
-        setIsInView(true);
-        observer.unobserve(element);
+        setState("shown");
+        observer.disconnect();
       }
     }, options);
 
@@ -30,7 +40,7 @@ export function useInView(options: IntersectionObserverInit = { threshold: 0.1, 
     };
   }, [options.threshold, options.rootMargin]);
 
-  return [ref, isInView] as const;
+  return [ref, state !== "hidden"] as const;
 }
 
 interface FadeInProps {
@@ -50,7 +60,7 @@ export function FadeIn({
   direction = "up",
   scale = false,
 }: FadeInProps) {
-  const [ref, inView] = useInView();
+  const [ref, shown] = useReveal();
 
   const getInitialTransform = () => {
     if (direction === "up") return "translate-y-8";
@@ -69,7 +79,7 @@ export function FadeIn({
         transitionTimingFunction: "cubic-bezier(0.16, 1, 0.3, 1)",
       }}
       className={`transition-all motion-reduce:transition-none motion-reduce:transform-none motion-reduce:opacity-100 ${
-        inView
+        shown
           ? "opacity-100 translate-y-0 scale-100"
           : `opacity-0 ${getInitialTransform()} ${initialScale}`
       } ${className}`}
@@ -92,7 +102,7 @@ export function Stagger({
   baseDelay = 0,
   step = 90,
 }: StaggerProps) {
-  const [ref, inView] = useInView();
+  const [ref, shown] = useReveal();
 
   return (
     <div ref={ref} className={className}>
@@ -105,7 +115,7 @@ export function Stagger({
             transitionTimingFunction: "cubic-bezier(0.16, 1, 0.3, 1)",
           }}
           className={`transition-all motion-reduce:transition-none motion-reduce:transform-none motion-reduce:opacity-100 ${
-            inView ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-7 scale-[0.98]"
+            shown ? "opacity-100 translate-y-0 scale-100" : "opacity-0 translate-y-7 scale-[0.98]"
           }`}
         >
           {child}

@@ -1,56 +1,75 @@
 import Link from "next/link";
 import OpenEchoButton from "./OpenEchoButton";
 
-const FOOTER_LINKS = [
-  { href: "/about", label: "About" },
-  { href: "/how-it-works", label: "How It Works" },
-  { href: "/use-cases", label: "Use Cases" },
-  { href: "/demo", label: "Demo" },
-  { href: "/blog", label: "Blog" },
-  { href: "/privacy", label: "Privacy" },
-  { href: "/terms", label: "Terms" },
+const FOOTER_COLUMNS = [
+  {
+    title: "Product",
+    links: [
+      { href: "/demo", label: "Demo" },
+      { href: "/how-it-works", label: "How it works" },
+      { href: "/use-cases", label: "Use cases" },
+    ],
+  },
+  {
+    title: "Company",
+    links: [
+      { href: "/about", label: "About" },
+      { href: "/blog", label: "Blog" },
+    ],
+  },
+  {
+    title: "Legal",
+    links: [
+      { href: "/privacy", label: "Privacy" },
+      { href: "/terms", label: "Terms" },
+    ],
+  },
 ];
 
 export default function MarketingFooter() {
   return (
-    <footer className="w-full border-t border-zinc-200/80 dark:border-zinc-800/80 bg-white dark:bg-zinc-950 transition-colors duration-200">
-      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-6 px-4 py-8 sm:flex-row sm:px-6 lg:px-8">
-        {/* Brand & Tagline */}
-        <div className="flex flex-col items-center gap-1.5 text-center sm:items-start sm:text-left">
+    <footer className="w-full border-t border-zinc-200/80 bg-slate-50/80 backdrop-blur-sm transition-colors duration-200 dark:border-zinc-800/80 dark:bg-zinc-950/80">
+      <div className="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:px-6 md:grid-cols-[1.4fr_repeat(3,1fr)] lg:px-8">
+        <div className="flex flex-col items-start gap-4">
           <Link
             href="/"
-            className="flex items-center gap-2 text-base font-semibold tracking-tight text-zinc-900 dark:text-white hover:opacity-90 transition-opacity"
+            className="flex items-center gap-2 text-base font-semibold tracking-tight text-zinc-900 transition-opacity hover:opacity-90 dark:text-white"
           >
-            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-zinc-900 border border-zinc-700 dark:bg-zinc-900 dark:border-zinc-800 text-xs font-semibold text-white shadow-sm">
+            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 text-xs font-semibold !text-white shadow-sm">
               E
-            </div>
+            </span>
             <span>Echo</span>
           </Link>
-          <p className="text-xs text-zinc-500">
-            The AI Workspace That Thinks With You.
+          <p className="max-w-xs text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
+            The AI workspace that thinks with you. Talk it through and watch the canvas build itself.
           </p>
-        </div>
-
-        {/* Links */}
-        <nav
-          className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2 text-sm text-zinc-600 dark:text-zinc-400"
-          aria-label="Footer Navigation"
-        >
-          {FOOTER_LINKS.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
-              className="transition-colors hover:text-zinc-900 dark:hover:text-zinc-200"
-            >
-              {link.label}
-            </Link>
-          ))}
-        </nav>
-
-        {/* Action */}
-        <div className="flex items-center">
           <OpenEchoButton />
         </div>
+
+        {FOOTER_COLUMNS.map((column) => (
+          <nav key={column.title} aria-label={`${column.title} links`}>
+            <p className="text-xs font-semibold uppercase tracking-[0.15em] text-zinc-500 dark:text-zinc-400">
+              {column.title}
+            </p>
+            <ul className="mt-4 flex flex-col gap-3 text-sm">
+              {column.links.map((link) => (
+                <li key={link.href}>
+                  <Link
+                    href={link.href}
+                    className="text-zinc-600 transition-colors hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-white"
+                  >
+                    {link.label}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </nav>
+        ))}
+      </div>
+      <div className="border-t border-zinc-200/80 dark:border-zinc-800/80">
+        <p className="mx-auto max-w-6xl px-4 py-5 text-xs text-zinc-500 dark:text-zinc-400 sm:px-6 lg:px-8">
+          © {new Date().getFullYear()} Echo. All rights reserved.
+        </p>
       </div>
     </footer>
   );

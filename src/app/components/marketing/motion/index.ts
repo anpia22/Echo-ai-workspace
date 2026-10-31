@@ -1,1 +1,1 @@
-export { FadeIn, Stagger, useInView } from "./FadeIn";
+export { FadeIn, Stagger, useReveal } from "./FadeIn";
