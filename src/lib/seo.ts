@@ -20,15 +20,24 @@ const normalize = (path: string) => {
  *     return withSeo(`/blog/${slug}`, { title: post.title, description: post.excerpt });
  *   }
  */
+/** Share card served by src/app/opengraph-image.tsx. Pages that set their own openGraph would otherwise drop it. */
+const DEFAULT_SHARE_IMAGE = '/opengraph-image';
+
 export function withSeo(path: string, base: Metadata = {}): Metadata {
   const o = overrides[normalize(path)];
-  if (!o) return base;
+  const merged: Metadata = o
+    ? {
+        ...base,
+        // `absolute` stops a layout's title template from adding a second brand suffix.
+        title: { absolute: o.title },
+        description: o.description,
+        openGraph: { ...(base.openGraph ?? {}), title: o.title, description: o.description },
+        twitter: { ...(base.twitter ?? {}), title: o.title, description: o.description },
+      }
+    : base;
   return {
-    ...base,
-    // `absolute` stops a layout's title template from adding a second brand suffix.
-    title: { absolute: o.title },
-    description: o.description,
-    openGraph: { ...(base.openGraph ?? {}), title: o.title, description: o.description },
-    twitter: { ...(base.twitter ?? {}), title: o.title, description: o.description },
-  };
+    ...merged,
+    openGraph: { images: [DEFAULT_SHARE_IMAGE], ...(merged.openGraph ?? {}) },
+    twitter: { card: 'summary_large_image', images: [DEFAULT_SHARE_IMAGE], ...(merged.twitter ?? {}) },
+  } as Metadata;
 }
