@@ -15,7 +15,7 @@ export const metadata: Metadata = withSeo("/terms", {
   },
 });
 
-const UPDATED = "October 19, 2026";
+const UPDATED = "November 2, 2026";
 
 export default function TermsPage() {
   return (

@@ -15,7 +15,7 @@ export const metadata: Metadata = withSeo("/privacy", {
   },
 });
 
-const UPDATED = "October 19, 2026";
+const UPDATED = "November 2, 2026";
 
 export default function PrivacyPage() {
   return (

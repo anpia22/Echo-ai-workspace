@@ -187,7 +187,7 @@ function StructureVisual() {
           Scattered ideas
         </span>
         <div className="flex flex-wrap gap-2">
-          {["Idea A", "Idea B", "Idea C", "Idea D"].map((label) => (
+          {["Add a cache", "Split the monolith", "Scale up", "Launch in 6 weeks"].map((label) => (
             <div
               key={label}
               className="rounded-lg border border-zinc-700/70 bg-zinc-900/60 px-3 py-1.5 text-xs text-zinc-400"
@@ -270,25 +270,25 @@ function StructureVisual() {
             {/* Core Idea */}
             <rect x="88" y="6" width="104" height="28" rx="8" fill="#18181b" stroke="#6366f1" strokeWidth="1.5" />
             <text x="140" y="24" textAnchor="middle" fill="#ffffff" fontSize="12" fontWeight="500" fontFamily="system-ui, -apple-system, sans-serif">
-              Core Idea
+              Slow at peak
             </text>
 
             {/* Option A */}
             <rect x="28" y="66" width="92" height="28" rx="7" fill="#18181b" stroke="#3f3f46" strokeWidth="1" />
             <text x="74" y="84" textAnchor="middle" fill="#d4d4d8" fontSize="11" fontWeight="400" fontFamily="system-ui, -apple-system, sans-serif">
-              Option A
+              Add cache
             </text>
 
             {/* Option B */}
             <rect x="160" y="66" width="92" height="28" rx="7" fill="#18181b" stroke="#3f3f46" strokeWidth="1" />
             <text x="206" y="84" textAnchor="middle" fill="#d4d4d8" fontSize="11" fontWeight="400" fontFamily="system-ui, -apple-system, sans-serif">
-              Option B
+              Split service
             </text>
 
             {/* Decision */}
             <rect x="92" y="126" width="96" height="28" rx="7" fill="#18181b" stroke="#10b981" strokeWidth="1.5" />
             <text x="140" y="144" textAnchor="middle" fill="#ffffff" fontSize="11" fontWeight="500" fontFamily="system-ui, -apple-system, sans-serif">
-              Decision
+              Cache first
             </text>
           </svg>
         </div>
@@ -309,7 +309,7 @@ function CanvasVisual() {
           <div className="h-2.5 w-2.5 rounded-full bg-zinc-800" />
         </div>
         <div className="flex-1 mx-3 h-5 rounded-md bg-zinc-900/80 border border-zinc-700/60 flex items-center px-2">
-          <span className="text-[11px] text-zinc-600 font-mono">echo://canvas/preview</span>
+          <span className="text-[11px] text-zinc-600 font-mono">Cache or split?</span>
         </div>
         <div className="text-xs text-zinc-600 font-medium">Canvas</div>
       </div>
@@ -359,32 +359,32 @@ function CanvasVisual() {
           {/* Core Idea Node */}
           <rect x="112" y="14" width="96" height="30" rx="8" fill="#18181b" stroke="#6366f1" strokeWidth="1.5" />
           <text x="160" y="33" textAnchor="middle" fill="#ffffff" fontSize="12" fontWeight="500" fontFamily="system-ui, -apple-system, sans-serif">
-            Core Idea
+            Slow at peak
           </text>
 
           {/* Option A Node */}
           <rect x="32" y="92" width="88" height="28" rx="7" fill="#18181b" stroke="#3f3f46" strokeWidth="1" />
           <text x="76" y="110" textAnchor="middle" fill="#d4d4d8" fontSize="11" fontWeight="400" fontFamily="system-ui, -apple-system, sans-serif">
-            Option A
+            Add cache
           </text>
 
           {/* Option B Node */}
           <rect x="200" y="92" width="88" height="28" rx="7" fill="#18181b" stroke="#3f3f46" strokeWidth="1" />
           <text x="244" y="110" textAnchor="middle" fill="#d4d4d8" fontSize="11" fontWeight="400" fontFamily="system-ui, -apple-system, sans-serif">
-            Option B
+            Split service
           </text>
 
           {/* Decision Node */}
           <rect x="114" y="166" width="92" height="28" rx="7" fill="#18181b" stroke="#10b981" strokeWidth="1.5" />
           <text x="160" y="184" textAnchor="middle" fill="#ffffff" fontSize="11" fontWeight="500" fontFamily="system-ui, -apple-system, sans-serif">
-            Decision
+            Cache first
           </text>
 
           {/* Remote collaborator cursor glide */}
           <g transform="translate(195, 126)" className="animate-echo-float-fast">
             <polygon points="0,0 0,12 3,10 6,15 8,14 5,9 9,9" fill="#10b981" />
-            <rect x="8" y="9" width="38" height="15" rx="3" fill="#10b981" />
-            <text x="27" y="20" textAnchor="middle" fill="#ffffff" fontSize="8" fontWeight="600" fontFamily="sans-serif">Alex</text>
+            <rect x="8" y="9" width="48" height="15" rx="3" fill="#10b981" />
+            <text x="32" y="20" textAnchor="middle" fill="#ffffff" fontSize="8" fontWeight="600" fontFamily="sans-serif">Teammate</text>
           </g>
         </svg>
       </div>
@@ -410,15 +410,15 @@ function ContinuationVisual() {
         <div className="flex flex-col gap-2">
           <div className="flex items-start gap-2">
             <div className="mt-1 h-1.5 w-1.5 rounded-full bg-zinc-600 flex-shrink-0" />
-            <span className="text-xs text-zinc-400 leading-relaxed">Core Idea: established</span>
+            <span className="text-xs text-zinc-400 leading-relaxed">Problem: API slow at peak</span>
           </div>
           <div className="flex items-start gap-2">
             <div className="mt-1 h-1.5 w-1.5 rounded-full bg-zinc-700 flex-shrink-0" />
-            <span className="text-xs text-zinc-500 leading-relaxed">Option A: explored</span>
+            <span className="text-xs text-zinc-500 leading-relaxed">Options: cache vs split, explored</span>
           </div>
           <div className="flex items-start gap-2">
             <div className="mt-1 h-1.5 w-1.5 rounded-full bg-zinc-700 flex-shrink-0" />
-            <span className="text-xs text-zinc-500 leading-relaxed">Decision: reached</span>
+            <span className="text-xs text-zinc-500 leading-relaxed">Decision: cache first, reached</span>
           </div>
         </div>
       </div>

@@ -90,6 +90,7 @@ export default function UseCaseTabs({ tabs }: { tabs: UseCaseTab[] }) {
             <section key={tab.id}>
               <h3>{tab.heading}</h3>
               <p>{tab.description}</p>
+              {tab.example ? <p>Example: {tab.example}</p> : null}
             </section>
           ))}
       </div>
