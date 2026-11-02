@@ -52,7 +52,7 @@ export function getRoomChannelName(roomId: RoomId): string {
 export function buildRoomPath(roomId: RoomId): string {
   const params = new URLSearchParams();
   params.set(ROOM_QUERY_PARAM, roomId);
-  return `/?${params.toString()}`;
+  return `/app?${params.toString()}`;
 }
 
 export function buildRoomUrl(

@@ -1,5 +1,6 @@
 import Link from "next/link";
 import OpenEchoButton from "./OpenEchoButton";
+import { EchoLogo } from "../brand/EchoLogo";
 
 const FOOTER_COLUMNS = [
   {
@@ -35,9 +36,7 @@ export default function MarketingFooter() {
             href="/"
             className="flex items-center gap-2 text-base font-semibold tracking-tight text-zinc-900 transition-opacity hover:opacity-90 dark:text-white"
           >
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-indigo-500 to-violet-500 text-xs font-semibold !text-white shadow-sm">
-              E
-            </span>
+            <EchoLogo className="h-8 w-8" />
             <span>Echo</span>
           </Link>
           <p className="max-w-xs text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">

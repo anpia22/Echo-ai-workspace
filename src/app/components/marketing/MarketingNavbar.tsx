@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import OpenEchoButton from "./OpenEchoButton";
 import ThemeToggle from "../theme/ThemeToggle";
+import { EchoLogo } from "../brand/EchoLogo";
 
 const NAV_LINKS = [
   { href: "/about", label: "About" },
@@ -41,9 +42,7 @@ export default function MarketingNavbar() {
           href="/"
           className="flex items-center gap-2.5 transition-opacity hover:opacity-90"
         >
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-zinc-900 border border-zinc-700 dark:bg-zinc-900 dark:border-zinc-800 text-white font-semibold shadow-sm">
-            <span className="text-sm tracking-tight">E</span>
-          </div>
+          <EchoLogo className="h-9 w-9 text-zinc-900 dark:text-white" />
           <span className="text-base font-semibold tracking-tight text-zinc-900 dark:text-white">
             Echo
           </span>

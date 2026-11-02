@@ -460,3 +460,36 @@ html.dark .echo-scenario-badge:hover,
 
 
 
+
+/* Echo loader mark (from public/logo/logo-loader.svg) */
+.echo-loader-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 100 105;
+  stroke-dashoffset: 101;
+  animation: echo-loader-draw 1.5s cubic-bezier(.65, 0, .35, 1) .55s forwards;
+}
+.echo-loader-pen {
+  offset-path: path('M16 61 H81 C90 60.4 94 53 93 46 C92 36 82 30.4 70 30.4 C54 30.4 39 42 36.6 58 C34.4 78 48 92 64 92 C80 92 94 82 105 71.6');
+  offset-rotate: 0deg;
+  offset-distance: 0%;
+  animation: echo-loader-travel 1.5s cubic-bezier(.65, 0, .35, 1) .55s forwards;
+}
+.echo-loader-dot {
+  fill: #0F766E;
+  transform: scale(0);
+  animation: echo-loader-pop .5s ease-out forwards, echo-loader-settle .4s ease-out 2.05s;
+}
+@keyframes echo-loader-draw { to { stroke-dashoffset: 0; } }
+@keyframes echo-loader-travel { to { offset-distance: 100%; } }
+@keyframes echo-loader-pop { 0% { transform: scale(0); } 60% { transform: scale(1.4); } 100% { transform: scale(1); } }
+@keyframes echo-loader-settle { 0% { transform: scale(1); } 45% { transform: scale(1.3); } 100% { transform: scale(1); } }
+@media (prefers-reduced-motion: reduce) {
+  .echo-loader-line, .echo-loader-pen, .echo-loader-dot { animation: none; }
+  .echo-loader-line { stroke-dashoffset: 0; }
+  .echo-loader-pen { offset-distance: 100%; }
+  .echo-loader-dot { transform: scale(1); }
+}

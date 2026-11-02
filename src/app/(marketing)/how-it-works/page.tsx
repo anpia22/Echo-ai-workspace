@@ -500,7 +500,7 @@ export default function HowItWorksPage() {
             body={
               <>
                 <p>As the idea becomes clearer, Echo can help organize the thinking into connected relationships, groups, and directions.</p>
-                <p>Scattered ideas start to take shape — not through automation, but through the thinking you do together.</p>
+                <p>Scattered ideas start to take shape — the AI drafts the structure and you shape it, so it reflects your thinking.</p>
               </>
             }
             visual={<StructureVisual />}

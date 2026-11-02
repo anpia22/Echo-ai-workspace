@@ -9,44 +9,45 @@ import {
 } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import EchoCanvas, { type ViewportApi } from "./components/EchoCanvas";
-import RoomControls from "./components/RoomControls";
-import ThemeToggle from "./components/theme/ThemeToggle";
-import { applyCanvasActions } from "./lib/applyCanvasActions";
-import { createCanvasSnapshot } from "./lib/collaboration/canvasSnapshot";
-import type { ViewportState } from "./lib/collaboration/viewportEvents";
+import EchoCanvas, { type ViewportApi } from "../components/EchoCanvas";
+import RoomControls from "../components/RoomControls";
+import ThemeToggle from "../components/theme/ThemeToggle";
+import { EchoLoader } from "../components/brand/EchoLogo";
+import { applyCanvasActions } from "../lib/applyCanvasActions";
+import { createCanvasSnapshot } from "../lib/collaboration/canvasSnapshot";
+import type { ViewportState } from "../lib/collaboration/viewportEvents";
 import {
   applyRemoteNodeEvent,
   diffLocalNodeMutations,
   moveSemanticNode,
   publishLocalNodeMutations,
-} from "./lib/collaboration/nodeEvents";
+} from "../lib/collaboration/nodeEvents";
 import {
   applyRemoteEdgeEvent,
   diffLocalEdgeMutations,
   publishLocalEdgeMutations,
-} from "./lib/collaboration/edgeEvents";
+} from "../lib/collaboration/edgeEvents";
 import {
   applyRemoteGroupEvent,
   diffLocalGroupMutations,
   publishLocalGroupMutations,
-} from "./lib/collaboration/groupEvents";
-import { getRoomIdFromUrl } from "./lib/collaboration/room";
-import { useRoomChannel } from "./lib/collaboration/useRoomChannel";
-import { useMeeting } from "./lib/collaboration/meeting";
+} from "../lib/collaboration/groupEvents";
+import { getRoomIdFromUrl } from "../lib/collaboration/room";
+import { useRoomChannel } from "../lib/collaboration/useRoomChannel";
+import { useMeeting } from "../lib/collaboration/meeting";
 import {
   createMeetingConversationStore,
   type MeetingConversationStore,
-} from "./lib/collaboration/meeting/conversation";
+} from "../lib/collaboration/meeting/conversation";
 import type {
   MeetingInsightRecord,
   MeetingTranscriptSegmentRecord,
-} from "./lib/persistence/meetingTypes";
-import { MeetingDock } from "./components/meeting";
+} from "../lib/persistence/meetingTypes";
+import { MeetingDock } from "../components/meeting";
 import {
   buildGraphContext,
   logGraphContext,
-} from "./lib/graphContext";
+} from "../lib/graphContext";
 import {
   useWorkspaceHydration,
   useCanvasPersistence,
@@ -58,11 +59,11 @@ import {
   updateConversationTitleApi,
   updateConversationApi,
   loadConversationCanvasApi,
-} from "./lib/persistence/client";
+} from "../lib/persistence/client";
 import type {
   CanvasPersistenceStatus,
   ConversationPersistenceStatus,
-} from "./lib/persistence/client";
+} from "../lib/persistence/client";
 
 type CanvasAction = {
   type: string;
@@ -2349,7 +2350,7 @@ function Home() {
     return (
       <div className="flex h-dvh w-full items-center justify-center bg-zinc-950 text-white">
         <div className="flex flex-col items-center gap-4">
-          <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/20 border-t-white" />
+          <EchoLoader className="h-24 w-24 text-white" />
           <p className="text-sm font-medium text-zinc-400">Loading Echo Workspace…</p>
         </div>
       </div>
@@ -2380,7 +2381,7 @@ function Home() {
             </button>
             <button
               onClick={() => {
-                router.push("/");
+                router.push("/app");
               }}
               className="rounded-lg bg-white px-4 py-2 text-sm font-medium text-black transition hover:bg-zinc-200"
             >

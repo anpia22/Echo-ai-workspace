@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" role="img" aria-label="Echo">
+  <style>
+    .e { fill: none; stroke: currentColor; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round;
+         stroke-dasharray: 100 105; stroke-dashoffset: 101; animation: draw 1.5s cubic-bezier(.65,0,.35,1) .55s forwards; }
+    .pen { offset-path: path('M16 61 H81 C90 60.4 94 53 93 46 C92 36 82 30.4 70 30.4 C54 30.4 39 42 36.6 58 C34.4 78 48 92 64 92 C80 92 94 82 105 71.6'); offset-rotate: 0deg; offset-distance: 0%;
+           animation: travel 1.5s cubic-bezier(.65,0,.35,1) .55s forwards; }
+    .dot { fill: #0F766E; transform: scale(0); animation: pop .5s ease-out forwards, settle .4s ease-out 2.05s; }
+    @keyframes draw { to { stroke-dashoffset: 0; } }
+    @keyframes travel { to { offset-distance: 100%; } }
+    @keyframes pop { 0% { transform: scale(0); } 60% { transform: scale(1.4); } 100% { transform: scale(1); } }
+    @keyframes settle { 0% { transform: scale(1); } 45% { transform: scale(1.3); } 100% { transform: scale(1); } }
+    @media (prefers-reduced-motion: reduce) {
+      .e, .pen, .dot { animation: none; }
+      .e { stroke-dashoffset: 0; } .pen { offset-distance: 100%; } .dot { transform: scale(1); }
+    }
+  </style>
+  <path class="e" pathLength="100" d="M16 61 H81 C90 60.4 94 53 93 46 C92 36 82 30.4 70 30.4 C54 30.4 39 42 36.6 58 C34.4 78 48 92 64 92 C80 92 94 82 105 71.6"/>
+  <g class="pen"><circle class="dot" cx="0" cy="0" r="7.5"/></g>
+</svg>

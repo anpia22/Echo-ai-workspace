@@ -122,7 +122,7 @@ export const PUBLIC_PAGES = [
 ];
 
 /** Paths that must not be crawled or used as AI training material. */
-export const PRIVATE_PATHS = ["/api/", "/meeting-test"];
+export const PRIVATE_PATHS = ["/api/", "/meeting-test", "/app"];
 
 export async function getSiteUrl(): Promise<string> {
   const fromEnv = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL;
