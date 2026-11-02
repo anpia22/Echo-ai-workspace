@@ -1,6 +1,18 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import {
+  Background,
+  Handle,
+  MarkerType,
+  Position,
+  ReactFlow,
+  type Edge,
+  type Node,
+  type NodeProps,
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
+import { useTheme } from "../theme/ThemeProvider";
 
 type NodeType = "problem" | "question" | "idea" | "solution" | "decision" | "task";
 interface DemoNode {
@@ -29,8 +41,6 @@ const EXAMPLES = [
   },
 ];
 
-const COLUMN_ORDER: NodeType[] = ["problem", "question", "idea", "solution", "decision", "task"];
-
 const TYPE_STYLE: Record<NodeType, string> = {
   problem: "border-rose-400/60 bg-rose-500/10 text-rose-700 dark:text-rose-200",
   question: "border-amber-400/60 bg-amber-500/10 text-amber-700 dark:text-amber-200",
@@ -40,29 +50,95 @@ const TYPE_STYLE: Record<NodeType, string> = {
   task: "border-zinc-400/60 bg-zinc-500/10 text-zinc-700 dark:text-zinc-200",
 };
 
-/** Place nodes in one column per type (in thinking order), spread evenly down the column. */
-function layout(nodes: DemoNode[]) {
-  const used = COLUMN_ORDER.filter((t) => nodes.some((n) => n.type === t));
-  const pos = new Map<string, { x: number; y: number }>();
-  used.forEach((type, col) => {
-    const group = nodes.filter((n) => n.type === type);
-    group.forEach((n, row) => {
-      pos.set(n.id, {
-        x: used.length === 1 ? 50 : 12 + (col * 76) / (used.length - 1),
-        y: ((row + 1) * 100) / (group.length + 1),
+const NODE_W = 200;
+const COL_GAP = 110;
+const ROW_GAP = 26;
+const NODE_H = 76;
+
+/**
+ * Layered left-to-right layout: a node sits one column right of its deepest parent,
+ * so edges mostly flow forward and rarely cross a card.
+ */
+function layout(nodes: DemoNode[], edges: DemoEdge[]) {
+  const rank = new Map<string, number>(nodes.map((n) => [n.id, 0]));
+  // Bellman-Ford style relaxation, capped so cycles cannot loop forever.
+  for (let pass = 0; pass < nodes.length; pass++) {
+    let changed = false;
+    for (const e of edges) {
+      const next = (rank.get(e.source) ?? 0) + 1;
+      if (next > (rank.get(e.target) ?? 0) && next < nodes.length) {
+        rank.set(e.target, next);
+        changed = true;
+      }
+    }
+    if (!changed) break;
+  }
+
+  const columns = new Map<number, DemoNode[]>();
+  for (const n of nodes) {
+    const r = rank.get(n.id) ?? 0;
+    columns.set(r, [...(columns.get(r) ?? []), n]);
+  }
+  const tallest = Math.max(...[...columns.values()].map((c) => c.length));
+  const colHeight = tallest * NODE_H + (tallest - 1) * ROW_GAP;
+
+  const flowNodes: Node<DemoNodeData>[] = [];
+  for (const [r, col] of columns) {
+    const height = col.length * NODE_H + (col.length - 1) * ROW_GAP;
+    const top = (colHeight - height) / 2;
+    col.forEach((n, row) => {
+      flowNodes.push({
+        id: n.id,
+        type: "demo",
+        position: { x: r * (NODE_W + COL_GAP), y: top + row * (NODE_H + ROW_GAP) },
+        data: { type: n.type, title: n.title },
+        draggable: false,
       });
     });
-  });
-  return pos;
+  }
+
+  const flowEdges: Edge[] = edges.map((e, i) => ({
+    id: `e${i}`,
+    source: e.source,
+    target: e.target,
+    label: e.label || undefined,
+    type: "smoothstep",
+    markerEnd: { type: MarkerType.ArrowClosed, width: 16, height: 16 },
+    style: { strokeWidth: 1.5 },
+    labelStyle: { fontSize: 11, fontWeight: 500 },
+    labelBgPadding: [6, 3],
+    labelBgBorderRadius: 6,
+  }));
+
+  return { flowNodes, flowEdges };
 }
 
+type DemoNodeData = { type: NodeType; title: string };
+
+function DemoNodeCard({ data }: NodeProps<Node<DemoNodeData>>) {
+  return (
+    <div
+      style={{ width: NODE_W, minHeight: NODE_H }}
+      className={`rounded-xl border px-3 py-2.5 text-sm shadow-sm ${TYPE_STYLE[data.type]}`}
+    >
+      <Handle type="target" position={Position.Left} className="!h-2 !w-2 !border-0 !bg-zinc-400" />
+      <span className="block text-[10px] font-semibold uppercase tracking-wider opacity-70">{data.type}</span>
+      <span className="mt-0.5 block font-medium leading-snug">{data.title}</span>
+      <Handle type="source" position={Position.Right} className="!h-2 !w-2 !border-0 !bg-zinc-400" />
+    </div>
+  );
+}
+
+const nodeTypes = { demo: DemoNodeCard };
+
 export default function LiveDemo() {
+  const { resolvedTheme } = useTheme();
   const [prompt, setPrompt] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [graph, setGraph] = useState<{ nodes: DemoNode[]; edges: DemoEdge[] } | null>(null);
 
-  const positions = useMemo(() => (graph ? layout(graph.nodes) : null), [graph]);
+  const flow = useMemo(() => (graph ? layout(graph.nodes, graph.edges) : null), [graph]);
 
   async function run() {
     if (loading) return;
@@ -129,52 +205,31 @@ export default function LiveDemo() {
         ) : null}
       </div>
 
-      {graph && positions ? (
+      {graph && flow ? (
         <>
-          {/* Wide screens: positioned map. Narrow screens: readable list below. */}
-          <div className="relative mt-2 hidden h-[420px] overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50/70 dark:border-zinc-800 dark:bg-zinc-950/50 md:block">
-            <svg className="absolute inset-0 h-full w-full" aria-hidden="true">
-              {graph.edges.map((e, i) => {
-                const a = positions.get(e.source);
-                const b = positions.get(e.target);
-                if (!a || !b) return null;
-                return (
-                  <g key={i}>
-                    <line
-                      x1={`${a.x}%`}
-                      y1={`${a.y}%`}
-                      x2={`${b.x}%`}
-                      y2={`${b.y}%`}
-                      className="stroke-zinc-400 dark:stroke-zinc-600"
-                      strokeWidth="1.5"
-                    />
-                    {e.label ? (
-                      <text
-                        x={`${(a.x + b.x) / 2}%`}
-                        y={`${(a.y + b.y) / 2}%`}
-                        textAnchor="middle"
-                        className="fill-zinc-500 text-[10px] dark:fill-zinc-400"
-                      >
-                        {e.label}
-                      </text>
-                    ) : null}
-                  </g>
-                );
-              })}
-            </svg>
-            {graph.nodes.map((n, i) => {
-              const p = positions.get(n.id)!;
-              return (
-                <div
-                  key={n.id}
-                  style={{ left: `${p.x}%`, top: `${p.y}%`, animationDelay: `${i * 90}ms` }}
-                  className={`animate-fade-in absolute w-36 -translate-x-1/2 -translate-y-1/2 rounded-xl border px-3 py-2 text-xs shadow-sm backdrop-blur ${TYPE_STYLE[n.type]}`}
-                >
-                  <span className="block text-[10px] font-semibold uppercase tracking-wider opacity-70">{n.type}</span>
-                  <span className="mt-0.5 block font-medium leading-snug">{n.title}</span>
-                </div>
-              );
-            })}
+          {/* Wide screens: React Flow map (same library as the workspace canvas). Narrow screens: list below. */}
+          <div className="mt-2 hidden h-[440px] overflow-hidden rounded-2xl border border-zinc-200 bg-zinc-50/70 dark:border-zinc-800 dark:bg-zinc-950/50 md:block">
+            <ReactFlow
+              key={graph.nodes.map((n) => n.id).join("|")}
+              nodes={flow.flowNodes}
+              edges={flow.flowEdges}
+              nodeTypes={nodeTypes}
+              colorMode={resolvedTheme}
+              fitView
+              fitViewOptions={{ padding: 0.15 }}
+              minZoom={0.4}
+              maxZoom={1.5}
+              nodesDraggable={false}
+              nodesConnectable={false}
+              elementsSelectable={false}
+              zoomOnScroll={false}
+              preventScrolling={false}
+              panOnDrag
+              proOptions={{ hideAttribution: true }}
+              aria-label="Generated thinking map"
+            >
+              <Background gap={20} size={1} />
+            </ReactFlow>
           </div>
           <ul className="mt-2 space-y-2 md:hidden">
             {graph.nodes.map((n) => (

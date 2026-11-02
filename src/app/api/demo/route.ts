@@ -125,6 +125,9 @@ export async function POST(request: Request) {
     const completion = await client.chat.completions.create({
       model: "nvidia/nemotron-3-ultra-550b-a55b",
       temperature: 0.3,
+      // Same setting /api/analyze uses. Without it the model spends the whole token budget
+      // reasoning and returns empty content, which surfaced as a 502.
+      reasoning_effort: "none",
       max_tokens: 900,
       messages: [
         {
@@ -139,6 +142,9 @@ Rules: 5 to 8 nodes. Include at least one problem, one open question and one tas
     });
 
     const text = completion.choices[0]?.message?.content ?? "";
+    if (!text.trim()) {
+      console.error("[api/demo] empty model response, finish_reason:", completion.choices[0]?.finish_reason);
+    }
     const graph = clean(extractJson(text));
     if (graph.nodes.length < 2) throw new Error("Too few nodes");
     return NextResponse.json(graph);
