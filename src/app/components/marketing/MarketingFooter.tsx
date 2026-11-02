@@ -16,6 +16,7 @@ const FOOTER_COLUMNS = [
     links: [
       { href: "/about", label: "About" },
       { href: "/blog", label: "Blog" },
+      { href: "mailto:echoaiworkspace@gmail.com", label: "Contact" },
     ],
   },
   {
@@ -40,7 +41,7 @@ export default function MarketingFooter() {
             <span>Echo</span>
           </Link>
           <p className="max-w-xs text-sm leading-relaxed text-zinc-600 dark:text-zinc-400">
-            The AI workspace that thinks with you. Talk it through and watch the canvas build itself.
+            The AI workspace that thinks with you. Type a messy problem and watch it become a map.
           </p>
           <OpenEchoButton />
         </div>

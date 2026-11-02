@@ -148,9 +148,9 @@ export default function TermsPage() {
           the update, the new terms apply to that use.
         </p>
         <p>
-          This site does not publish a separate support inbox. Questions about
-          these terms go to the person or organization that invited you to this
-          Echo deployment.
+          Questions about these terms, and support requests, go to{" "}
+          <a href="mailto:echoaiworkspace@gmail.com">echoaiworkspace@gmail.com</a>.
+          Echo is run by Anup, the founder.
         </p>
       </Section>
     </article>

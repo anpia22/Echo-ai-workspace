@@ -6,7 +6,7 @@ import { SITE_DESCRIPTION, SITE_NAME } from "@/lib/site";
  */
 
 export const ECHO_DEFINITION =
-  "Echo is an AI workspace where teams talk through an idea with AI, turn the conversation into a visual canvas, and collaborate on it live in meetings with screen sharing.";
+  "Echo is an AI workspace where technical founders and engineers talk a messy problem through with AI, turn it into a visual map of options, decisions and tasks, and reshape that map so the AI works from their version.";
 
 export const ECHO_FEATURES = [
   "Conversational AI that helps you think through problems and decisions",
@@ -32,9 +32,9 @@ export const ECHO_FAQ: { question: string; answer: string }[] = [
       "You talk an idea through with Echo. As the thinking becomes clearer, Echo helps organize it into connected concepts, options, and decisions on a spatial canvas that you and your team can keep editing.",
   },
   {
-    question: "Can teams use Echo in live meetings?",
+    question: "Can I use Echo with my team?",
     answer:
-      "Yes. Echo supports live meetings with screen sharing and collaborative canvases, so the conversation, the shared screen, and the visual workspace live in one room.",
+      "Yes. Start alone, then share a room link. Teammates see the same canvas with live cursors, and you can meet and share your screen in the same room.",
   },
   {
     question: "How is Echo different from a chat assistant or a whiteboard?",

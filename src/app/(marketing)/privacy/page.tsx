@@ -138,14 +138,14 @@ export default function PrivacyPage() {
           You choose what to type, what to say, and what to put on a shared
           screen. You can leave a room, stop a screen share, and clear this
           site&apos;s data in your browser. To ask for access to or deletion of
-          workspace content stored on the server, contact the person or
-          organization that invited you to this Echo deployment. This site does
-          not publish a separate support inbox.
+          workspace content stored on the server, email{" "}
+          <a href="mailto:echoaiworkspace@gmail.com">echoaiworkspace@gmail.com</a>.
+          Echo is run by Anup, the founder.
         </p>
         <p>
           If the privacy law where you live gives you rights to access, correct,
-          delete, or export personal information, you can use that same contact
-          path to make the request. Some records may be kept when the operator
+          delete, or export personal information, you can use that same email
+          address to make the request. Some records may be kept when the operator
           needs them for security or to meet a legal duty.
         </p>
       </Section>

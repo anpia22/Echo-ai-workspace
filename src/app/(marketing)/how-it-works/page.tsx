@@ -410,15 +410,15 @@ function ContinuationVisual() {
         <div className="flex flex-col gap-2">
           <div className="flex items-start gap-2">
             <div className="mt-1 h-1.5 w-1.5 rounded-full bg-zinc-600 flex-shrink-0" />
-            <span className="text-xs text-zinc-400 leading-relaxed">Core Idea — established</span>
+            <span className="text-xs text-zinc-400 leading-relaxed">Core Idea: established</span>
           </div>
           <div className="flex items-start gap-2">
             <div className="mt-1 h-1.5 w-1.5 rounded-full bg-zinc-700 flex-shrink-0" />
-            <span className="text-xs text-zinc-500 leading-relaxed">Option A — explored</span>
+            <span className="text-xs text-zinc-500 leading-relaxed">Option A: explored</span>
           </div>
           <div className="flex items-start gap-2">
             <div className="mt-1 h-1.5 w-1.5 rounded-full bg-zinc-700 flex-shrink-0" />
-            <span className="text-xs text-zinc-500 leading-relaxed">Decision — reached</span>
+            <span className="text-xs text-zinc-500 leading-relaxed">Decision: reached</span>
           </div>
         </div>
       </div>
@@ -473,7 +473,7 @@ export default function HowItWorksPage() {
             body={
               <>
                 <p>
-                  You don&apos;t need a perfectly structured prompt. Start with a question, a problem, a decision — anything you&apos;re trying to think through.
+                  You don&apos;t need a perfectly structured prompt. Start with a question, a problem, a decision. Anything you&apos;re trying to think through.
                 </p>
                 <p>Echo is designed to work from the beginning of a thought, not just its finished form. Any starting point works.</p>
               </>
@@ -486,7 +486,7 @@ export default function HowItWorksPage() {
             body={
               <>
                 <p>
-                  Explore the idea through natural conversation. Ask questions, push back, change direction — Echo responds and helps the thinking develop.
+                  Explore the idea through natural conversation. Ask questions, push back, change direction. Echo responds and helps the thinking develop.
                 </p>
                 <p>The conversation is the starting material. It&apos;s how the idea gets clearer before it becomes something you can see.</p>
               </>
@@ -500,7 +500,7 @@ export default function HowItWorksPage() {
             body={
               <>
                 <p>As the idea becomes clearer, Echo can help organize the thinking into connected relationships, groups, and directions.</p>
-                <p>Scattered ideas start to take shape — the AI drafts the structure and you shape it, so it reflects your thinking.</p>
+                <p>Scattered ideas start to take shape. The AI drafts the structure and you shape it, so it reflects your thinking.</p>
               </>
             }
             visual={<StructureVisual />}
@@ -511,7 +511,7 @@ export default function HowItWorksPage() {
             body={
               <>
                 <p>
-                  The canvas lets you see how ideas connect spatially. Concepts, options, and decisions can be laid out and explored visually — beyond what a linear conversation thread can show.
+                  The canvas lets you see how ideas connect spatially. Concepts, options, and decisions can be laid out and explored visually, beyond what a linear conversation thread can show.
                 </p>
                 <p>This is where conversation and visual thinking come together in one shared space.</p>
               </>
@@ -527,7 +527,7 @@ export default function HowItWorksPage() {
                 <p>
                   The workspace gives your ideas a place to keep developing. Conversation and visual thinking stay connected in one space, so the context of what you were exploring doesn&apos;t get scattered.
                 </p>
-                <p>Pick up where you left off, add a new thought, or explore a different direction — all within the same workspace.</p>
+                <p>Pick up where you left off, add a new thought, or explore a different direction, all in the same workspace.</p>
               </>
             }
             visual={<ContinuationVisual />}

@@ -15,9 +15,18 @@ interface DemoEdge {
 }
 
 const EXAMPLES = [
-  "Our API is slow at peak traffic, we're not sure whether to add a cache, split the monolith, or just scale up. Launch is in 6 weeks.",
-  "Two engineers want to rebuild auth in-house, I'd rather buy. We have no security hire and a SOC 2 audit next quarter.",
-  "Churn is up 4% and nobody agrees why. Support says pricing, product says missing integrations, and I can't tell who's right.",
+  {
+    label: "Cache or split the service?",
+    text: "Our API is slow at peak traffic, we're not sure whether to add a cache, split the monolith, or just scale up. Launch is in 6 weeks.",
+  },
+  {
+    label: "Build or buy auth?",
+    text: "Two engineers want to rebuild auth in-house, I'd rather buy. We have no security hire and a SOC 2 audit next quarter.",
+  },
+  {
+    label: "Why is churn up?",
+    text: "Churn is up 4% and nobody agrees why. Support says pricing, product says missing integrations, and I can't tell who's right.",
+  },
 ];
 
 const COLUMN_ORDER: NodeType[] = ["problem", "question", "idea", "solution", "decision", "task"];
@@ -91,14 +100,14 @@ export default function LiveDemo() {
       />
       <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-wrap gap-2">
-          {EXAMPLES.map((ex, i) => (
+          {EXAMPLES.map((ex) => (
             <button
-              key={i}
+              key={ex.label}
               type="button"
-              onClick={() => setPrompt(ex)}
+              onClick={() => setPrompt(ex.text)}
               className="rounded-full border border-zinc-200 bg-white px-3 py-1 text-xs font-medium text-zinc-600 transition hover:border-indigo-300 hover:text-zinc-900 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:text-white"
             >
-              Example {i + 1}
+              {ex.label}
             </button>
           ))}
         </div>

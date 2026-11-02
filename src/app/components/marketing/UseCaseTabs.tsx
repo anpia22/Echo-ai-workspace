@@ -9,6 +9,8 @@ export type UseCaseTab = {
   heading: string;
   description: string;
   prompts: string[];
+  /** A concrete founder scenario shown above the prompts. */
+  example?: string;
   visual: ReactNode;
 };
 
@@ -60,6 +62,12 @@ export default function UseCaseTabs({ tabs }: { tabs: UseCaseTab[] }) {
             {active.heading}
           </h3>
           <p className="mt-4 text-base leading-relaxed text-zinc-600 dark:text-zinc-300">{active.description}</p>
+          {active.example ? (
+            <p className="mt-5 rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm leading-relaxed text-indigo-950 dark:border-indigo-500/30 dark:bg-indigo-500/10 dark:text-indigo-100">
+              <span className="font-semibold">Example: </span>
+              {active.example}
+            </p>
+          ) : null}
           <ul className="mt-6 space-y-2.5">
             {active.prompts.map((prompt) => (
               <li

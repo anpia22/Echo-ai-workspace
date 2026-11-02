@@ -24,7 +24,7 @@ export const BLOG_POSTS: BlogPost[] = [
     description:
       "Explore the defining problem AI solves today: context collapse and knowledge fragmentation. Discover how context-aware AI workspaces eliminate meeting amnesia and replace isolated chatbots.",
     excerpt:
-      "Isolated chatbots only added more noise to fragmented teams. The defining problem modern AI solves is context collapse—unifying disjointed apps, meeting amnesia, and complex reasoning into one shared spatial canvas.",
+      "Isolated chatbots only added more noise to fragmented teams. The defining problem modern AI solves is context collapse: unifying disjointed apps, meeting amnesia, and complex reasoning into one shared spatial canvas.",
     publishedAt: "2026-10-31",
     readingMinutes: 9,
     keywords: [
@@ -52,23 +52,23 @@ export const BLOG_POSTS: BlogPost[] = [
       "An AI Context Engine unifying fragmented apps, video meetings, and chat threads into a radiant collaborative canvas workspace.",
     sections: [
       {
-        heading: "The $400 Billion Dilemma: What Problem Does AI Actually Solve?",
+        heading: "The $400 billion dilemma: What problem does AI actually solve?",
         paragraphs: [
-          "Ask five executives what problem artificial intelligence actually solves, and you will receive five vague answers: writing marketing copy faster, drafting emails, summarizing long PDFs, or generating boilerplate code. While those individual tasks save minutes, they do not justify the trillion-dollar global transformation underway. The fundamental, high-value problem that artificial intelligence solves today is context fragmentation—the silent productivity crisis paralyzing modern knowledge workers.",
+          "Ask five executives what problem artificial intelligence actually solves, and you will receive five vague answers: writing marketing copy faster, drafting emails, summarizing long PDFs, or generating boilerplate code. While those individual tasks save minutes, they do not justify the trillion-dollar global transformation underway. The fundamental, high-value problem that artificial intelligence solves today is context fragmentation, the silent productivity crisis paralyzing modern knowledge workers.",
           "Over the past decade, cloud SaaS promised simplicity but delivered chaos. The typical enterprise employee now juggles an average of 14 disjointed applications every single day: Slack for instant messaging, Zoom or Teams for video calls, Notion or Confluence for documentation, Jira for project tracking, Figma or Miro for visual whiteboarding, and email for external coordination. Industry research reveals that knowledge workers switch between applications up to 1,200 times per day, incurring a devastating cognitive switching penalty that drains up to 4.5 hours of productive deep work every week.",
           "When work is scattered across a dozen browser tabs, human working memory collapses. We spend our mornings piecing together what was decided in yesterday's call, hunting through buried threads to find an architectural diagram, and re-explaining background constraints to teammates. Modern artificial intelligence is not merely a content generator; at its highest potential, AI is an ambient context orchestrator designed to eliminate cognitive fragmentation and unify collective intelligence. Explore how [Echo unifies cognitive modes across planning and decisions](/use-cases).",
         ],
       },
       {
-        heading: "The 'Chatbot Amnesia' Trap: Why First-Generation AI Made Fragmentation Worse",
+        heading: "The 'chatbot amnesia' trap: Why first-generation AI made fragmentation worse",
         paragraphs: [
           "When generative AI first exploded into public consciousness with single-user conversational interfaces, companies hoped chatbots would magically streamline operations. Instead, first-generation AI chatbots inadvertently exacerbated the context fragmentation crisis by creating a brand-new silo: the private prompt window.",
-          "Consider how teams interact with standard AI tools today: An engineer or product manager encounters a complex roadblock. They open an isolated browser tab, spend ten minutes crafting a detailed prompt full of proprietary business context, and receive an insightful synthesis. But where does that insight go? It remains trapped inside their personal chat history—invisible to their engineering lead, inaccessible to their design counterpart, and disconnected from the project backlog. To share it, they must copy-paste chunks into Slack or a shared Google Doc, stripping away the iterative reasoning that produced it.",
+          "Consider how teams interact with standard AI tools today: An engineer or product manager encounters a complex roadblock. They open an isolated browser tab, spend ten minutes crafting a detailed prompt full of proprietary business context, and receive an insightful synthesis. But where does that insight go? It remains trapped inside their personal chat history, invisible to their engineering lead, inaccessible to their design counterpart, and disconnected from the project backlog. To share it, they must copy-paste chunks into Slack or a shared Google Doc, stripping away the iterative reasoning that produced it.",
           "Even worse is 'meeting amnesia.' High-velocity teams make their most consequential architectural trade-offs and product pivots verbally during live video calls. Yet standard AI assistants operate as passive transcription bots that dump ten pages of unformatted text into inboxes hours later. Nobody reads transcripts. The critical nuance, the visual sketches, and the consensus formed in the room evaporate. Traditional AI was built for single-player text queries, but real enterprise value requires multiplayer, context-aware collaboration. You can experience this difference directly in the [interactive Echo demo walkthrough](/demo).",
         ],
       },
       {
-        heading: "From Linear Prompts to Spatial Cognition: How AI Workspaces Unify Context",
+        heading: "From linear prompts to spatial cognition: How AI workspaces unify context",
         paragraphs: [
           "Human reasoning is multidimensional, visual, and relational. We do not think in linear paragraphs; we conceptualize systems through maps, hierarchies, and cause-and-effect connections. By restricting AI interactions to vertical text threads, legacy tools force complex multidimensional problems into an unnatural, claustrophobic format.",
           "The modern breakthrough solving this bottleneck is the convergence of generative intelligence with infinite spatial canvases. Instead of reading through 30 chat bubbles, teams interact with an AI workspace that translates spoken and typed dialogue into interconnected concept nodes, interactive decision trees, and visual workflows in real time. To explore the mechanics of this transformation, see [how Echo works](/how-it-works).",
@@ -76,7 +76,7 @@ export const BLOG_POSTS: BlogPost[] = [
         ],
       },
       {
-        heading: "Agentic Workflows and Live Multiplayer Collaboration",
+        heading: "Agentic workflows and live multiplayer collaboration",
         paragraphs: [
           "The second crucial leap in solving context fragmentation is moving from static query-response mechanisms to persistent agentic workflows. In an advanced AI workspace, the intelligence maintains continuous situational awareness across both synchronous meetings and asynchronous execution.",
           "During live calls, [screen presence and presenter mode](/blog/screen-presence-collaborative-meetings) ensure that every participant is aligned on the exact same coordinate of thought. Rather than watching a passive screen broadcast where one presenter talks over a static slide deck, teammates navigate the canvas together with live multiplayer cursors, synchronized presenter follow-modes, and contextual AI prompts.",
@@ -84,7 +84,7 @@ export const BLOG_POSTS: BlogPost[] = [
         ],
       },
       {
-        heading: "The Strategic Imperative: What Enterprise Leaders Must Look For",
+        heading: "The strategic imperative: What enterprise leaders must look for",
         paragraphs: [
           "The organizations that pull ahead in the next five years will not be those whose employees run the most prompts in isolated browser tabs. Competitive advantage belongs to teams that eliminate friction between thinking, communicating, and executing. As you evaluate your team's AI infrastructure, demand answers to three foundational questions:",
           "First, does the AI possess continuous awareness of your visual workspace, or is it an isolated chatbot reading pasted text snippets? Second, can your team meet, present, and brainstorm directly inside the workspace without bouncing between video call clients and whiteboards? Third, does the collective intelligence persist as an interactive knowledge base, or does it die when the call ends?",
@@ -150,14 +150,14 @@ export const BLOG_POSTS: BlogPost[] = [
       {
         heading: "What an AI meeting workspace actually holds",
         paragraphs: [
-          "A useful meeting workspace has three layers that stay linked. First is dialogue: ask a question in natural language and get reasoning you can challenge. Second is a visual canvas of nodes, edges, and groups, so a decision is a map instead of a paragraph. Third is the live room itself — presence, shared cursors, and an audio and video meeting docked over that canvas.",
+          "A useful meeting workspace has three layers that stay linked. First is dialogue: ask a question in natural language and get reasoning you can challenge. Second is a visual canvas of nodes, edges, and groups, so a decision is a map instead of a paragraph. Third is the live room itself: presence, shared cursors, and an audio and video meeting docked over that canvas.",
           "Those layers matter because meetings fail in the gaps. If the AI only sees a pasted prompt, it misses what the room already agreed. If the canvas is a separate whiteboard, the call and the map drift apart. A collaborative AI workspace feeds the current canvas back into the conversation, so the next question is about this meeting, not a blank chat.",
         ],
       },
       {
         heading: "How teams use it during the call",
         paragraphs: [
-          "Start the meeting inside the workspace and keep the canvas visible. Explore the problem as questions and relationships. When the discussion turns sequential — owners, dependencies, order of work — plan those as connected nodes. When two options are on the table, put the trade-offs where everyone can point at them.",
+          "Start the meeting inside the workspace and keep the canvas visible. Explore the problem as questions and relationships. When the discussion turns sequential (owners, dependencies, order of work), plan those as connected nodes. When two options are on the table, put the trade-offs where everyone can point at them.",
           "Voice input helps when hands are already on the canvas. Real-time collaboration means a teammate can follow the presenter, see remote cursors, and join from a room link without exporting a snapshot. The meeting stays a working session.",
         ],
       },
@@ -174,7 +174,7 @@ export const BLOG_POSTS: BlogPost[] = [
     slug: "screen-presence-collaborative-meetings",
     title: "Screen Presence in Collaborative Meetings",
     description:
-      "Screen presence in a collaborative meeting means the room can see the presenter, the shared screen, and the same AI workspace — without competing screen shares.",
+      "Screen presence in a collaborative meeting means the room can see the presenter, the shared screen, and the same AI workspace, without competing screen shares.",
     excerpt:
       "Screen presence is more than a camera tile. In a collaborative meeting it is how clearly the room can see who is presenting, what is on the shared screen, and where the work actually lives.",
     publishedAt: "2026-10-12",
@@ -201,7 +201,7 @@ export const BLOG_POSTS: BlogPost[] = [
         heading: "One presenter, one shared screen",
         paragraphs: [
           "Competing screen shares are the fastest way to break a meeting. Two people present, the stage flips, and everyone spends the next minute asking which window is current. A single presenter lock keeps ownership obvious. Spotlight puts that presenter on the stage so the room is looking at one stream.",
-          "In Echo, screen sharing streams your screen or an application into the shared workspace, and the meeting dock sits over the canvas. The point of the share is the workspace itself — the node graph the team is editing — not a screenshot of a tool that will be outdated by the next comment.",
+          "In Echo, screen sharing streams your screen or an application into the shared workspace, and the meeting dock sits over the canvas. The point of the share is the workspace itself, meaning the node graph the team is editing, not a screenshot of a tool that will be outdated by the next comment.",
         ],
       },
       {
@@ -382,7 +382,7 @@ export const BLOG_POSTS: BlogPost[] = [
         heading: "Breaking out of the linear document prison",
         paragraphs: [
           "Human thought is non-linear, multidimensional, and associative. Yet for decades, distributed teams have been forced to cram complex software architecture, product roadmaps, and strategic debates into linear bullet lists and static slide decks. Linear mediums stifle organic problem solving and hide critical interdependencies.",
-          "A spatial visual AI workspace dismantles these constraints with an infinite canvas workspace. Instead of scrolling through 40 pages of disconnected text, teams organize ideas across two-dimensional space—grouping clusters, linking causal relationships with directional edges, and expanding technical hierarchies. It turns abstract debate into an intuitive team knowledge graph.",
+          "A spatial visual AI workspace dismantles these constraints with an infinite canvas workspace. Instead of scrolling through 40 pages of disconnected text, teams organize ideas across two-dimensional space by grouping clusters, linking causal relationships with directional edges, and expanding technical hierarchies. It turns abstract debate into an intuitive team knowledge graph.",
         ],
       },
       {
@@ -396,7 +396,7 @@ export const BLOG_POSTS: BlogPost[] = [
         heading: "Mind mapping AI: Transforming dialogue into architectural clarity",
         paragraphs: [
           "Brainstorming sessions often descend into chaos without structured facilitation. Integrating mind mapping AI and generative AI capabilities directly into the collaborative whiteboarding surface revolutionizes how concepts take form during live discussions.",
-          "Whether you speak thoughts aloud via voice AI assistant or type rapid questions, Echo synthesizes arguments into cleanly formatted concept cards and structured decision trees. The AI doesn't just regurgitate words—it identifies logical contradictions, maps alternatives side by side, and organizes sequence and ownership on a visual project planning canvas in real time.",
+          "Whether you speak thoughts aloud via voice AI assistant or type rapid questions, Echo synthesizes arguments into cleanly formatted concept cards and structured decision trees. The AI doesn't just regurgitate words. It identifies logical contradictions, maps alternatives side by side, and organizes sequence and ownership on a visual project planning canvas in real time.",
         ],
       },
       {

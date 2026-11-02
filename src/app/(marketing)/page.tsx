@@ -13,7 +13,7 @@ import {
 import { FadeIn } from "../components/marketing/motion";
 import LiveDemo from "../components/marketing/LiveDemo";
 
-const title = "Echo — The AI Workspace That Thinks With You";
+const title = "Echo: The AI workspace that thinks with you";
 const description =
   "Talk through a messy product or architecture decision and Echo maps it as problems, options, decisions and tasks. Built for technical founders. Free during beta.";
 
@@ -67,7 +67,7 @@ export default function HomePage() {
             Think through hard decisions <GradientText>out loud</GradientText>
           </>
         }
-        subtitle="Describe a messy product or architecture problem. Echo drafts the map of problems, options, decisions and tasks — you reshape it, and the AI works from your version."
+        subtitle="Describe a messy product or architecture problem. Echo drafts the map of problems, options, decisions and tasks. You reshape it, and the AI works from your version."
         secondary={{ href: "#try-it", label: "Try it below" }}
       />
 

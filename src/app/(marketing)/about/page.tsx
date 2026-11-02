@@ -24,7 +24,7 @@ export const metadata: Metadata = withSeo("/about", {
   },
 });
 
-const FRAGMENTS = ["A chat window here", "A whiteboard there", "Notes somewhere else", "Context that scrolls away"];
+const FRAGMENTS = ["A chat thread with the AI", "A whiteboard of boxes", "Notes in another tab", "Context that scrolls away"];
 
 const FLOW = [
   { label: "Conversation", sub: "You think out loud" },
@@ -36,7 +36,7 @@ const FLOW = [
 const WORKSPACE_BLOCKS = [
   {
     title: "Conversation",
-    body: "Natural language is the starting point. You think out loud — through questions, prompts, or rough ideas — and Echo responds and helps shape your thinking.",
+    body: "Natural language is the starting point. You think out loud, through questions, prompts or rough ideas, and Echo responds and helps shape your thinking.",
     icon: Icons.chat,
   },
   {
@@ -61,7 +61,7 @@ export default function AboutPage() {
             An AI workspace that <GradientText>thinks with you</GradientText>
           </>
         }
-        subtitle="Echo brings conversation and visual thinking together into one connected workspace — so ideas don't get lost between a chat box and everything else."
+        subtitle="Echo is built for founders and engineers who make calls with incomplete information. It brings conversation and a visual map into one workspace, so ideas don't get lost between a chat box and everything else."
         secondary={{ href: "/how-it-works", label: "See how it works" }}
       >
         <ProductFrame />
@@ -71,8 +71,8 @@ export default function AboutPage() {
       <section className="py-14 sm:py-20">
         <SectionHeader
           eyebrow="The problem"
-          title="Thinking gets fragmented"
-          subtitle="Most AI tools operate in isolation. When conversations scroll away, the broader picture is easily lost, and ideas struggle to connect into anything coherent."
+          title="Decisions get fragmented"
+          subtitle="The reasoning behind an architecture or product call ends up in a chat thread, a whiteboard and someone's notes. A week later nobody can reconstruct why you chose what you chose."
         />
         <div className="mx-auto grid max-w-4xl grid-cols-2 gap-3 sm:grid-cols-4">
           {FRAGMENTS.map((fragment, i) => (
@@ -92,7 +92,7 @@ export default function AboutPage() {
         <SectionHeader
           eyebrow="The Echo idea"
           title="Conversation becomes workspace"
-          subtitle="You talk with Echo. Echo helps organize the thinking. The workspace gives ideas a visual place to develop — keeping your thinking connected and clear."
+          subtitle="You talk with Echo. Echo helps organize the thinking. The workspace gives ideas a visual place to develop, keeping your thinking connected and clear."
         />
         <div className="mx-auto grid max-w-5xl gap-4 md:grid-cols-4">
           {FLOW.map((step, i) => (
@@ -123,6 +123,15 @@ export default function AboutPage() {
             <BentoCard key={block.title} title={block.title} body={block.body} icon={block.icon} />
           ))}
         </BentoGrid>
+      </section>
+
+      {/* Who is behind it */}
+      <section className="py-14 sm:py-20">
+        <SectionHeader
+          eyebrow="Who is behind Echo"
+          title="Built by Anup, for people making hard calls"
+          subtitle="Echo is an independent product, free during beta. If something breaks or you have an idea, email echoaiworkspace@gmail.com and a person will read it."
+        />
       </section>
 
       <CtaBand

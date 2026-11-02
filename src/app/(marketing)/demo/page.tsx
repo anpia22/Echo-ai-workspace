@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { withSeo } from "@/lib/seo";
+import LiveDemo from "../../components/marketing/LiveDemo";
 import {
   BentoCard,
   BentoGrid,
@@ -7,7 +8,6 @@ import {
   GradientText,
   Icons,
   PageHero,
-  ProductFrame,
   SectionHeader,
 } from "../../components/marketing/ui";
 
@@ -50,7 +50,7 @@ function AICanvasVisual() {
         <div className="flex items-center justify-center gap-2 py-0.5">
           <div className="h-px flex-1 bg-zinc-800" />
           <span className="text-xs text-indigo-400 font-medium flex items-center gap-1">
-            <span>✨</span>
+            <span className="h-1.5 w-1.5 rounded-full bg-indigo-400" />
             <span>Echo generates spatial actions</span>
           </span>
           <div className="h-px flex-1 bg-zinc-800" />
@@ -162,7 +162,7 @@ function MeetingDockVisual() {
         <div className="grid grid-cols-2 gap-2">
           <div className="rounded-xl border border-zinc-700/70 bg-zinc-900/80 p-3 text-center relative overflow-hidden">
             <div className="h-8 w-8 mx-auto mb-1.5 rounded-full bg-zinc-800 flex items-center justify-center text-xs text-zinc-300">
-              🎤
+              Y
             </div>
             <span className="text-xs font-medium text-white block">You</span>
             <span className="text-xs text-emerald-400 block mt-0.5">Speaking</span>
@@ -171,7 +171,7 @@ function MeetingDockVisual() {
 
           <div className="rounded-xl border border-zinc-700/70 bg-zinc-900/80 p-3 text-center relative overflow-hidden">
             <div className="h-8 w-8 mx-auto mb-1.5 rounded-full bg-zinc-800 flex items-center justify-center text-xs text-zinc-300">
-              👤
+              M
             </div>
             <span className="text-xs font-medium text-white block">Marcus</span>
             <span className="text-xs text-zinc-500 block mt-0.5">Muted</span>
@@ -182,14 +182,14 @@ function MeetingDockVisual() {
         {/* Meeting controls simulation bar */}
         <div className="flex items-center justify-between rounded-xl border border-zinc-700/60 bg-zinc-900/90 px-3 py-2">
           <div className="flex items-center gap-1.5">
-            <button type="button" className="h-7 w-7 rounded-lg bg-zinc-800 text-zinc-300 flex items-center justify-center text-xs">
-              🎙️
+            <button type="button" className="h-7 w-7 rounded-lg bg-zinc-800 text-zinc-300 flex items-center justify-center text-[10px]">
+              Mic
             </button>
-            <button type="button" className="h-7 w-7 rounded-lg bg-zinc-800 text-zinc-300 flex items-center justify-center text-xs">
-              📹
+            <button type="button" className="h-7 px-2 rounded-lg bg-zinc-800 text-zinc-300 flex items-center justify-center text-[10px]">
+              Cam
             </button>
-            <button type="button" className="h-7 w-7 rounded-lg bg-zinc-800 text-zinc-300 flex items-center justify-center text-xs">
-              🖥️
+            <button type="button" className="h-7 px-2 rounded-lg bg-zinc-800 text-zinc-300 flex items-center justify-center text-[10px]">
+              Share
             </button>
           </div>
           <div className="flex items-center gap-2">
@@ -233,7 +233,7 @@ function PresentationVisual() {
             <span className="text-zinc-200 font-medium">Sarah&apos;s Presentation</span>
           </div>
           <div className="flex items-center gap-1 text-zinc-500">
-            <span>⛶ Fullscreen</span>
+            <span>Fullscreen</span>
           </div>
         </div>
 
@@ -365,23 +365,23 @@ export default function DemoPage() {
   return (
     <div className="mx-auto w-full max-w-6xl">
       <PageHero
-        badge="See Echo in action"
+        badge="Live demo"
         title={
           <>
-            Talk it through. Watch the <GradientText>canvas build itself.</GradientText>
+            Type a messy problem. <GradientText>Watch it become a map.</GradientText>
           </>
         }
-        subtitle="Describe a problem out loud or in text and Echo turns it into a connected map your whole team can edit, discuss, and present from — live, in the same space."
+        subtitle="Describe an architecture or product decision you are stuck on. Echo drafts the problems, options and tasks, and you reshape the map. When you are ready, bring your team into the same room."
         secondary={{ href: "/how-it-works", label: "How it works" }}
       >
-        <ProductFrame />
+        <LiveDemo />
       </PageHero>
 
       <section className="py-14 sm:py-20">
         <SectionHeader
           eyebrow="Everything in one room"
-          title="Think, meet and present without switching tabs"
-          subtitle="Conversation, canvas, live presence and meetings share one surface, so the discussion never gets separated from the work."
+          title="Then take it into the room with your team"
+          subtitle="Once the map exists, invite teammates, talk it through live and present from the same canvas."
         />
         <BentoGrid cols={2}>
           <BentoCard

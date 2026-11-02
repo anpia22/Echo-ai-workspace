@@ -461,6 +461,8 @@ const TABS: UseCaseTab[] = [
     heading: "Start with a question and map what surrounds it",
     description:
       "When diving into unfamiliar territory or untangling a complex problem, start with what you know. Talk through the questions, map the uncertainties, and let the canvas show how disparate thoughts connect.",
+    example:
+      "A two-person startup sees checkout latency spike. Echo maps the suspects (database, third-party API, a new release) and marks which ones you have actually checked.",
     prompts: [
       "What are the hidden assumptions behind this approach?",
       "How do these three disparate pieces of research connect?",
@@ -475,6 +477,8 @@ const TABS: UseCaseTab[] = [
     heading: "Move from a rough idea to a structured path",
     description:
       "Turn an ambition into a structured sequence. Break the work apart into manageable phases, map dependencies, and see how the pieces relate spatially without losing the context of the conversation that shaped them.",
+    example:
+      "Launch is in six weeks and the backlog is twenty items long. Echo sorts it into phases, shows which tasks block others, and surfaces the critical path.",
     prompts: [
       "Break this launch initiative into three distinct phases.",
       "What needs to happen before this milestone can begin?",
@@ -489,6 +493,8 @@ const TABS: UseCaseTab[] = [
     heading: "Make trade-offs visible when choosing a direction",
     description:
       "When multiple paths seem possible, put the options somewhere you can actually compare them. Surface criteria, weigh downstream consequences, and keep the reasoning visible. You make the call; Echo provides the visual clarity.",
+    example:
+      "Build auth in-house or buy it? Echo lays out both options with cost, risk and audit timing side by side, and records the reasoning behind the choice you make.",
     prompts: [
       "Compare Option A (speed) vs Option B (maintainability).",
       "What are the downstream consequences of each choice?",
@@ -503,6 +509,8 @@ const TABS: UseCaseTab[] = [
     heading: "Let concepts take form through spatial iteration",
     description:
       "Start with rough fragments. Talk through the idea, shape it, move pieces around, and let the workspace become part of the creative process. Develop architectures, outlines, or presentations without premature constraints.",
+    example:
+      "You have a rough idea for a new onboarding flow. Echo helps you turn scattered notes into a structure you can move around until it holds together.",
     prompts: [
       "Help me structure a technical workshop on distributed state.",
       "Outline a modular design system from these initial sketches.",
@@ -522,7 +530,7 @@ export default function UseCasesPage() {
             Different problems. <GradientText>One space</GradientText> to think through them.
           </>
         }
-        subtitle="Some ideas need exploring. Some need a plan. Some need a decision. Others need room to become something new. Echo brings conversation and visual thinking into one workspace."
+        subtitle="Founders and engineers hit the same four moments: explore a problem, plan the work, decide between options, and shape something new. Echo gives each one a map you can reshape."
         secondary={{ href: "/how-it-works", label: "See how it works" }}
       >
         <OverviewMap />
