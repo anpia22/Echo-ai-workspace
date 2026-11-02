@@ -13,9 +13,17 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const defaultTitle = "Echo — The AI Workspace That Thinks With You";
+const defaultTitle = "Echo: The AI workspace that thinks with you";
 const defaultDescription =
-  "Echo is an AI workspace that helps you think, organize ideas, analyze information, and turn conversations into a visual workspace.";
+  "Describe a messy product or architecture problem. Echo drafts a map of problems, options, decisions and tasks, you reshape it, and the AI works from your version. Free during beta.";
+
+const metadataBase = new URL(
+  process.env.NEXT_PUBLIC_SITE_URL ||
+    process.env.SITE_URL ||
+    (process.env.VERCEL_PROJECT_PRODUCTION_URL
+      ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`
+      : "https://echo-ai-workspace.vercel.app")
+);
 
 // Home is a client page, so its title lives here as `title.default`.
 // An override replaces that default only; the "%s | Echo" template stays for other routes.
@@ -26,7 +34,9 @@ const home = withSeo("/", {
     title: defaultTitle,
     description: defaultDescription,
     type: "website",
+    siteName: "Echo",
   },
+  twitter: { card: "summary_large_image" },
 });
 
 const homeTitle =
@@ -36,6 +46,7 @@ const homeTitle =
 
 export const metadata: Metadata = {
   ...home,
+  metadataBase,
   title: {
     default: homeTitle,
     template: "%s | Echo",
