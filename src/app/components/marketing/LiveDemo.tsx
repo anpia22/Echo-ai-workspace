@@ -307,7 +307,7 @@ export default function LiveDemo() {
               </span>
             </div>
             <div className="flex items-center gap-3">
-              <span className="text-zinc-500 dark:text-zinc-400">Exportable to Linear / GitHub</span>
+              <span className="text-zinc-500 dark:text-zinc-400">Exportable decision schema</span>
               <a href="/app" className="font-semibold text-indigo-600 underline-offset-4 hover:underline dark:text-indigo-400">
                 Open workspace →
               </a>

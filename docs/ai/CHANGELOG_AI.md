@@ -4,6 +4,20 @@ This document tracks changes made across phases so subsequent AI sessions do not
 
 ---
 
+## 2026-11-05 — Shark Critique Remediation & Copy Calibration
+- **Changed**:
+  - **Compliance & Credibility**: Removed false compliance claims (BAA, current SOC 2 report) and repositioned as "Roadmap: SOC 2 Type II & SAML SSO" on Enterprise plans.
+  - **Enterprise Tier**: Scaled Enterprise tier down to honest solo-founder beta capabilities: "Custom self-hosted or private cloud deployment", direct founder architecture onboarding, and "Contact Founder" CTA.
+  - **NVIDIA Zero-Training Alignment**: Added explicit NVIDIA developer API terms statement to both the [Privacy Policy](file:///c:/Users/mestr/Desktop/echo%20challange/echo-ai-workspace/src/app/(marketing)/privacy/page.tsx) and [Pricing FAQ](file:///c:/Users/mestr/Desktop/echo%20challange/echo-ai-workspace/src/app/(marketing)/pricing/page.tsx) (prompts/outputs processed ephemerally, never used to train base foundation models).
+  - **Vendor & Integration Honesty**: Purged unused provider "Groq" (Echo uses NVIDIA Nemotron exclusively) and unintegrated tool "Jira"; clarified that decision maps export as structured Markdown, with 1-click Linear/GitHub sync on the roadmap.
+  - **Calm Tone & Unit Economics**: Removed pitch-deck "Unit Economics Defense" headline and unverified gross margin assertions; replaced with calm "Token efficiency by design" explanation of graph context serialization.
+  - **Paid Tier Transparency**: Removed misleading "Most Popular" badge on Founder Pro and fake billing CTA promises; labeled tiers as planned post-beta with free access during public beta.
+  - **Live Capabilities Grounding**: Removed unverified "Automated assumption drift alerts" from marketing pillars; focused on real, live-demoable capabilities (native WebRTC audio meetings, speech-to-text, remote cursors, and Follow-Me presenter viewport sync).
+  - **Founder Presence**: Placed founder Anup front-and-center on the first screen hero of the [About page](file:///c:/Users/mestr/Desktop/echo%20challange/echo-ai-workspace/src/app/(marketing)/about/page.tsx).
+- **Verification**: `npx tsc --noEmit` passed with 0 errors.
+
+---
+
 ## 2026-11-05 — UI Ergonomics & 2D Graph Restoration
 - **Changed**:
   - Restored Echo's signature 2D multi-column DAG layout in [`LiveDemo.tsx`](file:///c:/Users/mestr/Desktop/echo%20challange/echo-ai-workspace/src/app/components/marketing/LiveDemo.tsx) (`200px x 76px`, 2-3 balanced columns) to eliminate the horizontal single-row squishing.

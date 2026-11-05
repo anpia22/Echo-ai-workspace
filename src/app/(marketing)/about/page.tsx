@@ -55,13 +55,13 @@ export default function AboutPage() {
   return (
     <div className="mx-auto w-full max-w-6xl">
       <PageHero
-        badge="About Echo"
+        badge="Built by Anup · Solo Founder"
         title={
           <>
             An AI workspace that <GradientText>thinks with you</GradientText>
           </>
         }
-        subtitle="Echo is built for founders and engineers who make calls with incomplete information. It brings conversation and a visual map into one workspace, so ideas don't get lost between a chat box and everything else."
+        subtitle="I built Echo because I got tired of seeing crucial technical and product decisions disappear into Slack scrollback and discarded scratchpads. Echo brings live conversation and a visual decision graph into one unified workspace, so founders and engineers can reason through hard trade-offs out loud."
         secondary={{ href: "/how-it-works", label: "See how it works" }}
       >
         <ProductFrame />

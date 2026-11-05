@@ -73,8 +73,7 @@ export default function PrivacyPage() {
           </li>
         </ul>
         <p>
-          Echo does not ask you to create an account with an email address, and
-          it does not run third-party advertising or analytics cookies.
+          Echo does not require an account to try or view a room. You can optionally sign in with an email link or provider to sync your workspaces across devices. Echo does not run third-party advertising or analytics cookies.
         </p>
       </Section>
 
@@ -108,7 +107,10 @@ export default function PrivacyPage() {
           </li>
           <li>
             NVIDIA processes the prompts Echo sends to the Nemotron model,
-            including the conversation and workspace context needed to answer.
+            including the conversation and workspace context needed to generate
+            responses. Under NVIDIA&apos;s developer API terms, prompt and workspace
+            inputs are processed ephemerally and are not retained or used by NVIDIA
+            to train foundation models.
           </li>
           <li>
             A speech-to-text provider may process meeting audio when

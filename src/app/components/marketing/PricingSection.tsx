@@ -4,73 +4,74 @@ import { FadeIn } from "./motion";
 export const PRICING_TIERS = [
   {
     name: "Developer Beta",
-    badge: "Current Free Tier",
+    badge: "Current Free Beta",
     price: "$0",
-    frequency: "forever free during beta",
-    description: "For solo builders and engineers exploring complex architecture choices.",
+    frequency: "free during public beta",
+    description: "For solo builders and engineers exploring architecture choices and system trade-offs.",
     features: [
       "Up to 5 active decision workspaces",
       "Interactive spatial canvas with AI mapping",
-      "15-second domain templates (ADR, Build vs Buy)",
-      "Standard LLM inference model",
-      "Export maps to Markdown & SVG",
+      "Pre-built decision templates (ADR, Build vs Buy)",
+      "Fast NVIDIA Nemotron AI inference",
+      "Copy decision schemas & export to Markdown",
     ],
-    cta: "Start Free Now",
+    cta: "Start Free in Beta",
     href: "/app",
     popular: false,
   },
   {
     name: "Founder Pro",
-    badge: "Most Popular for Solo Founders",
+    badge: "Planned Post-Beta",
     price: "$18",
-    frequency: "per month",
-    description: "For technical founders and lead engineers who need persistent institutional memory.",
+    frequency: "per month (planned)",
+    description: "For technical founders and lead engineers who need persistent workspaces and voice transcription.",
     features: [
+      "Everything in Free Beta",
       "Unlimited decision workspaces & canvas nodes",
-      "High-throughput NVIDIA Nemotron & Groq inference",
-      "Real-time WebRTC audio meetings with voice-to-graph STT",
-      "Decision changelog & audit trail ('Why we chose X')",
-      "1-Click task sync to Linear and GitHub Issues",
-      "Priority customer & architecture support",
+      "High-throughput NVIDIA Nemotron inference",
+      "Real-time WebRTC audio meetings with voice-to-graph notes",
+      "Decision changelog & rationale history",
+      "Direct email support from the founder",
+      "Roadmap: 1-click Linear & GitHub task sync",
     ],
-    cta: "Lock In Beta Founder Rate",
-    href: "/login?tier=pro",
-    popular: true,
+    cta: "Try Free in Beta",
+    href: "/app",
+    popular: false,
   },
   {
     name: "Engineering Team",
-    badge: "For Fast-Moving Startups",
+    badge: "Planned Post-Beta",
     price: "$39",
-    frequency: "per seat / month",
-    description: "For engineering teams collaborating on distributed systems and roadmap trade-offs.",
+    frequency: "per seat / month (planned)",
+    description: "For engineering teams collaborating live on distributed systems and roadmap trade-offs.",
     features: [
       "Everything in Founder Pro",
       "Multiplayer real-time presence with remote cursors",
-      "Follow-Me presenter synchronization mode",
-      "Workspace permission levels (Admin, Editor, Viewer)",
-      "Shared organizational decision repository",
-      "Automated assumption drift alerts",
+      "Follow-Me presenter viewport synchronization",
+      "Shared room links for instant team joining",
+      "Shared organizational decision history",
+      "Roadmap: Workspace permission levels",
     ],
-    cta: "Start 14-Day Team Trial",
-    href: "/login?tier=team",
+    cta: "Try Team Mode in Beta",
+    href: "/app",
     popular: false,
   },
   {
     name: "Enterprise",
     badge: "Custom Deployment",
     price: "Custom",
-    frequency: "billed annually",
-    description: "For scale-ups and enterprises with stringent data governance and compliance needs.",
+    frequency: "contact founder",
+    description: "For teams with specific deployment, data isolation, or self-hosted model requirements.",
     features: [
-      "Bring Your Own LLM (Private vLLM / AWS Bedrock / Ollama)",
-      "SOC 2 Type II compliance report & BAA",
-      "SAML / Okta / Azure AD Single Sign-On (SSO)",
-      "Custom data retention policies & zero data training pledge",
-      "Dedicated solutions architect & custom onboarding",
-      "99.9% uptime SLA with 24/7 incident response",
+      "Custom self-hosted or private cloud deployment",
+      "Private LLM deployment option (vLLM / Ollama)",
+      "Zero model training on your data (via NVIDIA API terms)",
+      "Custom data retention and export policies",
+      "Direct architecture onboarding & founder support",
+      "Roadmap: SAML / Okta SSO & SOC 2 Type II",
     ],
-    cta: "Contact Enterprise Sales",
-    href: "mailto:echoaiworkspace@gmail.com?subject=Echo%20Enterprise%20Inquiry",
+    cta: "Contact Founder",
+    href: "mailto:echoaiworkspace@gmail.com?subject=Echo%20Custom%20Deployment%20Inquiry",
     popular: false,
   },
 ];
@@ -81,13 +82,13 @@ export function PricingSection({ showHeader = true }: { showHeader?: boolean }) 
       {showHeader && (
         <div className="mx-auto max-w-3xl text-center mb-14">
           <span className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600 dark:text-indigo-400">
-            Predictable Economics
+            Transparent Plans
           </span>
           <h2 className="mt-3 text-3xl font-semibold leading-tight tracking-tight text-zinc-900 dark:text-white sm:text-4xl md:text-5xl">
-            Simple, honest pricing. Zero token surprises.
+            Free in beta. Honest plans for what comes next.
           </h2>
           <p className="mt-4 text-base leading-relaxed text-zinc-600 dark:text-zinc-300 sm:text-lg">
-            Free during public beta. Lock in our early founder pricing before general availability.
+            Every feature is completely free while Echo is in public beta. Below is our planned post-beta pricing structure.
           </p>
         </div>
       )}
@@ -97,17 +98,8 @@ export function PricingSection({ showHeader = true }: { showHeader?: boolean }) 
           <FadeIn
             key={tier.name}
             delay={idx * 75}
-            className={`relative flex flex-col justify-between rounded-3xl border p-6 sm:p-7 transition-all duration-300 hover:-translate-y-1 ${tier.popular
-                ? "border-indigo-500 bg-white shadow-xl shadow-indigo-500/15 ring-2 ring-indigo-500/40 dark:bg-zinc-900"
-                : "border-zinc-200 bg-white/80 shadow-xs dark:border-zinc-800 dark:bg-zinc-900/50"
-              }`}
+            className="relative flex flex-col justify-between rounded-3xl border border-zinc-200 bg-white/80 p-6 shadow-xs dark:border-zinc-800 dark:bg-zinc-900/50 sm:p-7 transition-all duration-300 hover:-translate-y-1"
           >
-            {tier.popular && (
-              <span className="absolute -top-3.5 left-1/2 -translate-x-1/2 rounded-full bg-gradient-to-r from-indigo-500 to-violet-600 px-3 py-1 text-[11px] font-bold uppercase tracking-wider text-white shadow-md">
-                Most Popular
-              </span>
-            )}
-
             <div>
               <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
@@ -153,10 +145,7 @@ export function PricingSection({ showHeader = true }: { showHeader?: boolean }) 
             <div className="mt-8 pt-4">
               <Link
                 href={tier.href}
-                className={`flex w-full items-center justify-center rounded-xl px-4 py-2.5 text-xs font-semibold transition ${tier.popular
-                    ? "bg-indigo-600 !text-white shadow-sm hover:bg-indigo-500"
-                    : "border border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700"
-                  }`}
+                className="flex w-full items-center justify-center rounded-xl px-4 py-2.5 text-xs font-semibold border border-zinc-300 bg-white text-zinc-800 hover:bg-zinc-50 dark:border-zinc-700 dark:bg-zinc-800 dark:text-white dark:hover:bg-zinc-700 transition"
               >
                 {tier.cta}
               </Link>
@@ -165,24 +154,24 @@ export function PricingSection({ showHeader = true }: { showHeader?: boolean }) 
         ))}
       </div>
 
-      {/* Shark Defense: Unit Economics & Token Cost Transparency Box */}
-      <div className="mt-12 rounded-2xl border border-indigo-200/80 bg-gradient-to-r from-indigo-50/70 via-white to-indigo-50/70 p-5 dark:border-indigo-900/50 dark:from-zinc-900 dark:via-zinc-900/70 dark:to-zinc-900 sm:p-6">
+      {/* Structured Token Efficiency Box */}
+      <div className="mt-12 rounded-2xl border border-zinc-200 bg-white/80 p-5 dark:border-zinc-800 dark:bg-zinc-900/60 sm:p-6 shadow-xs">
         <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-center gap-3">
             <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-indigo-600 text-lg font-bold text-white shadow-xs">
-              $
+              ⚡
             </span>
             <div>
               <h4 className="text-sm font-semibold text-zinc-900 dark:text-white">
-                The Unit Economics Defense (How Echo Stays Highly Profitable)
+                Token efficiency by design
               </h4>
               <p className="mt-0.5 text-xs text-zinc-600 dark:text-zinc-300">
-                Unlike unconstrained chat wrappers, Echo uses structured schema output on optimized inference (NVIDIA Nemotron & Groq) costing <strong>&lt;$0.002 per synthesis</strong>. Average monthly LLM COGS per active Pro user are under <strong>$0.40/month</strong>, preserving <strong>&gt;95% gross margins</strong>.
+                Unlike open-ended chat assistants that re-send thousands of words of conversation scrollback, Echo represents your decisions as a structured graph of connected nodes. Only the active decision topology is sent to NVIDIA Nemotron, keeping token consumption focused, responses fast, and infrastructure costs sustainable.
               </p>
             </div>
           </div>
-          <span className="shrink-0 rounded-full border border-indigo-300 bg-indigo-100/70 px-3 py-1 text-xs font-semibold text-indigo-800 dark:border-indigo-700 dark:bg-indigo-950 dark:text-indigo-300">
-            &gt;95% Target Gross Margin
+          <span className="shrink-0 rounded-full border border-zinc-300 bg-zinc-100/80 px-3 py-1 text-xs font-medium text-zinc-700 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-300">
+            Graph-Pruned Inference
           </span>
         </div>
       </div>

@@ -80,11 +80,11 @@ export function ArchitectureAndVoiceSection() {
               Smart Context Window Budget
             </h3>
             <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">
-              Large graphs don't explode LLM token costs. Our topological extractor clusters active subtrees, pruning resolved history so each AI cycle costs less than $0.002.
+              Large canvases don't explode LLM token budgets. Echo serializes connected decision nodes and causal paths directly from the graph, omitting unrelated canvas branches so prompts stay compact and responses return quickly.
             </p>
           </div>
           <div className="mt-6 rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-xs font-mono text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-400">
-            🛡️ Subtree topological pruning · &gt;95% gross margins on inference
+            🛡️ Structured graph extraction · Causal edge paths · Compact token footprint
           </div>
         </FadeIn>
       </div>

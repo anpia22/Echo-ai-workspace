@@ -18,19 +18,19 @@ export const metadata: Metadata = withSeo("/pricing", {
 const PRICING_FAQS = [
   {
     q: "Is Echo really free right now?",
-    a: "Yes. During our public beta, all core workspace and AI mapping features are free. Beta users who sign up today will be granted early-adopter grandfathered discounts on Founder Pro.",
+    a: "Yes. During public beta, all core workspace, AI mapping, and WebRTC meeting features are free to use. There are no credit cards required or hidden paywalls.",
   },
   {
     q: "How does Echo handle AI token costs sustainably?",
-    a: "Unlike open-ended text chat wrappers that re-feed massive chat transcripts, Echo leverages our proprietary Graph Context Engine. It topologically clusters the canvas, summarizing inactive subtrees and injecting only relevant decision nodes. Runs execute on low-latency, highly cost-effective NVIDIA Nemotron and Groq inference (<$0.002 per run), maintaining healthy >95% gross margins.",
+    a: "Unlike conversational chat wrappers that re-send thousands of lines of chat scrollback with every message, Echo serializes your canvas as a structured graph of connected decision nodes. Only the active decision topology is sent to NVIDIA Nemotron, keeping token consumption focused and response times low.",
   },
   {
     q: "Can we export decisions into our existing tools?",
-    a: "Yes. Echo integrates directly with Linear, GitHub Issues, and Jira. When an architecture option is marked 'Accepted', tasks can be synced directly to your sprint backlog with a backlink to the decision provenance.",
+    a: "Yes. You can copy structured Markdown and decision provenance from the canvas directly into any issue tracker or document. Direct 1-click issue sync to Linear and GitHub is on our immediate product roadmap.",
   },
   {
-    q: "What about data security and SOC 2?",
-    a: "Echo does not use your private architecture graphs or conversation data to train foundation models. Enterprise plans include SOC 2 Type II compliance reports, SAML SSO, and optional self-hosted private LLM deployment (via Ollama or AWS Bedrock).",
+    q: "What about data security and model training?",
+    a: "Echo does not use your private architecture graphs or workspace conversations to train AI models. Under NVIDIA's developer API terms, prompts and outputs are processed ephemerally and are not retained or used by NVIDIA to train foundation models. Enterprise custom deployments can also run on your own private LLM endpoint (such as vLLM or Ollama). SAML SSO and SOC 2 Type II certification are on our enterprise roadmap.",
   },
   {
     q: "What makes Echo different from Miro or ChatGPT?",
@@ -42,9 +42,9 @@ export default function PricingPage() {
   return (
     <div className="mx-auto w-full max-w-6xl">
       <PageHero
-        badge="Transparent Pricing & Unit Economics"
+        badge="Transparent Pricing & Architecture"
         title="Predictable plans for engineers and founders"
-        subtitle="Start free during public beta. Upgrade to Pro or Team when you need institutional memory, WebRTC voice transcription, and Linear issue sync."
+        subtitle="Start free during public beta. Upgrade to Pro or Team when you need persistent institutional memory, WebRTC voice transcription, and team rooms."
         secondary={{ href: "/demo", label: "Try the live demo" }}
       />
 

@@ -48,4 +48,12 @@ This document captures the two rounds of Shark reviews, synthesizes their critiq
   - Showcased Linear & GitHub Issue export flow and Decision Audit Trail ("Why did we choose this 3 months ago?").
 - [x] **TASK-SHARK-07**: **Typecheck & Verification Guard**
   - Ran `npx tsc --noEmit`: 100% clean compilation, zero errors across all components and routes.
+- [x] **TASK-SHARK-08**: **Eliminate Pitch Overclaims & Harmonize Privacy/Pricing Copy**
+  - Removed false compliance certifications (BAA, current SOC 2 report) and repositioned as "Roadmap: SOC 2 Type II & SAML SSO".
+  - Scaled Enterprise tier from uncredible 24/7 SLA/solutions architect claims to authentic "Custom self-hosted or private cloud deployment" with direct founder support.
+  - Aligned data training promises with NVIDIA's actual developer API terms in both the Privacy Policy and Pricing FAQ (ephemeral processing, no model training).
+  - Purged unused providers (Groq) and unintegrated tools (Jira); clarified that current export produces structured decision schemas and Markdown, with 1-click Linear/GitHub sync on the roadmap.
+  - Removed "Most Popular" badge on Founder Pro and fake billing CTA promises; labeled paid tiers as planned post-beta with free beta access.
+  - Replaced pitch-deck "Unit Economics Defense" boasting with calm, plain-spoken architectural transparency ("Token efficiency by design" via graph-pruned inference).
+  - Elevated founder presence directly into the hero section of the About page ("Built by Anup · Solo Founder").
 

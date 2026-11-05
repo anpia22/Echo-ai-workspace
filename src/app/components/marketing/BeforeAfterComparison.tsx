@@ -134,7 +134,7 @@ export function BeforeAfterComparison() {
               <ul className="mt-1.5 space-y-1 text-zinc-600 dark:text-zinc-400">
                 <li>✅ Trade-offs remain spatially connected and visible at a glance.</li>
                 <li>✅ Institutional memory: why options were rejected is permanently preserved.</li>
-                <li>✅ Directly bridges thinking to execution via Linear & GitHub exports.</li>
+                <li>✅ Directly bridges thinking to execution with structured task and schema exports.</li>
               </ul>
             </div>
           </div>

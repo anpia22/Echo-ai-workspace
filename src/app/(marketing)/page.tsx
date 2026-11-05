@@ -18,7 +18,7 @@ import { PricingSection } from "../components/marketing/PricingSection";
 
 const title = "Echo: The AI Workspace That Thinks With You";
 const description =
-  "Talk or type through messy product and architecture decisions. Echo maps them into problems, evaluated options, decisions, and Linear-ready tasks in real time.";
+  "Talk or type through messy product and architecture decisions. Echo maps them into problems, evaluated options, decisions, and actionable tasks in real time.";
 
 export const metadata: Metadata = withSeo("/", {
   title: { absolute: title },
@@ -47,15 +47,15 @@ const JOBS = [
 const MOAT_PILLARS = [
   {
     title: "Living System of Record",
-    body: "Not a drawing tool. Echo enforces an engineering decision schema ([Problem] → [Option] → [Decision] → [Task]) with full provenance.",
+    body: "Not a drawing tool. Echo enforces an engineering decision schema ([Problem] → [Option] → [Decision] → [Task]) with full rationale provenance.",
   },
   {
-    title: "1-Click Linear & GitHub Sync",
-    body: "Bridge thinking directly to code execution. Accepted decisions push tasks with backlinked rationale directly to your sprint backlog.",
+    title: "Native WebRTC Voice & Transcription",
+    body: "Talk through dilemmas out loud. Integrated peer-to-peer audio and speech transcription map verbal engineering debates into structured canvas nodes.",
   },
   {
-    title: "Assumption Drift Tracking",
-    body: "When latency, traffic, or team size changes, Echo flags previously made decisions whose core assumptions are now at risk.",
+    title: "Multiplayer Presence & Follow-Me",
+    body: "Collaborate on architecture in real time with remote cursors, live node updates, and presenter viewport following during design reviews.",
   },
 ];
 
@@ -69,7 +69,7 @@ export default function HomePage() {
             Think through hard decisions <GradientText>out loud</GradientText>
           </>
         }
-        subtitle="Speak or type a messy product or architecture dilemma. Echo maps it into problems, evaluated trade-offs, recorded decisions, and Linear-ready tasks in real time."
+        subtitle="Speak or type a messy product or architecture dilemma. Echo maps it into problems, evaluated trade-offs, recorded decisions, and actionable tasks in real time."
         secondary={{ href: "#try-it", label: "Try 15-second demo" }}
       />
 
