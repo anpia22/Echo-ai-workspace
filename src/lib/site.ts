@@ -56,6 +56,14 @@ export const PUBLIC_PAGES = [
     priority: 0.7,
   },
   {
+    path: "/blog/agentic-ai-multi-agent-orchestration-workspaces",
+    title: "The Rise of Agentic AI and Test-Time Reasoning",
+    description:
+      "How autonomous multi-agent orchestration, test-time compute, and Model Context Protocol (MCP) require a shared spatial canvas for human-in-the-loop control.",
+    changeFrequency: "monthly" as const,
+    priority: 0.7,
+  },
+  {
     path: "/blog/what-problem-does-ai-solve-context-fragmentation",
     title: "What Problem Does AI Actually Solve? Context Fragmentation in Modern Work",
     description:

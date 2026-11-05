@@ -56,7 +56,7 @@ export function organizationJsonLd(siteUrl?: string) {
     name: SITE_NAME,
     description: SITE_DESCRIPTION,
     url: siteUrl,
-    logo: siteUrl ? `${siteUrl}/favicon.ico` : undefined,
+    logo: siteUrl ? `${siteUrl}/android-chrome-512x512.png` : undefined,
   };
 }
 

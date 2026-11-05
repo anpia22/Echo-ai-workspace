@@ -44,6 +44,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 const RELATED: Record<string, { href: string; label: string }[]> = {
+  "agentic-ai-multi-agent-orchestration-workspaces": [
+    { href: "/use-cases", label: "Echo use cases" },
+    { href: "/blog/what-problem-does-ai-solve-context-fragmentation", label: "What problem does AI solve?" },
+    { href: "/blog/spatial-ai-canvas-screen-meetings-collaboration", label: "Spatial AI canvas & screen meetings" },
+    { href: "/demo", label: "Interactive Echo demo" },
+  ],
   "what-problem-does-ai-solve-context-fragmentation": [
     { href: "/use-cases", label: "Echo use cases" },
     { href: "/blog/spatial-ai-canvas-screen-meetings-collaboration", label: "Spatial AI canvas & screen meetings" },

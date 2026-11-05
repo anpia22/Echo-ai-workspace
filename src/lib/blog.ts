@@ -19,6 +19,109 @@ export type BlogPost = {
 
 export const BLOG_POSTS: BlogPost[] = [
   {
+    slug: "agentic-ai-multi-agent-orchestration-workspaces",
+    title: "The Rise of Agentic AI and Test-Time Reasoning: Why Autonomous Multi-Agent Workflows Demand a Shared Spatial Canvas",
+    description:
+      "Explore the 2026 shift from static chatbots to autonomous agentic AI and multi-agent orchestration. Discover how test-time compute, Model Context Protocol (MCP), and spatial canvases enable transparent human-in-the-loop collaboration.",
+    excerpt:
+      "Static prompt windows cannot handle autonomous multi-agent workflows. As reasoning models leverage test-time compute and tool-calling protocols, teams require a shared spatial canvas to supervise, orchestrate, and co-create with agentic AI in real time.",
+    publishedAt: "2026-11-05",
+    readingMinutes: 10,
+    keywords: [
+      "agentic AI",
+      "multi-agent orchestration",
+      "test-time compute",
+      "reasoning models",
+      "inference-time scaling",
+      "autonomous AI agents",
+      "Model Context Protocol",
+      "MCP",
+      "human-in-the-loop AI",
+      "collaborative AI workspace",
+      "spatial AI canvas",
+      "multimodal reasoning",
+      "vibe coding",
+      "AI workflow orchestration",
+      "decision intelligence",
+      "generative engine optimization",
+      "answer engine optimization",
+      "AEO and GEO",
+      "real-time collaboration",
+      "context-aware AI",
+    ],
+    image: "/blog/agentic-ai-multi-agent-workspaces.jpg",
+    imageAlt:
+      "An autonomous multi-agent orchestration system dynamically projecting reasoning graphs, tool executions, and decision trees onto an interactive spatial AI workspace canvas.",
+    sections: [
+      {
+        heading: "The post-chatbot paradigm: From static prompts to autonomous agentic AI",
+        paragraphs: [
+          "The artificial intelligence industry has crossed a decisive threshold: the era of passive conversational chatbots is officially over. For years, knowledge workers engaged with AI through single-turn text boxes—entering a query, waiting for a completion, and manually copy-pasting answers across disparate tools. While that interaction pattern accelerated micro-tasks, it failed to automate end-to-end operational workflows.",
+          "Today's breakthrough frontier is **Agentic AI** powered by test-time compute and inference-time scaling. Rather than generating an instantaneous statistical prediction, modern reasoning models spend compute cycles deliberately planning multi-step trajectories, formulating hypotheses, critiquing their intermediate assumptions, executing external tools, and self-correcting logic before presenting a final output. Instead of being passive scribes, AI models have evolved into proactive, goal-driven agents capable of autonomous problem solving. Discover how [Echo structures cognitive modes from exploration to execution](/use-cases).",
+        ],
+      },
+      {
+        heading: "The coordination dilemma: Why multi-agent systems fail inside black boxes",
+        paragraphs: [
+          "To tackle ambitious projects—such as architecting distributed cloud backends, debugging complex codebases, or stress-testing product strategies—enterprises are deploying **multi-agent orchestration**. Specialized agents (planners, code generators, research synthesizers, and QA auditors) coordinate under centralized supervisors, exchanging state and invoking services via standardized interfaces like the Model Context Protocol (MCP).",
+          "However, this explosion in autonomous agent capability introduces a severe coordination crisis: the black-box execution trap. When four or five autonomous agents run concurrently inside traditional terminal logs or narrow chat sidebars, human visibility completely collapses. Intermediate reasoning steps flash past in unreadable command lines. If an agent misinterprets an architectural requirement or enters a recursive debugging loop, the human team has no intuitive way to intervene before bad assumptions cascade into costly errors.",
+          "Without visual transparency, autonomous agents create operational anxiety instead of leverage. High-velocity engineering and design teams cannot afford to wait twenty minutes for a monolithic output only to discover that the underlying multi-agent swarm misunderstood the core business objective. Learn [how Echo connects reasoning and live collaboration](/how-it-works).",
+        ],
+      },
+      {
+        heading: "The spatial solution: Mapping agent reasoning onto an infinite canvas",
+        paragraphs: [
+          "Human cognition does not parse complex systems as vertical streams of scrollable text. We comprehend architecture, trade-offs, and workflows through visual hierarchies, physical relationships, and connected maps. The natural interface for multi-agent systems is not a text feed; it is an **infinite spatial AI canvas**.",
+          "In [Echo's collaborative workspace](/demo), multi-agent deliberation is mapped directly onto a shared two-dimensional surface. As reasoning models execute test-time compute, Echo translates branching logic, parallel research threads, and tool invocations into interactive visual nodes and directed dependency graphs. Teammates can watch the supervisor agent draft a task decomposition, see specialized worker agents populate competing technical options side by side, and inspect live data payloads anchored to exact coordinates in the workspace.",
+          "By elevating multi-agent orchestration out of opaque terminal windows into a persistent spatial plane, complex agentic reasoning becomes legible, auditable, and structured at a glance.",
+        ],
+      },
+      {
+        heading: "Human-in-the-loop control: Steer, refine, and co-create alongside agents",
+        paragraphs: [
+          "The most productive teams do not surrender 100% autonomy to black-box agents, nor do they micromanage every keystroke. They operate with **human-in-the-loop intelligence**, acting as strategic conductors of autonomous swarms. A shared spatial workspace transforms passive supervision into active multiplayer co-creation.",
+          "With [screen presence and presenter mode](/blog/screen-presence-collaborative-meetings), distributed teams can gather in live video meetings docked directly over the canvas. While agents run background research or test code paths, team members use live multiplayer cursors to annotate nodes, reorganize priorities, or repoint agent focus. If an agent veers off course, an engineer can drag a connector or edit a constraint directly on the canvas, instantly recalibrating the agent swarm's execution path without restarting the entire prompt chain.",
+          "When synchronous meetings wrap up, the spatial state remains fully preserved. Distributed teammates across global time zones can enter the room asynchronously, review the visual audit trail of why the agents made specific architectural choices, and issue follow-up instructions anchored to exact decision nodes. Explore how [spatial AI canvases empower distributed teams](/blog/spatial-ai-canvas-screen-meetings-collaboration).",
+        ],
+      },
+      {
+        heading: "The open protocol era: Unifying Model Context Protocol (MCP) and visual intelligence",
+        paragraphs: [
+          "The enterprise AI stack is consolidating around open interoperability protocols like Model Context Protocol (MCP). Standardized protocols enable AI agents to securely connect with local file systems, databases, developer tools, and external cloud APIs without custom bespoke glue code.",
+          "Echo is built from the ground up to synthesize this multimodal, protocol-driven future. By uniting conversational dialogue, live WebRTC screen sharing, and interactive graph structures, Echo bridges the gap between raw compute and human decision intelligence. The future of work is not humans competing with autonomous agents; it is humans and autonomous multi-agent teams thinking together on the same canvas.",
+          "Experience the next generation of collaborative agentic workflows in the [interactive Echo demo](/demo), explore our [mission and architecture](/about), or read our analysis on [solving context fragmentation](/blog/what-problem-does-ai-solve-context-fragmentation).",
+        ],
+      },
+    ],
+    faqs: [
+      {
+        question: "What is Agentic AI and how does it differ from traditional generative AI chatbots?",
+        answer:
+          "Traditional generative AI chatbots are single-turn systems that generate instantaneous text responses based on statistical probability. Agentic AI refers to autonomous systems powered by reasoning models that use test-time compute to plan multi-step strategies, execute external tools and APIs, evaluate intermediate results, and self-correct errors to accomplish complex end goals.",
+      },
+      {
+        question: "What is test-time compute and inference-time scaling in reasoning models?",
+        answer:
+          "Test-time compute (or inference-time scaling) refers to allowing an AI model to spend variable compute cycles thinking, deliberating, and running chain-of-thought simulations before outputting an answer. Rather than scaling only during training, models scale during inference to solve hard mathematics, logic, and software engineering problems with verifiable accuracy.",
+      },
+      {
+        question: "What is multi-agent orchestration and why is Model Context Protocol (MCP) important?",
+        answer:
+          "Multi-agent orchestration coordinates multiple specialized AI agents (e.g., planners, researchers, coders, and critics) working together to execute complex workflows. Model Context Protocol (MCP) is an open standard that allows these agents to securely and consistently connect with external data sources, developer tools, canvases, and local environments.",
+      },
+      {
+        question: "Why do autonomous multi-agent workflows require a spatial canvas instead of a chat feed?",
+        answer:
+          "Linear chat feeds force multi-agent reasoning, parallel tool calls, and branching logic into a single vertical scrollbar that quickly becomes unreadable. A spatial canvas organizes agent logic into visual nodes, dependency graphs, and side-by-side matrices, enabling human teams to monitor, audit, and understand complex multi-agent execution at a glance.",
+      },
+      {
+        question: "How does Echo support human-in-the-loop multi-agent collaboration?",
+        answer:
+          "Echo embeds conversational reasoning, live video calls, and multiplayer cursors into a persistent spatial canvas. Humans and AI agents share the same visual workspace, allowing team members to steer agent workflows in real time, modify constraints visually, and maintain persistent alignment without context fragmentation.",
+      },
+    ],
+  },
+  {
     slug: "what-problem-does-ai-solve-context-fragmentation",
     title: "What Problem Does AI Actually Solve? Overcoming the Context Fragmentation Crisis in Modern Work",
     description:

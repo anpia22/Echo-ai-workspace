@@ -12,10 +12,13 @@ import {
 } from "../components/marketing/ui";
 import { FadeIn } from "../components/marketing/motion";
 import LiveDemo from "../components/marketing/LiveDemo";
+import { BeforeAfterComparison } from "../components/marketing/BeforeAfterComparison";
+import { ArchitectureAndVoiceSection } from "../components/marketing/ArchitectureAndVoiceSection";
+import { PricingSection } from "../components/marketing/PricingSection";
 
-const title = "Echo: The AI workspace that thinks with you";
+const title = "Echo: The AI Workspace That Thinks With You";
 const description =
-  "Talk through a messy product or architecture decision and Echo maps it as problems, options, decisions and tasks. Built for technical founders. Free during beta.";
+  "Talk or type through messy product and architecture decisions. Echo maps them into problems, evaluated options, decisions, and Linear-ready tasks in real time.";
 
 export const metadata: Metadata = withSeo("/", {
   title: { absolute: title },
@@ -23,37 +26,36 @@ export const metadata: Metadata = withSeo("/", {
   openGraph: { title, description, type: "website" },
 });
 
-const COMPARISON = [
-  {
-    heading: "A whiteboard with AI added",
-    body: "You start from a blank board and ask AI to fill it in or summarize it. The thinking happens somewhere else, then gets pasted in.",
-  },
-  {
-    heading: "A chat with a canvas attached",
-    body: "The answer lives in a scrolling thread. A canvas may appear beside it, but it doesn't become the shared context for the next question.",
-  },
-  {
-    heading: "Echo",
-    body: "The conversation is the input and the map is the memory. Every reply reads the canvas, every edit you make changes what the AI knows next.",
-    highlight: true,
-  },
-];
-
 const JOBS = [
   {
-    title: "Architecture choices",
-    body: "Cache or split the service? Buy or build auth? Lay out the options, the trade-offs and the open questions in one map.",
+    title: "Architecture Decisions (ADRs)",
+    body: "Cache or split the service? Buy or build auth? Lay out competing options, trade-offs, and open questions in one spatial map.",
     icon: Icons.graph,
   },
   {
-    title: "Product decisions",
-    body: "Talk through what to build next. Echo separates the problem, the options on the table and the decision you actually made.",
+    title: "Product Roadmaps & Scope Cuts",
+    body: "Talk through what to build next. Echo separates root problems, options on the table, and the decisions you actually agreed on.",
     icon: Icons.layers,
   },
   {
-    title: "Picking it up tomorrow",
-    body: "Workspaces are saved, so you return to the same map and the same context instead of re-explaining the project.",
+    title: "Permanent Institutional Memory",
+    body: "Saved workspaces preserve why an option was rejected 3 months ago, ending repetitive Slack debates and onboarding friction.",
     icon: Icons.chat,
+  },
+];
+
+const MOAT_PILLARS = [
+  {
+    title: "Living System of Record",
+    body: "Not a drawing tool. Echo enforces an engineering decision schema ([Problem] → [Option] → [Decision] → [Task]) with full provenance.",
+  },
+  {
+    title: "1-Click Linear & GitHub Sync",
+    body: "Bridge thinking directly to code execution. Accepted decisions push tasks with backlinked rationale directly to your sprint backlog.",
+  },
+  {
+    title: "Assumption Drift Tracking",
+    body: "When latency, traffic, or team size changes, Echo flags previously made decisions whose core assumptions are now at risk.",
   },
 ];
 
@@ -61,14 +63,14 @@ export default function HomePage() {
   return (
     <div className="mx-auto w-full max-w-6xl">
       <PageHero
-        badge="Free during beta · Built for technical founders"
+        badge="Real-time Voice Meetings + AI Spatial Canvas · Built for Technical Founders"
         title={
           <>
             Think through hard decisions <GradientText>out loud</GradientText>
           </>
         }
-        subtitle="Describe a messy product or architecture problem. Echo drafts the map of problems, options, decisions and tasks. You reshape it, and the AI works from your version."
-        secondary={{ href: "#try-it", label: "Try it below" }}
+        subtitle="Speak or type a messy product or architecture dilemma. Echo maps it into problems, evaluated trade-offs, recorded decisions, and Linear-ready tasks in real time."
+        secondary={{ href: "#try-it", label: "Try 15-second demo" }}
       />
 
       {/* Live demo: the product, before any account */}
@@ -76,33 +78,39 @@ export default function HomePage() {
         <SectionHeader
           eyebrow="Try it now"
           title="Type a messy problem. Watch it take shape."
-          subtitle="No sign-up. One message in, a connected map out."
+          subtitle="No sign-up. Pick a 1-click domain template or type your own architecture dilemma."
         />
         <FadeIn direction="up">
           <LiveDemo />
         </FadeIn>
       </section>
 
-      {/* Positioning vs. canvas tools and chat */}
+      {/* Proof: The Before / After Comparison */}
+      <BeforeAfterComparison />
+
+      {/* Built-in Voice WebRTC & Distributed Sync receipts */}
+      <ArchitectureAndVoiceSection />
+
+      {/* System of Record / Defensibility */}
       <section className="py-14 sm:py-20">
         <SectionHeader
-          eyebrow="Why Echo"
-          title="Not another whiteboard with an AI button"
-          subtitle="Canvas tools and chat assistants each hold half of the work. Echo keeps both in the same loop."
+          eyebrow="Defensibility & Moat"
+          title="Why Echo is a system of record, not a whiteboard"
+          subtitle="Chat wrappers produce throwaway text. Whiteboards produce unstructured doodles. Echo creates lasting institutional memory."
         />
         <div className="grid gap-4 md:grid-cols-3">
-          {COMPARISON.map((item, i) => (
+          {MOAT_PILLARS.map((item, i) => (
             <FadeIn
-              key={item.heading}
+              key={item.title}
               delay={i * 90}
-              className={`rounded-3xl border p-6 sm:p-7 ${
-                item.highlight
-                  ? "border-indigo-400/60 bg-indigo-500/10 shadow-lg shadow-indigo-500/10"
-                  : "border-zinc-200 bg-white/80 dark:border-zinc-700/60 dark:bg-zinc-900/50"
-              }`}
+              className="rounded-3xl border border-zinc-200 bg-white/80 p-6 shadow-xs backdrop-blur dark:border-zinc-700/60 dark:bg-zinc-900/50 sm:p-7"
             >
-              <h3 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-white">{item.heading}</h3>
-              <p className="mt-2 text-[15px] leading-relaxed text-zinc-600 dark:text-zinc-300">{item.body}</p>
+              <h3 className="text-lg font-semibold tracking-tight text-zinc-900 dark:text-white">
+                {item.title}
+              </h3>
+              <p className="mt-2 text-[15px] leading-relaxed text-zinc-600 dark:text-zinc-300">
+                {item.body}
+              </p>
             </FadeIn>
           ))}
         </div>
@@ -111,8 +119,9 @@ export default function HomePage() {
       {/* One audience, concrete jobs */}
       <section className="py-14 sm:py-20">
         <SectionHeader
-          eyebrow="Who it's for"
-          title="Founders and engineers making calls with incomplete information"
+          eyebrow="Target Audience"
+          title="Built for technical founders and engineering leads"
+          subtitle="Designed specifically for leaders making high-impact choices with incomplete information."
         />
         <BentoGrid>
           {JOBS.map((job) => (
@@ -125,16 +134,19 @@ export default function HomePage() {
       <section className="py-14 sm:py-20">
         <SectionHeader
           eyebrow="You stay in charge"
-          title="AI drafts the structure. You shape it."
-          subtitle="Echo proposes nodes and connections from the conversation. You can move, edit, delete and regroup anything, and the AI reads your changes on the next message."
+          title="AI drafts the structure. You command it."
+          subtitle="Echo proposes nodes and connections from the conversation. You can move, edit, delete, and regroup anything, and the AI reads your changes on the next message."
         />
         <ProductFrame />
       </section>
 
+      {/* Pricing & Unit Economics Section */}
+      <PricingSection showHeader={true} />
+
       <CtaBand
         title="Bring one real decision"
-        subtitle="Free during beta. Meetings and shared rooms are there when you want to think with your team."
-        secondary={{ href: "/how-it-works", label: "See how it works" }}
+        subtitle="Free during beta. WebRTC voice meetings and shared multiplayer rooms are ready when you want to think with your team."
+        secondary={{ href: "/pricing", label: "View pricing details" }}
       />
     </div>
   );

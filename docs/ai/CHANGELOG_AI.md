@@ -4,6 +4,29 @@ This document tracks changes made across phases so subsequent AI sessions do not
 
 ---
 
+## 2026-11-05 — UI Ergonomics & 2D Graph Restoration
+- **Changed**:
+  - Restored Echo's signature 2D multi-column DAG layout in [`LiveDemo.tsx`](file:///c:/Users/mestr/Desktop/echo%20challange/echo-ai-workspace/src/app/components/marketing/LiveDemo.tsx) (`200px x 76px`, 2-3 balanced columns) to eliminate the horizontal single-row squishing.
+  - Aligned node schema strictly back to Echo's native types: `problem`, `question`, `idea`, `solution`, `decision`, `task` with high-contrast readable color-coding.
+  - Refined [`/api/demo`](file:///c:/Users/mestr/Desktop/echo%20challange/echo-ai-workspace/src/app/api/demo/route.ts) prompt to generate coherent left-to-right DAG connections without orphan nodes or nonsensical links.
+- **Verification**: `npx tsc --noEmit` passed with 0 errors.
+
+---
+
+## 2026-11-05 — Post-Shark Reviews & Positioning Overhaul
+- **Changed**:
+  - Created [SHARK_REVIEWS_AND_ACTION_PLAN.md](file:///c:/Users/mestr/Desktop/echo%20challange/echo-ai-workspace/docs/ai/SHARK_REVIEWS_AND_ACTION_PLAN.md) detailing all 8 Sharks' critiques, rebuttals, and execution tasks.
+  - Implemented 1-click domain templates in [`LiveDemo.tsx`](file:///c:/Users/mestr/Desktop/echo%20challange/echo-ai-workspace/src/app/components/marketing/LiveDemo.tsx) (ADR, Build vs Buy, Sharding, Incident Postmortem) to eliminate "Blank Canvas Panic".
+  - Created [`BeforeAfterComparison.tsx`](file:///c:/Users/mestr/Desktop/echo%20challange/echo-ai-workspace/src/app/components/marketing/BeforeAfterComparison.tsx) demonstrating Chat Thread Chaos vs Echo Living System of Record.
+  - Created [`ArchitectureAndVoiceSection.tsx`](file:///c:/Users/mestr/Desktop/echo%20challange/echo-ai-workspace/src/app/components/marketing/ArchitectureAndVoiceSection.tsx) explaining WebRTC P2P Voice-to-Graph STT, throttled broadcast state sync, and topological context pruning.
+  - Built [`PricingSection.tsx`](file:///c:/Users/mestr/Desktop/echo%20challange/echo-ai-workspace/src/app/components/marketing/PricingSection.tsx) and new dedicated page [`/pricing`](file:///c:/Users/mestr/Desktop/echo%20challange/echo-ai-workspace/src/app/(marketing)/pricing/page.tsx) with transparent Developer Free ($0), Founder Pro ($18), Team ($39), and Enterprise plans plus >95% gross margin defense.
+  - Updated [`MarketingNavbar.tsx`](file:///c:/Users/mestr/Desktop/echo%20challange/echo-ai-workspace/src/app/components/marketing/MarketingNavbar.tsx) and [`MarketingFooter.tsx`](file:///c:/Users/mestr/Desktop/echo%20challange/echo-ai-workspace/src/app/components/marketing/MarketingFooter.tsx) with Pricing navigation.
+  - Overhauled [`page.tsx`](file:///c:/Users/mestr/Desktop/echo%20challange/echo-ai-workspace/src/app/(marketing)/page.tsx) to integrate all proof sections and defensibility pillars.
+- **Reason**: Address critiques from VC and Technical Shark Tank rounds and position Echo as an enterprise-grade system of record.
+- **Verification**: `npx tsc --noEmit` passed with 0 errors.
+
+---
+
 ## 2026-09-16 — Phase 13.9: Client Migration & Cutover Verification
 - **Changed**:
   - Implemented migration hash check & cutover verification logic in `src/app/lib/persistence/repositories/MigrationRepository.ts`

@@ -6,12 +6,14 @@ import { useState, useEffect } from "react";
 import OpenEchoButton from "./OpenEchoButton";
 import ThemeToggle from "../theme/ThemeToggle";
 import { EchoLogo } from "../brand/EchoLogo";
+import { UserNav } from "../auth/UserNav";
 
 const NAV_LINKS = [
   { href: "/about", label: "About" },
   { href: "/how-it-works", label: "How It Works" },
   { href: "/use-cases", label: "Use Cases" },
   { href: "/demo", label: "Demo" },
+  { href: "/pricing", label: "Pricing" },
   { href: "/blog", label: "Blog" },
 ];
 
@@ -62,11 +64,10 @@ export default function MarketingNavbar() {
               <Link
                 key={link.href}
                 href={link.href}
-                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${
-                  isActive
+                className={`rounded-lg px-3 py-1.5 text-sm font-medium transition-colors ${isActive
                     ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800/80 dark:text-white shadow-sm"
                     : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:text-zinc-900 dark:hover:text-zinc-200"
-                }`}
+                  }`}
               >
                 {link.label}
               </Link>
@@ -77,6 +78,7 @@ export default function MarketingNavbar() {
         {/* Right: Desktop Open Echo CTA & Theme Toggle */}
         <div className="hidden md:flex items-center gap-2">
           <ThemeToggle />
+          <UserNav />
           <OpenEchoButton />
         </div>
 
@@ -121,11 +123,10 @@ export default function MarketingNavbar() {
 
       {/* Mobile Navigation Dropdown */}
       <div
-        className={`overflow-hidden transition-all duration-300 ease-in-out md:hidden mx-auto mt-2 max-w-6xl rounded-2xl bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl motion-reduce:transition-none ${
-          mobileMenuOpen
+        className={`overflow-hidden transition-all duration-300 ease-in-out md:hidden mx-auto mt-2 max-w-6xl rounded-2xl bg-white/95 dark:bg-zinc-950/95 backdrop-blur-xl motion-reduce:transition-none ${mobileMenuOpen
             ? "max-h-96 opacity-100 px-4 pt-2 pb-6 border border-zinc-200 dark:border-zinc-800"
             : "max-h-0 opacity-0 px-4 py-0 border border-transparent pointer-events-none"
-        }`}
+          }`}
       >
         <nav className="flex flex-col space-y-1">
           {NAV_LINKS.map((link) => {
@@ -138,18 +139,21 @@ export default function MarketingNavbar() {
                 key={link.href}
                 href={link.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                  isActive
+                className={`rounded-lg px-3 py-2 text-sm font-medium transition-colors ${isActive
                     ? "bg-zinc-100 text-zinc-900 dark:bg-zinc-800/80 dark:text-white"
                     : "text-zinc-600 dark:text-zinc-400 hover:bg-zinc-100 dark:hover:bg-zinc-900 hover:text-zinc-900 dark:hover:text-zinc-200"
-                }`}
+                  }`}
               >
                 {link.label}
               </Link>
             );
           })}
         </nav>
-        <div className="mt-4 pt-4 border-t border-zinc-200/80 dark:border-zinc-800/80">
+        <div className="mt-4 pt-4 border-t border-zinc-200/80 dark:border-zinc-800/80 flex flex-col gap-2">
+          <div className="flex items-center justify-between px-1">
+            <span className="text-xs text-zinc-500">Account</span>
+            <UserNav />
+          </div>
           <OpenEchoButton
             className="w-full justify-center"
             onClick={() => setMobileMenuOpen(false)}
