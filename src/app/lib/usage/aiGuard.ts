@@ -10,6 +10,7 @@
  * demo/anonymous fallback (which gets the lower anonymous limit).
  */
 
+import { logger } from "../observability/logger";
 import { PersistenceError } from "../persistence/server/errors";
 import { resolveServerIdentity, type ServerIdentity } from "../persistence/server/auth";
 import {
@@ -24,6 +25,8 @@ import { createSupabaseUsageStore, type UsageOutcome, type UsageStore } from "./
 
 /** Response header a handler may set to refine the logged outcome; stripped before sending. */
 export const AI_OUTCOME_HEADER = "x-echo-ai-outcome";
+/** Response header carrying a stable error code (see observability/aiHealth); stripped before sending. */
+export const AI_ERROR_CODE_HEADER = "x-echo-ai-error-code";
 
 export type AiTracker = {
   /** Records the outcome of a handled request (never throws). */
@@ -97,7 +100,13 @@ export function createAiGuard(deps: AiGuardDeps) {
       });
 
       if (!decision.allowed) {
-        console.warn(`[usage] rate limit hit for ${actorKey} (${limit} per ${Math.round(config.windowMs / 60000)} min)`);
+        logger.warn("ai.rate_limited", {
+          route: options.route,
+          actor: identity.authenticated ? "user" : "anonymous",
+          limit,
+          windowMinutes: Math.round(config.windowMs / 60000),
+          retryAfterSeconds: decision.retryAfterSeconds,
+        });
         const windowLabel =
           config.windowMs === 3_600_000 ? "hour" : `${Math.round(config.windowMs / 60000)} minutes`;
         return {
@@ -129,12 +138,29 @@ export function createAiGuard(deps: AiGuardDeps) {
       tracker: {
         async finish(response: Response) {
           const status = outcomeFromResponse(response);
+          const errorCode = response.headers.get(AI_ERROR_CODE_HEADER) ?? undefined;
           response.headers.delete(AI_OUTCOME_HEADER);
+          response.headers.delete(AI_ERROR_CODE_HEADER);
+          const latencyMs = deps.now() - nowMs;
+
+          // Content-free: route/model/outcome/latency only (the logger also redacts sensitive keys).
+          const level = status === "ok" && !errorCode ? "info" : "warn";
+          logger[level]("ai.request.finished", {
+            route: options.route,
+            model: options.model,
+            actor: identity.authenticated ? "user" : "anonymous",
+            status,
+            httpStatus: response.status,
+            latencyMs,
+            errorCode,
+          });
+
           if (!usageId) return;
           await deps.store.finish(usageId, {
             status,
             httpStatus: response.status,
-            latencyMs: deps.now() - nowMs,
+            latencyMs,
+            errorCode,
           });
         },
       },

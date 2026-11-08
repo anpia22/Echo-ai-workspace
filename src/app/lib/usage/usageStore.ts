@@ -11,6 +11,7 @@
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { getServerSupabaseClient } from "../persistence/server/db";
+import { logger } from "../observability/logger";
 
 export type UsageStart = {
   actorKey: string;
@@ -47,7 +48,11 @@ let warned = false;
 function warnOnce(message: string): void {
   if (warned) return;
   warned = true;
-  console.warn(`[usage] ${message} — falling back to in-memory limiting. Is the ai_usage_events migration applied?`);
+  logger.warn("usage.store_unavailable", {
+    reason: message,
+    effect: "falling back to in-memory limiting",
+    hint: "is the ai_usage_events migration applied?",
+  });
 }
 
 export function createSupabaseUsageStore(getClient: () => SupabaseClient = getServerSupabaseClient): UsageStore {

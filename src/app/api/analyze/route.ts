@@ -22,7 +22,9 @@ import { deduplicateActions } from "../../lib/deduplicateActions";
 import { parseGroupNodesAction, resolveGroupMemberIds } from "../../lib/groupNodesAction";
 import { parseMoveNodeAction } from "../../lib/moveNodeAction";
 import { resolveServerActor } from "../../lib/persistence/server/auth";
-import { AI_OUTCOME_HEADER, guardAiRequest } from "../../lib/usage/aiGuard";
+import { AI_ERROR_CODE_HEADER, AI_OUTCOME_HEADER, guardAiRequest } from "../../lib/usage/aiGuard";
+import { classifyAiError } from "../../lib/observability/aiHealth";
+import { logger } from "../../lib/observability/logger";
 import { PersistenceError } from "../../lib/persistence/server/errors";
 import {
   AIContextEngine,
@@ -1172,10 +1174,13 @@ Keep message concise. If no canvas mutation, actions must be empty.`,
       );
     }
 
-    console.log(
-      "RAW AI RESPONSE:",
-      content
-    );
+    // Model output derives from user content: never print it in production logs.
+    if (process.env.NODE_ENV !== "production") {
+      console.log(
+        "RAW AI RESPONSE:",
+        content
+      );
+    }
 
     const parsedResult =
       parseAiResponseContent(
@@ -1188,7 +1193,8 @@ Keep message concise. If no canvas mutation, actions must be empty.`,
           message:
             "I couldn't reliably interpret that response. Please try again.",
           actions: [],
-        }
+        },
+        { headers: { [AI_ERROR_CODE_HEADER]: "unparseable_response" } }
       );
     }
 
@@ -1200,11 +1206,14 @@ Keep message concise. If no canvas mutation, actions must be empty.`,
       typeof parsed !== "object" ||
       Array.isArray(parsed)
     ) {
-      return NextResponse.json({
-        message:
-          "I couldn't reliably interpret that response. Please try again.",
-        actions: [],
-      });
+      return NextResponse.json(
+        {
+          message:
+            "I couldn't reliably interpret that response. Please try again.",
+          actions: [],
+        },
+        { headers: { [AI_ERROR_CODE_HEADER]: "unparseable_response" } }
+      );
     }
 
     // ==================================================
@@ -1280,23 +1289,25 @@ Keep message concise. If no canvas mutation, actions must be empty.`,
       insightActions
     );
 
-    console.log(
-      "AI ACTIONS:",
-      JSON.stringify(
-        parsed.actions,
-        null,
-        2
-      )
-    );
+    if (process.env.NODE_ENV !== "production") {
+      console.log(
+        "AI ACTIONS:",
+        JSON.stringify(
+          parsed.actions,
+          null,
+          2
+        )
+      );
 
-    console.log(
-      "VALIDATED ACTIONS:",
-      JSON.stringify(
-        insightActions,
-        null,
-        2
-      )
-    );
+      console.log(
+        "VALIDATED ACTIONS:",
+        JSON.stringify(
+          insightActions,
+          null,
+          2
+        )
+      );
+    }
 
     parsed.actions =
       insightActions;
@@ -1349,7 +1360,8 @@ Keep message concise. If no canvas mutation, actions must be empty.`,
       );
     }
 
-    console.error("❌ AI analysis error:", error);
+    const errorCode = classifyAiError(error);
+    logger.reportError(error, { route: "analyze", errorCode });
 
     return NextResponse.json(
       {
@@ -1363,6 +1375,7 @@ Keep message concise. If no canvas mutation, actions must be empty.`,
       },
       {
         status: 500,
+        headers: { [AI_ERROR_CODE_HEADER]: errorCode },
       }
     );
   }
