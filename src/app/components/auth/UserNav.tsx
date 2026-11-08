@@ -4,12 +4,16 @@ import { useEffect, useState, useRef } from "react";
 import type { User } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { signOut } from "@/lib/supabase/auth";
+import { getSuggestedName } from "@/lib/supabase/profile";
+import { clearProfileCache } from "@/lib/profileName";
 import { AuthModal } from "./AuthModal";
+import { ProfileDialog } from "./ProfileDialog";
 
 export function UserNav() {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -43,6 +47,7 @@ export function UserNav() {
   const handleSignOut = async () => {
     setDropdownOpen(false);
     await signOut();
+    clearProfileCache();
     setUser(null);
     window.location.reload();
   };
@@ -88,7 +93,7 @@ export function UserNav() {
         <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-[11px] font-bold text-white">
           {initial}
         </div>
-        <span className="max-w-[100px] truncate">{displayName}</span>
+        <span className="hidden max-w-[100px] truncate sm:inline">{displayName}</span>
       </button>
 
       {dropdownOpen && (
@@ -101,6 +106,30 @@ export function UserNav() {
               {user.email}
             </p>
           </div>
+
+          <button
+            onClick={() => {
+              setDropdownOpen(false);
+              setIsProfileOpen(true);
+            }}
+            className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
+          >
+            <svg
+              className="h-3.5 w-3.5"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
+              />
+            </svg>
+            Edit profile
+          </button>
 
           <button
             onClick={handleSignOut}
@@ -122,6 +151,17 @@ export function UserNav() {
             Sign Out
           </button>
         </div>
+      )}
+
+      {isProfileOpen && (
+        <ProfileDialog
+          mode="edit"
+          userId={user.id}
+          initialName={getSuggestedName(user)}
+          onClose={() => setIsProfileOpen(false)}
+          // Reload so live presence, cursors and meetings pick up the new name.
+          onSaved={() => window.location.reload()}
+        />
       )}
     </div>
   );

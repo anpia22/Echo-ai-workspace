@@ -44,6 +44,8 @@ import type {
   MeetingTranscriptSegmentRecord,
 } from "../lib/persistence/meetingTypes";
 import { MeetingDock } from "../components/meeting";
+import { OnboardingGuard } from "../components/auth/OnboardingGuard";
+import { UserNav } from "../components/auth/UserNav";
 import {
   buildGraphContext,
   logGraphContext,
@@ -2399,7 +2401,7 @@ function Home() {
 
         {/* Header */}
 
-        <header className="flex h-14 sm:h-16 min-w-0 items-center justify-between gap-2 overflow-hidden border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 px-3 sm:px-6 backdrop-blur-md">
+        <header className="relative z-[70] flex h-14 sm:h-16 min-w-0 items-center justify-between gap-2 border-b border-zinc-200 dark:border-zinc-800 bg-white/80 dark:bg-zinc-950/80 px-3 sm:px-6 backdrop-blur-md">
 
           <div className="flex min-w-0 items-center gap-2 sm:gap-4 pr-1 sm:pr-4">
             <button
@@ -2444,7 +2446,7 @@ function Home() {
               conversationStatus={conversationPersistenceStatus} 
             />
 
-            <div className="echo-header-room shrink-0">
+            <div className="echo-header-room relative z-30 shrink-0">
               <RoomControls
                 connection={roomConnection}
                 followInterruptedNotice={followInterruptedNotice}
@@ -2487,6 +2489,8 @@ function Home() {
             ) : null}
 
             <ThemeToggle />
+
+            <UserNav />
 
             <button
               onClick={() =>
@@ -3084,7 +3088,9 @@ function Home() {
 export default function Page() {
   return (
     <Suspense fallback={null}>
-      <Home />
+      <OnboardingGuard>
+        <Home />
+      </OnboardingGuard>
     </Suspense>
   );
 }

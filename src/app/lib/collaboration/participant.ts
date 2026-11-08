@@ -1,5 +1,7 @@
 "use client";
 
+import { getCachedDisplayName } from "../../../lib/profileName";
+
 export type Participant = {
   userId: string;
   displayName: string;
@@ -58,6 +60,25 @@ function isParticipant(value: unknown): value is Participant {
   );
 }
 
+/**
+ * Applies the signed-in user's chosen display name (see src/lib/profileName.ts)
+ * on top of the per-tab participant. userId and color are unchanged, so
+ * presence identity stays stable; only the visible name follows the profile.
+ */
+function applyProfileName(participant: Participant): Participant {
+  const profileName = getCachedDisplayName();
+  if (!profileName || profileName === participant.displayName) {
+    return participant;
+  }
+  const updated: Participant = { ...participant, displayName: profileName };
+  try {
+    sessionStorage.setItem(PARTICIPANT_STORAGE_KEY, JSON.stringify(updated));
+  } catch {
+    // ignore storage errors; the in-memory participant still carries the name
+  }
+  return updated;
+}
+
 function createParticipant(): Participant {
   const userId = crypto.randomUUID();
   return {
@@ -83,7 +104,7 @@ export function getOrCreateParticipant(): Participant {
       const parsed: unknown = JSON.parse(stored);
 
       if (isParticipant(parsed)) {
-        return parsed;
+        return applyProfileName(parsed);
       }
 
       // Upgrade legacy participant entry (missing color or placeholder "You")
@@ -111,14 +132,14 @@ export function getOrCreateParticipant(): Participant {
           PARTICIPANT_STORAGE_KEY,
           JSON.stringify(upgraded)
         );
-        return upgraded;
+        return applyProfileName(upgraded);
       }
     } catch {
       sessionStorage.removeItem(PARTICIPANT_STORAGE_KEY);
     }
   }
 
-  const participant = createParticipant();
+  const participant = applyProfileName(createParticipant());
   sessionStorage.setItem(
     PARTICIPANT_STORAGE_KEY,
     JSON.stringify(participant)

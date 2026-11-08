@@ -13,6 +13,7 @@
 import { NextResponse } from "next/server";
 import { resolveServerActor } from "../../lib/persistence/server/auth";
 import { PersistenceError } from "../../lib/persistence/server/errors";
+import { resolveProfileDisplayName } from "../../lib/persistence/server/profile";
 import { WorkspaceRepository } from "../../lib/persistence/repositories/workspaceRepository";
 import type { CreateWorkspaceRequest } from "../../lib/persistence/workspaceTypes";
 
@@ -44,9 +45,12 @@ export async function POST(request: Request) {
       ? (body.settings as Record<string, unknown>)
       : undefined;
 
-    const displayName = typeof body.displayName === "string" && body.displayName.trim() !== ""
-      ? body.displayName.trim()
-      : "Owner";
+    // Prefer the verified account profile name; the client body is only a fallback.
+    const profileName = await resolveProfileDisplayName(actor.userId);
+    const displayName = profileName
+      ?? (typeof body.displayName === "string" && body.displayName.trim() !== ""
+        ? body.displayName.trim()
+        : "Owner");
 
     const color = typeof body.color === "string" && /^#[0-9a-f]{6}$/i.test(body.color)
       ? body.color
