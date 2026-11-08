@@ -17,6 +17,30 @@ import { resolveProfileDisplayName } from "../../lib/persistence/server/profile"
 import { WorkspaceRepository } from "../../lib/persistence/repositories/workspaceRepository";
 import type { CreateWorkspaceRequest } from "../../lib/persistence/workspaceTypes";
 
+/**
+ * GET /api/workspace — lists the workspaces the authenticated actor belongs to.
+ */
+export async function GET(request: Request) {
+  try {
+    const actor = await resolveServerActor(request);
+    const repository = new WorkspaceRepository();
+    const workspaces = await repository.listWorkspaces(actor);
+    return NextResponse.json({ workspaces }, { status: 200 });
+  } catch (error) {
+    if (error instanceof PersistenceError) {
+      return NextResponse.json(
+        { error: { code: error.code, message: error.message } },
+        { status: error.toHttpStatus() }
+      );
+    }
+    const message = error instanceof Error ? error.message : "Failed to list workspaces";
+    return NextResponse.json(
+      { error: { code: "INTERNAL_ERROR", message } },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(request: Request) {
   try {
     // 1. Authoritative server-side identity resolution

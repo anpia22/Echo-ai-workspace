@@ -8,6 +8,7 @@
 import type {
   CreateWorkspaceRequest,
   CreateWorkspaceResponse,
+  ListWorkspacesResponse,
   LoadWorkspaceResponse,
 } from "../workspaceTypes";
 
@@ -21,6 +22,29 @@ export class WorkspaceApiError extends Error {
     this.status = status;
     this.code = code;
   }
+}
+
+/**
+ * Lists the workspaces the signed-in user belongs to via GET /api/workspace.
+ */
+export async function listWorkspacesApi(
+  signal?: AbortSignal
+): Promise<ListWorkspacesResponse> {
+  const res = await fetch("/api/workspace", {
+    method: "GET",
+    headers: { "Accept": "application/json" },
+    signal,
+  });
+
+  const json = await res.json().catch(() => ({}));
+
+  if (!res.ok) {
+    const code = json?.error?.code || "API_ERROR";
+    const message = json?.error?.message || `Failed to list workspaces (HTTP ${res.status})`;
+    throw new WorkspaceApiError(res.status, code, message);
+  }
+
+  return json as ListWorkspacesResponse;
 }
 
 /**

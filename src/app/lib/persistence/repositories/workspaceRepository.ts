@@ -14,6 +14,8 @@ import type {
   Workspace,
   WorkspaceId,
   WorkspaceMember,
+  WorkspaceMemberRole,
+  WorkspaceSummary,
 } from "../index";
 import {
   type PersistenceActor,
@@ -73,6 +75,45 @@ export class WorkspaceRepository {
       workspace: mapWorkspaceRow(data.workspace),
       member: mapWorkspaceMemberRow(data.member),
     };
+  }
+
+  /**
+   * Lists every workspace the actor is a member of, most recently updated first.
+   * Membership comes from the database; this is what lets a user find their data
+   * after signing out/in or from another device.
+   */
+  async listWorkspaces(actor: PersistenceActor): Promise<WorkspaceSummary[]> {
+    const { data: memberships, error: memberError } = await this.client
+      .from("workspace_members")
+      .select("workspace_id, role")
+      .eq("user_id", actor.userId);
+
+    if (memberError) {
+      throw new PersistenceError("DATABASE_ERROR", `Failed to list memberships: ${memberError.message}`);
+    }
+    if (!memberships || memberships.length === 0) {
+      return [];
+    }
+
+    const roleByWorkspace = new Map<string, WorkspaceMemberRole>();
+    for (const m of memberships) {
+      roleByWorkspace.set(String(m.workspace_id), m.role as WorkspaceMemberRole);
+    }
+
+    const { data: rows, error: wsError } = await this.client
+      .from("workspaces")
+      .select("*")
+      .in("id", Array.from(roleByWorkspace.keys()))
+      .order("updated_at", { ascending: false });
+
+    if (wsError) {
+      throw new PersistenceError("DATABASE_ERROR", `Failed to list workspaces: ${wsError.message}`);
+    }
+
+    return (rows || []).map((row) => ({
+      ...mapWorkspaceRow(row),
+      role: roleByWorkspace.get(String(row.id)) as WorkspaceMemberRole,
+    }));
   }
 
   /**

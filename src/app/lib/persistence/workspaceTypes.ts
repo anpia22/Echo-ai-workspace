@@ -39,6 +39,19 @@ export type Workspace = {
 };
 
 /**
+ * A workspace the caller belongs to, with the caller's role in it.
+ * Returned by GET /api/workspace so a user can find their data from any device.
+ */
+export type WorkspaceSummary = Workspace & {
+  role: WorkspaceMemberRole;
+};
+
+export type ListWorkspacesResponse = {
+  /** Most recently updated first. */
+  workspaces: WorkspaceSummary[];
+};
+
+/**
  * Membership association linking a user to a workspace with role & attribution.
  */
 export type WorkspaceMember = {

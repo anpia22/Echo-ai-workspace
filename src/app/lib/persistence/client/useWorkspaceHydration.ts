@@ -16,12 +16,14 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import type { Workspace, CreateWorkspaceResponse } from "../workspaceTypes";
 import {
   createWorkspaceApi,
+  listWorkspacesApi,
   loadWorkspaceApi,
   WorkspaceApiError,
 } from "./workspaceApi";
 import {
   normalizePersistedCanvas,
   normalizePersistedConversations,
+  pickWorkspaceToOpen,
   type RuntimeCanvasState,
   type RuntimeConversation,
 } from "./workspaceHydration";
@@ -62,8 +64,28 @@ export function useWorkspaceHydration(rawWorkspaceParam: string | null): Workspa
   const inFlightCreationPromiseRef = useRef<Promise<CreateWorkspaceResponse> | null>(null);
   const hasCreatedRef = useRef(false);
   const retryCountRef = useRef(0);
+  const workspaceIdRef = useRef<string | null>(null);
 
   const performHydration = useCallback(async () => {
+    const trimmedParam = rawWorkspaceParam?.trim();
+
+    // Guard: If workspace is already loaded/hydrated and there is either no workspace parameter
+    // in the URL or the parameter matches the already-loaded workspace, maintain "ready" status
+    // and avoid re-entering "loading" (which causes frozen loading screens on room creation/navigation).
+    if (hasCreatedRef.current && workspaceIdRef.current) {
+      if (!trimmedParam || trimmedParam === workspaceIdRef.current) {
+        if (typeof window !== "undefined") {
+          const url = new URL(window.location.href);
+          if (!url.searchParams.has("workspace")) {
+            url.searchParams.set("workspace", workspaceIdRef.current);
+            window.history.replaceState(null, "", url.toString());
+          }
+        }
+        setStatus("ready");
+        return;
+      }
+    }
+
     // 1. Abort any previous in-flight request
     if (activeAbortControllerRef.current) {
       activeAbortControllerRef.current.abort();
@@ -74,8 +96,6 @@ export function useWorkspaceHydration(rawWorkspaceParam: string | null): Workspa
     const currentGen = ++activeRequestGenRef.current;
     setStatus("loading");
     setError(null);
-
-    const trimmedParam = rawWorkspaceParam?.trim();
 
     // -------------------------------------------------------------
     // Case A: Concrete workspace identity in URL
@@ -112,6 +132,8 @@ export function useWorkspaceHydration(rawWorkspaceParam: string | null): Workspa
         setWorkspace(hydrationData.workspace);
         setHydratedCanvas(normalizedCanvas);
         setHydratedConversations(normalizedConvs);
+        workspaceIdRef.current = trimmedParam;
+        hasCreatedRef.current = true;
 
         if (typeof window !== "undefined" && window.localStorage) {
           try {
@@ -149,24 +171,46 @@ export function useWorkspaceHydration(rawWorkspaceParam: string | null): Workspa
       // -------------------------------------------------------------
       // Prevent duplicate creation attempts for the same unparameterized mount (StrictMode defense)
       if (hasCreatedRef.current) {
+        if (workspaceIdRef.current) {
+          setStatus("ready");
+        }
         return;
       }
 
-      // Check for stored last active workspace, or fallback to known existing workspace
-      let candidateWorkspaceId: string | null = null;
+      // The browser pointer is only a hint for WHICH of the account's workspaces to open.
+      let storedPointer: string | null = null;
       if (typeof window !== "undefined" && window.localStorage) {
         try {
           const stored = window.localStorage.getItem(LAST_WORKSPACE_KEY);
           if (stored && UUID_REGEX.test(stored.trim())) {
-            candidateWorkspaceId = stored.trim();
+            storedPointer = stored.trim();
           }
         } catch {
           // ignore
         }
       }
 
-      if (!candidateWorkspaceId) {
-        candidateWorkspaceId = CANONICAL_FALLBACK_WORKSPACE_ID;
+      // The account is the source of truth: ask the server which workspaces this user
+      // belongs to, so data follows the user across sign-outs and devices.
+      let candidateWorkspaceId: string | null = null;
+      let serverListResolved = false;
+      try {
+        const { workspaces } = await listWorkspacesApi(controller.signal);
+        if (controller.signal.aborted || currentGen !== activeRequestGenRef.current) {
+          return;
+        }
+        serverListResolved = true;
+        candidateWorkspaceId = pickWorkspaceToOpen(workspaces, storedPointer);
+      } catch (err) {
+        if (controller.signal.aborted || (err instanceof Error && err.name === "AbortError") || currentGen !== activeRequestGenRef.current) {
+          return;
+        }
+        console.warn("[useWorkspaceHydration] Could not list workspaces, using browser pointer:", err);
+      }
+
+      // Only when the server list is unavailable do we rely on the pointer / legacy fallback.
+      if (!serverListResolved) {
+        candidateWorkspaceId = storedPointer ?? CANONICAL_FALLBACK_WORKSPACE_ID;
       }
 
       if (candidateWorkspaceId) {
@@ -184,6 +228,7 @@ export function useWorkspaceHydration(rawWorkspaceParam: string | null): Workspa
           );
 
           hasCreatedRef.current = true;
+          workspaceIdRef.current = candidateWorkspaceId;
           setWorkspaceId(candidateWorkspaceId);
           setWorkspace(hydrationData.workspace);
           setHydratedCanvas(normalizedCanvas);
@@ -211,7 +256,9 @@ export function useWorkspaceHydration(rawWorkspaceParam: string | null): Workspa
           }
 
           console.warn("[useWorkspaceHydration] Candidate workspace load failed, falling back to new workspace creation:", err);
-          if (typeof window !== "undefined" && window.localStorage) {
+          // Forget the pointer only when the workspace is truly gone (404). A 403/network error
+          // (e.g. signed out, wrong account) must not erase the user's way back to their data.
+          if (err instanceof WorkspaceApiError && err.status === 404 && typeof window !== "undefined" && window.localStorage) {
             try {
               window.localStorage.removeItem(LAST_WORKSPACE_KEY);
             } catch {}
@@ -240,6 +287,7 @@ export function useWorkspaceHydration(rawWorkspaceParam: string | null): Workspa
         inFlightCreationPromiseRef.current = null;
 
         const newId = created.workspace.id;
+        workspaceIdRef.current = newId;
         setWorkspaceId(newId);
         setWorkspace(created.workspace);
         setHydratedCanvas({ nodes: [], edges: [], groups: [] });
@@ -298,6 +346,7 @@ export function useWorkspaceHydration(rawWorkspaceParam: string | null): Workspa
   const retry = useCallback(() => {
     retryCountRef.current++;
     hasCreatedRef.current = false;
+    workspaceIdRef.current = null;
     inFlightCreationPromiseRef.current = null;
     void performHydration();
   }, [performHydration]);

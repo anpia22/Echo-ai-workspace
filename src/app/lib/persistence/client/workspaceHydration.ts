@@ -58,6 +58,25 @@ export type RuntimeConversation = {
 };
 
 /**
+ * Chooses which of the user's workspaces to open when the URL names none.
+ * Prefers the workspace this browser last used if the user still belongs to it;
+ * otherwise the most recently updated one (the list arrives newest-first).
+ * Returns null when the user has no workspaces yet, meaning one should be created.
+ */
+export function pickWorkspaceToOpen(
+  workspaces: ReadonlyArray<{ id: string }>,
+  lastUsedId: string | null
+): string | null {
+  if (!Array.isArray(workspaces) || workspaces.length === 0) {
+    return null;
+  }
+  if (lastUsedId && workspaces.some((w) => w.id === lastUsedId)) {
+    return lastUsedId;
+  }
+  return workspaces[0].id;
+}
+
+/**
  * Normalizes a loaded persistent CanvasSnapshotRecord into authoritative runtime CanvasState.
  * Validates node existence, edge/group relationship integrity, and duplicate identities.
  */
