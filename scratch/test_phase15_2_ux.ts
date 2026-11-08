@@ -5,7 +5,7 @@ console.log("=================================================");
 console.log("RUNNING PHASE 15.2 UX POLISH VERIFICATION TESTS");
 console.log("=================================================");
 
-const pagePath = path.resolve(process.cwd(), "src/app/page.tsx");
+const pagePath = path.resolve(process.cwd(), "src/app/app/page.tsx");
 const canvasPath = path.resolve(process.cwd(), "src/app/components/EchoCanvas.tsx");
 
 const pageContent = fs.readFileSync(pagePath, "utf-8");
@@ -30,10 +30,13 @@ assert(
   "Header AI status badge exists with data-testid='header-ai-status'"
 );
 assert(
+  // The idle "AI Ready" badge was removed on purpose (commit 7cd1e40); the header now shows
+  // Thinking/Reasoning/Listening only while active, plus a separate SystemStatusBadge.
   pageContent.includes("Echo Thinking…") &&
+  pageContent.includes("Echo Reasoning…") &&
   pageContent.includes("Listening…") &&
-  pageContent.includes("AI Ready"),
-  "Header AI status displays real reactive states (Thinking, Listening, AI Ready)"
+  pageContent.includes("<SystemStatusBadge"),
+  "Header AI status displays real reactive states (Thinking, Reasoning, Listening) plus system status badge"
 );
 
 // 2. Canvas Viewport AI Thinking Pill

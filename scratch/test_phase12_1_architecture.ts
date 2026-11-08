@@ -1,3 +1,4 @@
+// @ts-nocheck -- partial browser/WebRTC mocks; this file was an untyped .mjs before the loader-compat rename
 /**
  * Phase 12.1 - Audio/Video Meeting Architecture & Foundation Verification Suite
  *

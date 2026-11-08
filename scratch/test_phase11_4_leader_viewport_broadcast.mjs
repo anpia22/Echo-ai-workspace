@@ -568,6 +568,7 @@ async function runTests() {
     const pkg = JSON.parse(pkgText);
     const deps = Object.keys(pkg.dependencies || {});
     const expectedDeps = [
+      "@supabase/ssr", // added with the auth/session work (P0.1)
       "@supabase/supabase-js",
       "@xyflow/react",
       "next",

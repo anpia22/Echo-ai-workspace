@@ -2,7 +2,7 @@ import fs from "fs";
 import path from "path";
 import assert from "assert";
 
-const pagePath = path.resolve(process.cwd(), "src/app/page.tsx");
+const pagePath = path.resolve(process.cwd(), "src/app/app/page.tsx");
 const pageSrc = fs.readFileSync(pagePath, "utf-8");
 
 console.log("=================================================");

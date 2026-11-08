@@ -486,7 +486,7 @@ async function runTests() {
     assert(soloMode === "solo", "Solo mode active");
 
     const pageSource = readFileSync(
-      resolve(process.cwd(), "src/app/page.tsx"),
+      resolve(process.cwd(), "src/app/app/page.tsx"),
       "utf-8"
     );
 

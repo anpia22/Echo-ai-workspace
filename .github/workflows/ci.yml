@@ -1,0 +1,77 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  verify:
+    name: Typecheck, test, build, smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    # Placeholders only. CI never needs real secrets: unit tests run with keys stripped, and the
+    # smoke test only exercises paths that are answered before any database or AI call.
+    env:
+      NEXT_TELEMETRY_DISABLED: "1"
+      ECHO_DEMO_MODE: "false"
+      NEXT_PUBLIC_SUPABASE_URL: https://ci-placeholder.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: ci-placeholder-anon-key
+      SUPABASE_SERVICE_ROLE_KEY: ci-placeholder-service-key
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install
+        run: npm ci --no-audit --no-fund
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      # Report-only for now: src/ and tests/ still carry ~36 older style errors (see ROADMAP P0.4).
+      # Remove continue-on-error once they are cleaned up so lint becomes a gate.
+      - name: Lint (report only)
+        run: npx eslint src tests
+        continue-on-error: true
+
+      - name: Tests (legacy scripts + configuration checks)
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Start production server
+        run: |
+          npx next start -p 3100 > server.log 2>&1 &
+          for i in $(seq 1 45); do
+            if curl -fsS -o /dev/null http://localhost:3100/login; then
+              echo "server is up after ${i} checks"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "server did not become ready" >&2
+          cat server.log >&2
+          exit 1
+
+      - name: Smoke tests
+        env:
+          SMOKE_BASE_URL: http://localhost:3100
+        run: npm run test:smoke
+
+      - name: Server log (on failure)
+        if: failure()
+        run: cat server.log || true
