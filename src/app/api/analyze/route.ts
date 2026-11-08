@@ -22,6 +22,7 @@ import { deduplicateActions } from "../../lib/deduplicateActions";
 import { parseGroupNodesAction, resolveGroupMemberIds } from "../../lib/groupNodesAction";
 import { parseMoveNodeAction } from "../../lib/moveNodeAction";
 import { resolveServerActor } from "../../lib/persistence/server/auth";
+import { AI_OUTCOME_HEADER, guardAiRequest } from "../../lib/usage/aiGuard";
 import { PersistenceError } from "../../lib/persistence/server/errors";
 import {
   AIContextEngine,
@@ -33,6 +34,7 @@ import {
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
+const ANALYZE_MODEL = "nvidia/nemotron-3-ultra-550b-a55b";
 const NVIDIA_REQUEST_TIMEOUT_MS = 60_000;
 const NVIDIA_503_RETRY_DELAY_MS = 750;
 
@@ -917,7 +919,22 @@ function parseAiResponseContent(
 // POST
 // ==================================================
 
-export async function POST(
+/**
+ * P0.2: every request passes through the usage guard (identity, rate limit, usage log)
+ * before the handler runs, including requests that carry no workspaceId.
+ */
+export async function POST(request: Request) {
+  const guard = await guardAiRequest(request, { route: "analyze", model: ANALYZE_MODEL });
+  if (!guard.ok) {
+    return guard.response;
+  }
+
+  const response = await handleAnalyze(request);
+  await guard.tracker.finish(response);
+  return response;
+}
+
+async function handleAnalyze(
   request: Request
 ) {
   try {
@@ -1061,8 +1078,7 @@ export async function POST(
       await withSingle503Retry(() => {
         return client.chat.completions.create(
           {
-            model:
-              "nvidia/nemotron-3-ultra-550b-a55b",
+            model: ANALYZE_MODEL,
 
           messages: [
             {
@@ -1308,11 +1324,14 @@ Keep message concise. If no canvas mutation, actions must be empty.`,
         "ms"
       );
 
-      return NextResponse.json({
-        message:
-          "Echo is taking longer than expected. Please try again.",
-        actions: [],
-      });
+      return NextResponse.json(
+        {
+          message:
+            "Echo is taking longer than expected. Please try again.",
+          actions: [],
+        },
+        { headers: { [AI_OUTCOME_HEADER]: "timeout" } }
+      );
     }
 
     if (isNvidiaProviderUnavailableError(error)) {
@@ -1320,11 +1339,14 @@ Keep message concise. If no canvas mutation, actions must be empty.`,
         "NVIDIA provider unavailable (503)"
       );
 
-      return NextResponse.json({
-        message:
-          "Echo is temporarily unavailable. Please try again in a moment.",
-        actions: [],
-      });
+      return NextResponse.json(
+        {
+          message:
+            "Echo is temporarily unavailable. Please try again in a moment.",
+          actions: [],
+        },
+        { headers: { [AI_OUTCOME_HEADER]: "unavailable" } }
+      );
     }
 
     console.error("❌ AI analysis error:", error);

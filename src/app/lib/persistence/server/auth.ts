@@ -69,6 +69,24 @@ export function createActor(userId: string): PersistenceActor {
  * - Client request body or query params are NEVER trusted for userId, role, or membership.
  */
 export async function resolveServerActor(req?: Request): Promise<PersistenceActor> {
+  return (await resolveServerIdentity(req)).actor;
+}
+
+export type ServerIdentity = {
+  actor: PersistenceActor;
+  /**
+   * true  = a verified Supabase identity (Bearer token or session cookie).
+   * false = the shared dev/demo fallback actor, which is NOT a real account.
+   */
+  authenticated: boolean;
+};
+
+/**
+ * Same resolution as resolveServerActor, but also reports whether the caller is a
+ * verified account or the shared fallback, so callers (e.g. rate limiting) can treat
+ * anonymous demo traffic differently from signed-in users.
+ */
+export async function resolveServerIdentity(req?: Request): Promise<ServerIdentity> {
   // 1. Check Bearer token if request is provided
   if (req) {
     const authHeader = req.headers.get("authorization") || req.headers.get("Authorization");
@@ -79,7 +97,7 @@ export async function resolveServerActor(req?: Request): Promise<PersistenceActo
           const client = getServerSupabaseClient();
           const { data, error } = await client.auth.getUser(token);
           if (!error && data?.user?.id) {
-            return createActor(data.user.id);
+            return { actor: createActor(data.user.id), authenticated: true };
           }
         } catch {
           // Token invalid or auth service unreachable; proceed to fallback check
@@ -92,7 +110,7 @@ export async function resolveServerActor(req?: Request): Promise<PersistenceActo
   if (req) {
     const cookieUserId = await resolveSessionCookieUserId(req);
     if (cookieUserId) {
-      return createActor(cookieUserId);
+      return { actor: createActor(cookieUserId), authenticated: true };
     }
   }
 
@@ -105,5 +123,5 @@ export async function resolveServerActor(req?: Request): Promise<PersistenceActo
 
   // Local development / test fallback (NODE_ENV !== "production")
   const devUserId = (process.env.ECHO_DEV_USER_ID || "00000000-0000-0000-0000-000000000001").trim();
-  return createActor(devUserId);
+  return { actor: createActor(devUserId), authenticated: false };
 }
