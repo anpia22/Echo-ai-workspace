@@ -29,8 +29,25 @@ export async function proxy(request: NextRequest) {
         }
     );
 
-    // Refresh auth token
-    await supabase.auth.getUser();
+    // Refresh auth token (getUser validates the JWT with Supabase Auth)
+    const {
+        data: { user },
+    } = await supabase.auth.getUser();
+
+    // Gate the workspace app: signed-out visitors go to /login and return afterwards.
+    // ECHO_DEMO_MODE="true" keeps the app open for public demos (shared demo identity).
+    const { pathname, search } = request.nextUrl;
+    const isProtected = pathname === "/app" || pathname.startsWith("/app/");
+    if (isProtected && !user && process.env.ECHO_DEMO_MODE !== "true") {
+        const loginUrl = request.nextUrl.clone();
+        loginUrl.pathname = "/login";
+        loginUrl.search = "";
+        loginUrl.searchParams.set("next", `${pathname}${search}`);
+        const redirect = NextResponse.redirect(loginUrl);
+        // Preserve any refreshed auth cookies on the redirect response
+        supabaseResponse.cookies.getAll().forEach((cookie) => redirect.cookies.set(cookie));
+        return redirect;
+    }
 
     return supabaseResponse;
 }

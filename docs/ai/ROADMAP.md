@@ -17,7 +17,7 @@ Frozen subsystems (see `FROZEN_BOUNDARIES.md`) must only be modified when a task
 
 | # | Item | Status | Notes |
 |---|---|---|---|
-| P0.1 | Real authentication and access control | ⬜ | Supabase Auth, workspace roles (owner / editor / viewer), invite links, RLS policy audit. Review the `ECHO_DEMO_MODE` bypass in `src/app/lib/persistence/server/auth.ts`. |
+| P0.1 | Real authentication and access control | 🔄 | **Done:** server reads the Supabase session cookie (validated via `getUser()`); `/app` redirects signed-out users to `/login` unless `ECHO_DEMO_MODE=true`; 10 tests in `scratch/test_p0_1_auth_actor.ts`. **Remaining:** verify a real signed-in session end to end, sign-out UI / user menu, invite links and role management (owner / editor / viewer), RLS policy audit, retire the hardcoded `CANONICAL_FALLBACK_WORKSPACE_ID` and the shared demo identity before a public launch. |
 | P0.2 | Rate limiting and cost control on `/api/analyze` | ⬜ | Per-user limits, request timeouts, usage tracking, clear "limit reached" UI state. Protects the NVIDIA quota. |
 | P0.3 | Observability | ⬜ | Error monitoring (e.g. Sentry), structured logs for AI calls (latency, failures, retries), basic analytics. Also verify the live provider path (Phase 14 deferred this). |
 | P0.4 | Real test suite and CI | ⬜ | Move `scratch/` scripts into Vitest (logic) and Playwright (browser flows). Run in `.github` workflow. |
