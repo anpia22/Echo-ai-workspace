@@ -8,6 +8,7 @@ import { getSuggestedName } from "@/lib/supabase/profile";
 import { clearProfileCache } from "@/lib/profileName";
 import { AuthModal } from "./AuthModal";
 import { ProfileDialog } from "./ProfileDialog";
+import { MembersDialog } from "./MembersDialog";
 
 export function UserNav() {
   const [user, setUser] = useState<User | null>(null);
@@ -15,6 +16,8 @@ export function UserNav() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [isMembersOpen, setIsMembersOpen] = useState(false);
+  const [workspaceId, setWorkspaceId] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -87,7 +90,11 @@ export function UserNav() {
   return (
     <div className="relative" ref={dropdownRef}>
       <button
-        onClick={() => setDropdownOpen((prev) => !prev)}
+        onClick={() => {
+          // The app keeps the open workspace in ?workspace=; read it when the menu opens.
+          setWorkspaceId(new URLSearchParams(window.location.search).get("workspace"));
+          setDropdownOpen((prev) => !prev);
+        }}
         className="flex items-center gap-2 rounded-full border border-zinc-200/80 dark:border-zinc-700/80 bg-zinc-100 dark:bg-zinc-800/80 p-1 pr-2.5 text-xs font-medium text-zinc-800 dark:text-zinc-200 hover:bg-zinc-200/60 dark:hover:bg-zinc-700/60 transition"
       >
         <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-600 text-[11px] font-bold text-white">
@@ -131,6 +138,26 @@ export function UserNav() {
             Edit profile
           </button>
 
+          {workspaceId && (
+            <button
+              onClick={() => {
+                setDropdownOpen(false);
+                setIsMembersOpen(true);
+              }}
+              className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-zinc-700 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition"
+            >
+              <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
+              Members &amp; invites
+            </button>
+          )}
+
           <button
             onClick={handleSignOut}
             className="flex w-full items-center gap-2 rounded-lg px-2.5 py-1.5 text-xs font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition"
@@ -151,6 +178,10 @@ export function UserNav() {
             Sign Out
           </button>
         </div>
+      )}
+
+      {isMembersOpen && workspaceId && (
+        <MembersDialog workspaceId={workspaceId} onClose={() => setIsMembersOpen(false)} />
       )}
 
       {isProfileOpen && (

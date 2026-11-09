@@ -68,6 +68,25 @@ describe.skipIf(!BASE)("smoke: production build", () => {
       expect(res.status).toBe(401);
     });
 
+    const WS = "11111111-1111-4111-8111-111111111111";
+    it.each([
+      ["GET", `/api/workspace/${WS}/members`],
+      ["GET", `/api/workspace/${WS}/invites`],
+      ["POST", `/api/workspace/${WS}/invites`],
+      ["DELETE", `/api/workspace/${WS}/invites/${WS}`],
+      ["PATCH", `/api/workspace/${WS}/members/some-user`],
+      ["DELETE", `/api/workspace/${WS}/members/some-user`],
+      ["POST", "/api/invites/accept"],
+    ])("%s %s -> 401", async (method, route) => {
+      const res = await get(route, { method, headers: { "Content-Type": "application/json" }, body: method === "GET" ? undefined : "{}" });
+      expect(res.status).toBe(401);
+    });
+
+    it("the invite landing page renders", async () => {
+      const res = await get("/invite/abcdefghijklmnopqrstuvwxyz012345");
+      expect(res.status).toBe(200);
+    });
+
     it("POST /api/profile/sync -> 401", async () => {
       expect((await get("/api/profile/sync", { method: "POST" })).status).toBe(401);
     });

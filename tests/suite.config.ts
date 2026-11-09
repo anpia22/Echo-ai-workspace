@@ -12,6 +12,7 @@
 export const RUN: string[] = [
   "test_group_nodes.ts",
   "test_p0_1_auth_actor.ts",
+  "test_p0_1_invites.ts",
   "test_p0_1_list_workspaces.ts",
   "test_p0_1_profile_name.ts",
   "test_p0_2_rate_limit.ts",
