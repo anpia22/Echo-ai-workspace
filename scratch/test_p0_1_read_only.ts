@@ -26,6 +26,7 @@ import {
   updateConversationTitleApi,
 } from "../src/app/lib/persistence/client/conversationApi";
 import { createMeetingApi, endMeetingApi, getMeetingHistoryApi } from "../src/app/lib/persistence/client/meetingApi";
+import { migrateWorkspaceApi } from "../src/app/lib/persistence/client/migrationApi";
 import { closeRoomApi, createRoomApi, listRoomsApi } from "../src/app/lib/persistence/client/roomApi";
 
 let passed = 0;
@@ -70,6 +71,7 @@ async function main() {
     ["endMeetingApi", () => endMeetingApi(W, "m")],
     ["createRoomApi", () => createRoomApi(W, {} as never)],
     ["closeRoomApi", () => closeRoomApi(W, "r")],
+    ["migrateWorkspaceApi", () => migrateWorkspaceApi(W, {} as never)],
   ];
   for (const [name, call] of writes) {
     let err: unknown = null;

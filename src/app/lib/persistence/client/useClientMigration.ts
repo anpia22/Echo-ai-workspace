@@ -15,6 +15,7 @@
  * 6. Deterministic Canvas ordering: selection metadata only; server timestamps are authoritative.
  */
 
+import { isReadOnlyError } from "./readOnly";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type {
   MigrateWorkspaceRequest,
@@ -254,6 +255,12 @@ export function useClientMigration({
         migrationGenerationRef.current !== currentGeneration ||
         activeWorkspaceIdRef.current !== targetWsId
       ) {
+        return;
+      }
+
+      if (isReadOnlyError(err)) {
+        // Viewers never import local data into a workspace they cannot edit.
+        setStatus("skipped");
         return;
       }
 

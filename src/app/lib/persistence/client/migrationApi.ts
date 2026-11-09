@@ -14,6 +14,8 @@ import type {
   MigrateWorkspaceResponse,
 } from "../migrationTypes";
 
+import { assertWritable } from "./readOnly";
+
 export class MigrationApiError extends Error {
   readonly code: string;
   readonly status: number;
@@ -30,6 +32,7 @@ export async function migrateWorkspaceApi(
   workspaceId: string,
   requestPayload: MigrateWorkspaceRequest
 ): Promise<MigrateWorkspaceResponse> {
+  assertWritable();
   const response = await fetch(`/api/workspace/${encodeURIComponent(workspaceId)}/migrate`, {
     method: "POST",
     headers: {
