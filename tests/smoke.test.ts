@@ -82,6 +82,12 @@ describe.skipIf(!BASE)("smoke: production build", () => {
       expect(res.status).toBe(401);
     });
 
+    it("/admin is a 404 for signed-out visitors", async () => {
+      const res = await get("/admin");
+      expect(res.status).toBe(404);
+      expect(await res.text()).not.toMatch(/Echo admin/);
+    });
+
     it("the invite landing page renders", async () => {
       const res = await get("/invite/abcdefghijklmnopqrstuvwxyz012345");
       expect(res.status).toBe(200);
