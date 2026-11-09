@@ -12,6 +12,8 @@
 
 import type { CollaborationRoomRecord } from "../collaborationTypes";
 
+import { assertWritable } from "./readOnly";
+
 export class RoomPersistenceApiError extends Error {
   readonly code: string;
   readonly status: number;
@@ -49,6 +51,7 @@ export async function createRoomApi(
   workspaceId: string,
   payload: CreateRoomPayload
 ): Promise<CollaborationRoomRecord> {
+  assertWritable();
   const response = await fetch(`/api/workspace/${encodeURIComponent(workspaceId)}/rooms`, {
     method: "POST",
     headers: {
@@ -85,6 +88,7 @@ export async function closeRoomApi(
   roomId: string,
   payload?: CloseRoomPayload
 ): Promise<CollaborationRoomRecord> {
+  assertWritable();
   const response = await fetch(
     `/api/workspace/${encodeURIComponent(workspaceId)}/rooms/${encodeURIComponent(roomId)}`,
     {

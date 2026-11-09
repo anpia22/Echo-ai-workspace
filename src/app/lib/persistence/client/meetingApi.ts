@@ -16,6 +16,8 @@ import type {
   MeetingTranscriptSegmentRecord,
 } from "../meetingTypes";
 
+import { assertWritable } from "./readOnly";
+
 export class MeetingPersistenceApiError extends Error {
   readonly code: string;
   readonly status: number;
@@ -53,6 +55,7 @@ export async function createMeetingApi(
   workspaceId: string,
   payload: CreateMeetingPayload
 ): Promise<MeetingRecord> {
+  assertWritable();
   const response = await fetch(`/api/workspace/${encodeURIComponent(workspaceId)}/meetings`, {
     method: "POST",
     headers: {
@@ -88,6 +91,7 @@ export async function endMeetingApi(
   meetingId: string,
   payload?: EndMeetingPayload
 ): Promise<MeetingRecord> {
+  assertWritable();
   const response = await fetch(
     `/api/workspace/${encodeURIComponent(workspaceId)}/meetings/${encodeURIComponent(meetingId)}`,
     {

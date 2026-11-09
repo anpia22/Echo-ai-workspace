@@ -121,7 +121,7 @@ export class WorkspaceRepository {
    */
   async loadWorkspace(actor: PersistenceActor, workspaceId: WorkspaceId): Promise<LoadWorkspaceResponse> {
     // 1. Verify caller membership & authorization
-    await requireWorkspaceMember(this.client, workspaceId, actor);
+    const auth = await requireWorkspaceMember(this.client, workspaceId, actor);
 
     // 2. Fetch workspace root
     const { data: wsData, error: wsError } = await this.client
@@ -183,6 +183,7 @@ export class WorkspaceRepository {
         groups: (groupsRes.data || []).map(mapCanvasGroupRow),
       },
       recentMeetings: (meetingsRes.data || []).map(mapMeetingRow),
+      role: auth.role,
     };
   }
 

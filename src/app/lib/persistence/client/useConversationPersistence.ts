@@ -11,6 +11,7 @@
  * - Hydration is read-only; this hook never triggers unsolicited writes.
  */
 
+import { isReadOnlyError } from "./readOnly";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   appendMessageApi,
@@ -82,7 +83,9 @@ export function useConversationPersistence(workspaceId: string | null) {
         setSavedWithAutoClear();
         return true;
       } catch (err) {
-        if (err instanceof ConversationPersistenceConflictError) {
+        if (isReadOnlyError(err)) {
+          return false;
+        } else if (err instanceof ConversationPersistenceConflictError) {
           setConversationPersistenceStatus("conflict");
         } else {
           console.error("[useConversationPersistence] Failed to persist conversation:", err);
@@ -153,7 +156,9 @@ export function useConversationPersistence(workspaceId: string | null) {
           }
         }
 
-        if (err instanceof ConversationPersistenceConflictError) {
+        if (isReadOnlyError(err)) {
+          // keep the local message; viewers do not save
+        } else if (err instanceof ConversationPersistenceConflictError) {
           setConversationPersistenceStatus("conflict");
         } else {
           console.error("[useConversationPersistence] Failed to persist message:", err);

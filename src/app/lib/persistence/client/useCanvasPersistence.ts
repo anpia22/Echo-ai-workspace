@@ -15,6 +15,7 @@
  * - Client-only: no server/repository/database imports.
  */
 
+import { isReadOnlyError } from "./readOnly";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { mapActionsToMutation, isMutationRequestEmpty, buildMoveNodeMutation } from "./canvasActionMapper";
 import type { CanvasStateLike, CanvasNodeLike } from "./canvasActionMapper";
@@ -114,6 +115,7 @@ export function useCanvasPersistence(
   );
 
   const handleError = useCallback((err: unknown) => {
+    if (isReadOnlyError(err)) return; // viewers never write; nothing to report
     if (err instanceof CanvasPersistenceConflictError) {
       setPersistenceStatus("conflict");
       console.warn(

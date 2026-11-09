@@ -12,6 +12,7 @@
  * - Does not import server/repository/database code.
  */
 
+import { setWorkspaceReadOnly } from "./readOnly";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { Workspace, CreateWorkspaceResponse } from "../workspaceTypes";
 import {
@@ -129,6 +130,7 @@ export function useWorkspaceHydration(rawWorkspaceParam: string | null): Workspa
           normalizedCanvas
         );
 
+        setWorkspaceReadOnly(hydrationData.role === "viewer");
         setWorkspace(hydrationData.workspace);
         setHydratedCanvas(normalizedCanvas);
         setHydratedConversations(normalizedConvs);
@@ -230,6 +232,7 @@ export function useWorkspaceHydration(rawWorkspaceParam: string | null): Workspa
           hasCreatedRef.current = true;
           workspaceIdRef.current = candidateWorkspaceId;
           setWorkspaceId(candidateWorkspaceId);
+          setWorkspaceReadOnly(hydrationData.role === "viewer");
           setWorkspace(hydrationData.workspace);
           setHydratedCanvas(normalizedCanvas);
           setHydratedConversations(normalizedConvs);
@@ -289,6 +292,7 @@ export function useWorkspaceHydration(rawWorkspaceParam: string | null): Workspa
         const newId = created.workspace.id;
         workspaceIdRef.current = newId;
         setWorkspaceId(newId);
+        setWorkspaceReadOnly(false);
         setWorkspace(created.workspace);
         setHydratedCanvas({ nodes: [], edges: [], groups: [] });
         setHydratedConversations([]);

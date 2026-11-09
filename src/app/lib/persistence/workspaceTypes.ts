@@ -100,4 +100,6 @@ export type LoadWorkspaceResponse = {
   activeConversationMessages: MessageRecord[];
   canvas: CanvasSnapshotRecord;
   recentMeetings: MeetingRecord[];
+  /** The caller's own role in this workspace (additive; older clients ignore it). */
+  role?: WorkspaceMemberRole;
 };

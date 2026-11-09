@@ -10,6 +10,8 @@
  * - No automatic retries (Phase 13.5 scope)
  */
 
+import { assertWritable } from "./readOnly";
+
 export type CanvasPersistenceMutationPayload = {
   expectedBaseRevision: number;
   upsertNodes?: Array<{
@@ -82,6 +84,7 @@ export async function persistCanvasMutation(
   payload: CanvasPersistenceMutationPayload,
   signal?: AbortSignal
 ): Promise<CanvasPersistenceSuccessResult> {
+  assertWritable();
   const res = await fetch(
     `/api/workspace/${encodeURIComponent(workspaceId)}/canvas`,
     {

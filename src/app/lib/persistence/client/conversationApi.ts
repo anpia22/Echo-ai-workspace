@@ -17,6 +17,8 @@ import type {
   MessageRole,
 } from "../conversationTypes";
 
+import { assertWritable } from "./readOnly";
+
 export class ConversationPersistenceApiError extends Error {
   readonly code: string;
   readonly status: number;
@@ -56,6 +58,7 @@ export async function createConversationApi(
   workspaceId: string,
   payload: CreateConversationPayload
 ): Promise<ConversationRecord> {
+  assertWritable();
   const response = await fetch(`/api/workspace/${encodeURIComponent(workspaceId)}/conversations`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -191,6 +194,7 @@ export async function appendMessageApi(
   conversationId: string,
   payload: AppendMessagePayload
 ): Promise<MessageRecord> {
+  assertWritable();
   const response = await fetch(
     `/api/workspace/${encodeURIComponent(workspaceId)}/conversations/${encodeURIComponent(conversationId)}/messages`,
     {
@@ -228,6 +232,7 @@ export async function updateConversationApi(
   conversationId: string,
   payload: { title?: string; metadata?: Record<string, unknown> }
 ): Promise<ConversationRecord> {
+  assertWritable();
   const response = await fetch(
     `/api/workspace/${encodeURIComponent(workspaceId)}/conversations/${encodeURIComponent(conversationId)}`,
     {
@@ -258,5 +263,6 @@ export async function updateConversationTitleApi(
   conversationId: string,
   title: string
 ): Promise<ConversationRecord> {
+  assertWritable();
   return updateConversationApi(workspaceId, conversationId, { title });
 }

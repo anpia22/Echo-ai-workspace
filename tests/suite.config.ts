@@ -15,6 +15,7 @@ export const RUN: string[] = [
   "test_p0_1_invites.ts",
   "test_p0_1_list_workspaces.ts",
   "test_p0_1_profile_name.ts",
+  "test_p0_1_read_only.ts",
   "test_p0_2_rate_limit.ts",
   "test_p0_3_observability.ts",
   "test_phase10_regression.mjs",

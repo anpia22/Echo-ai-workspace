@@ -62,6 +62,11 @@ import {
   updateConversationApi,
   loadConversationCanvasApi,
 } from "../lib/persistence/client";
+import {
+  isReadOnlyError,
+  isWorkspaceReadOnly,
+  useWorkspaceReadOnly,
+} from "../lib/persistence/client/readOnly";
 import type {
   CanvasPersistenceStatus,
   ConversationPersistenceStatus,
@@ -537,6 +542,7 @@ function Home() {
   const roomId = getRoomIdFromUrl(searchParams);
   const rawWorkspaceParam = searchParams.get("workspace");
   const workspaceHydration = useWorkspaceHydration(rawWorkspaceParam);
+  const isViewOnly = useWorkspaceReadOnly();
 
   // --------------------------------------------------
   // Phase 13.5 — Canvas Persistence
@@ -1999,7 +2005,7 @@ function Home() {
             }
           })
           .catch((err) => {
-            console.error("Failed to persist conversation canvas on move:", err);
+            if (!isReadOnlyError(err)) console.error("Failed to persist conversation canvas on move:", err);
           });
       }
     }
@@ -2012,6 +2018,8 @@ function Home() {
 
   const analyzeTranscript = async () => {
     if (!transcript.trim()) return;
+    // Viewers cannot change the workspace, so they do not spend AI quota on it.
+    if (isWorkspaceReadOnly()) return;
 
     if (analyzeInFlightRef.current || loading) {
       return;
@@ -2260,7 +2268,7 @@ function Home() {
             }
           })
           .catch((err) => {
-            console.error("Failed to persist conversation canvas:", err);
+            if (!isReadOnlyError(err)) console.error("Failed to persist conversation canvas:", err);
           });
 
         if (process.env.NODE_ENV !== "production") {
@@ -2490,6 +2498,14 @@ function Home() {
 
             <ThemeToggle />
 
+            {isViewOnly && (
+              <span
+                title="You can look around but not change this workspace"
+                className="rounded-full border border-amber-300/70 bg-amber-50 px-2.5 py-1 text-[11px] font-semibold text-amber-800 dark:border-amber-500/40 dark:bg-amber-950/40 dark:text-amber-300"
+              >
+                View only
+              </span>
+            )}
             <UserNav />
 
             <button
