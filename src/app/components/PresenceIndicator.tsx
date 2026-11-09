@@ -92,7 +92,7 @@ export default function PresenceIndicator({
   }
 
   return (
-    <div ref={containerRef} className="relative inline-block text-left shrink-0">
+    <div ref={containerRef} className="relative z-50 inline-block text-left shrink-0">
       <button
         type="button"
         onClick={() => setIsOpen((prev: boolean) => !prev)}
@@ -154,7 +154,7 @@ export default function PresenceIndicator({
                     >
                       {item.displayName.slice(0, 1).toUpperCase()}
                     </span>
-                    <span className="min-w-0 truncate font-medium">
+                    <span className="min-w-0 truncate font-medium ">
                       {item.displayName}
                       {item.isYou ? (
                         <span className="ml-1 text-[10px] font-normal text-zinc-400">

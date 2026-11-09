@@ -222,7 +222,7 @@ export default function LiveDemo() {
       />
 
       <div className="mt-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex flex-wrap gap-2">
+        <div className="min-w-0 flex-1 flex flex-wrap gap-2">
           {EXAMPLES.map((ex) => (
             <button
               key={ex.label}
@@ -241,9 +241,24 @@ export default function LiveDemo() {
           type="button"
           onClick={run}
           disabled={loading || prompt.trim().length < 10}
-          className="rounded-xl bg-zinc-900 px-5 py-2.5 text-sm font-semibold !text-white shadow-sm transition hover:bg-zinc-800 disabled:cursor-not-allowed disabled:opacity-50 dark:!bg-white dark:!text-black dark:hover:bg-zinc-100"
+          className="group inline-flex shrink-0 whitespace-nowrap items-center justify-center gap-1.5 self-end sm:self-auto rounded-xl bg-zinc-900 px-5 py-2.5 text-sm font-semibold !text-white shadow-sm transition-all hover:bg-zinc-800 hover:shadow-md active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:scale-100 dark:!bg-white dark:!text-black dark:hover:bg-zinc-100"
         >
-          {loading ? "Mapping…" : "Map it"}
+          {loading ? (
+            <>
+              <svg className="h-4 w-4 animate-spin text-white dark:text-black" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+              </svg>
+              <span>Mapping…</span>
+            </>
+          ) : (
+            <>
+              <span>Map it</span>
+              <span className="transition-transform duration-200 group-hover:translate-x-0.5" aria-hidden="true">
+                →
+              </span>
+            </>
+          )}
         </button>
       </div>
 

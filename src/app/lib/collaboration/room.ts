@@ -49,8 +49,15 @@ export function getRoomChannelName(roomId: RoomId): string {
   return `echo-room:${roomId}`;
 }
 
-export function buildRoomPath(roomId: RoomId): string {
-  const params = new URLSearchParams();
+export function buildRoomPath(
+  roomId: RoomId,
+  existingSearch?: string | URLSearchParams
+): string {
+  const params = new URLSearchParams(
+    typeof existingSearch === "string"
+      ? (existingSearch.startsWith("?") ? existingSearch.slice(1) : existingSearch)
+      : (existingSearch ? existingSearch.toString() : "")
+  );
   params.set(ROOM_QUERY_PARAM, roomId);
   return `/app?${params.toString()}`;
 }

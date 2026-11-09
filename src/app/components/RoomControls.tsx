@@ -86,7 +86,11 @@ export default function RoomControls({
 
   const createRoom = () => {
     const nextRoomId = createRoomId();
-    router.push(buildRoomPath(nextRoomId));
+    const currentSearch =
+      typeof window !== "undefined" && window.location.search
+        ? window.location.search
+        : searchParams?.toString() ?? "";
+    router.push(buildRoomPath(nextRoomId, currentSearch));
   };
 
   const copyRoomLink = async () => {
@@ -147,7 +151,7 @@ export default function RoomControls({
     : "";
 
   return (
-    <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
+    <div className="relative z-30 flex shrink-0 items-center gap-1.5 sm:gap-2">
       <span
         className="hidden sm:inline-block max-w-40 truncate text-xs text-zinc-500"
         title={`Shared workspace ${roomId}`}
