@@ -265,7 +265,7 @@ export function closePeerConnection(
  */
 export function createDefaultRtcConfiguration(): RTCConfiguration {
   return {
-    iceServers: [
+    iceServers: runtimeIceServers ?? [
       {
         urls: [
           "stun:stun.l.google.com:19302",
@@ -275,4 +275,14 @@ export function createDefaultRtcConfiguration(): RTCConfiguration {
     ],
     iceCandidatePoolSize: 10,
   };
+}
+
+/**
+ * P1.1: STUN + TURN servers fetched from /api/webrtc/ice (see iceServersClient.ts).
+ * Null until loaded, in which case the public STUN servers above are used, as before.
+ */
+let runtimeIceServers: RTCIceServer[] | null = null;
+
+export function setRuntimeIceServers(servers: RTCIceServer[] | null): void {
+  runtimeIceServers = servers && servers.length > 0 ? servers : null;
 }

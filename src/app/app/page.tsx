@@ -62,6 +62,7 @@ import {
   updateConversationApi,
   loadConversationCanvasApi,
 } from "../lib/persistence/client";
+import { startIceServerRefresh } from "../lib/webrtc/iceServersClient";
 import {
   isReadOnlyError,
   isWorkspaceReadOnly,
@@ -1266,6 +1267,11 @@ function Home() {
   // --------------------------------------------------
   // Voice / speech-to-text (composer input only)
   // --------------------------------------------------
+
+  // P1.1: fetch STUN/TURN servers early so a call can use a relay on strict networks.
+  useEffect(() => {
+    startIceServerRefresh();
+  }, []);
 
   useEffect(() => {
     isMountedRef.current = true;
