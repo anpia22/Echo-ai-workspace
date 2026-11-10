@@ -865,8 +865,16 @@ function Home() {
     | { kind: "idle" }
     | { kind: "listening" }
     | { kind: "info"; message: string }
-    | { kind: "error"; message: string }
+    | { kind: "error"; message: string; retryable?: boolean }
   >({ kind: "idle" });
+
+  // P1.4: the message whose AI request failed in a retryable way, so Retry re-asks the AI
+  // without adding the user's message to the conversation a second time.
+  const lastFailedRef = useRef<{
+    message: Message;
+    conversationId: string;
+    workspaceId: string;
+  } | null>(null);
 
   const recognitionRef =
     useRef<SpeechRecognitionInstance | null>(null);
@@ -2022,8 +2030,10 @@ function Home() {
   // Analyze transcript
   // --------------------------------------------------
 
-  const analyzeTranscript = async () => {
-    if (!transcript.trim()) return;
+  const analyzeTranscript = async (options?: { retry?: boolean }) => {
+    // Called from onClick too, so only an explicit { retry: true } counts.
+    const isRetry = options?.retry === true;
+    if (!isRetry && !transcript.trim()) return;
     // Viewers cannot change the workspace, so they do not spend AI quota on it.
     if (isWorkspaceReadOnly()) return;
 
@@ -2039,23 +2049,44 @@ function Home() {
       return;
     }
 
+    // A retry re-asks about the message that already failed; it must still belong to the
+    // conversation that is open, otherwise there is nothing to retry.
+    const failed = isRetry ? lastFailedRef.current : null;
+    if (isRetry) {
+      if (
+        !failed ||
+        failed.conversationId !== requestConversationId ||
+        failed.workspaceId !== requestWorkspaceId
+      ) {
+        lastFailedRef.current = null;
+        setVoiceFeedback({ kind: "idle" });
+        return;
+      }
+    } else {
+      lastFailedRef.current = null;
+    }
+
     analyzeInFlightRef.current = true;
 
-    const userMessage = transcript.trim();
+    const userMessage = failed ? failed.message.content : transcript.trim();
 
-    // Add user message to conversation
-    const newUserMessage: Message = {
-      id: crypto.randomUUID(),
-      role: "user",
-      content: userMessage,
-      createdAt:
-        new Date().toISOString(),
-    };
+    // Add user message to conversation (a retry reuses the one already there)
+    const newUserMessage: Message = failed
+      ? failed.message
+      : {
+          id: crypto.randomUUID(),
+          role: "user",
+          content: userMessage,
+          createdAt:
+            new Date().toISOString(),
+        };
 
-    setMessages((currentMessages) => [
-      ...currentMessages,
-      newUserMessage,
-    ]);
+    if (!failed) {
+      setMessages((currentMessages) => [
+        ...currentMessages,
+        newUserMessage,
+      ]);
+    }
 
     let activeTitle = conversationTitle;
     const hasUserMessage = messages.some(
@@ -2090,7 +2121,9 @@ function Home() {
     }
 
     // Phase 13.6: Persist user message to backend (non-blocking)
-    persistMessage(requestConversationId, newUserMessage, activeTitle);
+    if (!failed) {
+      persistMessage(requestConversationId, newUserMessage, activeTitle);
+    }
 
     setSlowThinking(false);
     setLoading(true);
@@ -2136,10 +2169,10 @@ function Home() {
             workspaceId: requestWorkspaceId,
             meetingId: activeMeetingIdRef.current || undefined,
 
-            conversationHistory: [
-              ...messages,
-              newUserMessage,
-            ]
+            conversationHistory: (failed
+              ? messages
+              : [...messages, newUserMessage]
+            )
               .slice(-4)
               .map((message) => ({
                 role: message.role,
@@ -2168,9 +2201,18 @@ function Home() {
 
       if (!response.ok) {
         console.error("❌ ANALYZE ERROR:", data);
+        const canRetry = data?.retryable === true;
+        lastFailedRef.current = canRetry
+          ? {
+              message: newUserMessage,
+              conversationId: requestConversationId,
+              workspaceId: requestWorkspaceId,
+            }
+          : null;
         setVoiceFeedback({
           kind: "error",
           message: typeof data?.error === "string" ? data.error : "Echo couldn't process this request. Please try again.",
+          retryable: canRetry,
         });
         return;
       }
@@ -2324,12 +2366,22 @@ function Home() {
         }, 4000);
       }
 
-      setTranscript("");
+      lastFailedRef.current = null;
+      // After a retry, keep anything the user has typed since.
+      if (!failed || transcript.trim() === userMessage) {
+        setTranscript("");
+      }
     } catch (error) {
       console.error(error);
+      lastFailedRef.current = {
+        message: newUserMessage,
+        conversationId: requestConversationId,
+        workspaceId: requestWorkspaceId,
+      };
       setVoiceFeedback({
         kind: "error",
         message: "Connection issue. Please check your network and try again.",
+        retryable: true,
       });
     } finally {
       analyzeInFlightRef.current = false;
@@ -2918,7 +2970,7 @@ function Home() {
                       </button>
 
                       <button
-                        onClick={analyzeTranscript}
+                        onClick={() => void analyzeTranscript()}
                         aria-label="Send message"
                         disabled={loading || isListening || !transcript.trim()}
                         className="flex h-9 w-9 items-center justify-center rounded-xl bg-zinc-900 text-white transition-all hover:bg-zinc-800 dark:bg-white dark:text-black dark:hover:bg-zinc-200 disabled:cursor-not-allowed disabled:opacity-50 disabled:bg-zinc-100 disabled:text-zinc-400 dark:disabled:bg-zinc-800 dark:disabled:text-zinc-600"
@@ -2985,6 +3037,16 @@ function Home() {
                           : voiceFeedback.kind === "error" || voiceFeedback.kind === "info"
                           ? voiceFeedback.message
                           : "Ready"}
+                        {voiceFeedback.kind === "error" && voiceFeedback.retryable && !isViewOnly && (
+                          <button
+                            type="button"
+                            data-testid="retry-ai"
+                            onClick={() => void analyzeTranscript({ retry: true })}
+                            className="ml-2 rounded-md border border-red-300 px-2 py-0.5 text-[11px] font-semibold text-red-600 hover:bg-red-50 dark:border-red-500/50 dark:text-red-300 dark:hover:bg-red-950/40"
+                          >
+                            Retry
+                          </button>
+                        )}
                       </span>
                     )}
                   </div>

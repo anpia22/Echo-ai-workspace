@@ -20,6 +20,7 @@ export const RUN: string[] = [
   "test_p0_3_observability.ts",
   "test_p1_1_turn.ts",
   "test_p1_4_ai_resilience.ts",
+  "test_p1_4_retry_ui.ts",
   "test_p1_6_admin.ts",
   "test_phase10_regression.mjs",
   "test_phase11_2_viewport.mjs",
