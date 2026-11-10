@@ -13,7 +13,7 @@ import {
   parseTurnUrls,
   sanitizeIceServers,
 } from "../src/app/lib/webrtc/iceServers";
-import { createDefaultRtcConfiguration, setRuntimeIceServers } from "../src/app/lib/collaboration/meeting/mediaLifecycle";
+import { createDefaultRtcConfiguration, setRuntimeIceServers, shouldForceRelay } from "../src/app/lib/collaboration/meeting/mediaLifecycle";
 
 let passed = 0;
 let failed = 0;
@@ -111,6 +111,12 @@ async function main() {
   setRuntimeIceServers([]);
   check("an empty list falls back to public STUN", JSON.stringify(createDefaultRtcConfiguration().iceServers).includes("stun.l.google.com"));
   setRuntimeIceServers(null);
+
+  console.log("force-relay debug switch");
+  check("off by default", !shouldForceRelay("", null) && !shouldForceRelay("?room=abc", null) && !shouldForceRelay("?relay=all", "0"));
+  check("?relay=only turns it on", shouldForceRelay("?relay=only", null) && shouldForceRelay("?room=a&relay=only", null));
+  check("localStorage echo_force_relay=1 turns it on", shouldForceRelay("", "1"));
+  check("config has no relay-only policy for normal users (no window)", createDefaultRtcConfiguration().iceTransportPolicy === undefined);
 
   console.log("wiring");
   const read = (p: string) => readFileSync(new URL(`../${p}`, import.meta.url), "utf8");

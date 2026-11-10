@@ -274,7 +274,33 @@ export function createDefaultRtcConfiguration(): RTCConfiguration {
       },
     ],
     iceCandidatePoolSize: 10,
+    // Debug aid: relay-only makes every call go through the TURN server, which is how you
+    // prove the relay works on one machine (see shouldForceRelay).
+    ...(typeof window !== "undefined" && shouldForceRelay(window.location.search, readForceRelayFlag())
+      ? { iceTransportPolicy: "relay" as RTCIceTransportPolicy }
+      : {}),
   };
+}
+
+/**
+ * True when the page URL has ?relay=only, or localStorage "echo_force_relay" is "1".
+ * Normal users never set either. Pure so it can be tested.
+ */
+export function shouldForceRelay(search: string, storedFlag: string | null): boolean {
+  try {
+    if (new URLSearchParams(search).get("relay") === "only") return true;
+  } catch {
+    // ignore malformed query strings
+  }
+  return storedFlag === "1";
+}
+
+function readForceRelayFlag(): string | null {
+  try {
+    return window.localStorage.getItem("echo_force_relay");
+  } catch {
+    return null;
+  }
 }
 
 /**

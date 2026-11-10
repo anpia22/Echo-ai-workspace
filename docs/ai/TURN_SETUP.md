@@ -28,3 +28,17 @@ Copy the URLs, username and credential from the provider's dashboard.
 3. Real test: join a call from a phone on mobile data (Wi-Fi off) and a laptop on Wi-Fi.
 
 Never put these values in client code or commit them. `.env*` is git-ignored.
+
+## Prove the relay on one machine (no deployment needed)
+Two windows on the same computer connect directly, so a normal call never touches the relay.
+To force it, make the app use **only** the relay:
+
+1. In each browser window, open the app and run this in the console, then reload:
+   `localStorage.setItem("echo_force_relay", "1")`
+   (or add `?relay=only` to the URL). Remove it with `localStorage.removeItem("echo_force_relay")`.
+2. Start a meeting in both windows. If audio/video flows, the Metered relay is working.
+3. To see it: open `chrome://webrtc-internals`, find the connection, and check the selected
+   candidate pair: the type should be `relay`.
+4. If the call never connects with the switch on, the relay (credentials or URLs) is not working.
+
+Relay traffic counts against your provider's data allowance, so turn the switch off afterwards.
