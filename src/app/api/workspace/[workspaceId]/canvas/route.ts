@@ -17,9 +17,60 @@ import { NextResponse } from "next/server";
 import { resolveServerActor } from "../../../../lib/persistence/server/auth";
 import { PersistenceError } from "../../../../lib/persistence/server/errors";
 import { CanvasRepository } from "../../../../lib/persistence/repositories/canvasRepository";
+import { getServerSupabaseClient } from "../../../../lib/persistence/server/db";
+import { requireWorkspaceMember } from "../../../../lib/persistence/server/authorization";
 import type { CanvasMutationRequest } from "../../../../lib/persistence/canvasTypes";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+/**
+ * GET /api/workspace/[workspaceId]/canvas — the workspace's current revision.
+ *
+ * Lets a client whose save was rejected as stale (someone else saved first) learn the
+ * revision to rebase on, without downloading the whole workspace. Members only.
+ */
+export async function GET(
+  request: Request,
+  context: { params: Promise<{ workspaceId: string }> }
+) {
+  try {
+    const { workspaceId } = await context.params;
+    if (!workspaceId || !UUID_REGEX.test(workspaceId)) {
+      return NextResponse.json(
+        { ok: false, code: "VALIDATION_ERROR", message: "Invalid workspace ID" },
+        { status: 400 }
+      );
+    }
+
+    const actor = await resolveServerActor(request);
+    const client = getServerSupabaseClient();
+    await requireWorkspaceMember(client, workspaceId, actor);
+
+    const { data, error } = await client
+      .from("workspaces")
+      .select("revision")
+      .eq("id", workspaceId)
+      .maybeSingle();
+    if (error) throw new PersistenceError("DATABASE_ERROR", "Failed to read workspace revision");
+    if (!data) throw new PersistenceError("NOT_FOUND", "Workspace not found");
+
+    return NextResponse.json(
+      { ok: true, workspaceId, revision: Number(data.revision) },
+      { status: 200, headers: { "Cache-Control": "no-store" } }
+    );
+  } catch (error) {
+    if (error instanceof PersistenceError) {
+      return NextResponse.json(
+        { ok: false, code: error.code, message: error.message },
+        { status: error.toHttpStatus() }
+      );
+    }
+    return NextResponse.json(
+      { ok: false, code: "INTERNAL_ERROR", message: "Failed to read revision" },
+      { status: 500 }
+    );
+  }
+}
 
 export async function POST(
   request: Request,

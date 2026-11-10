@@ -9,7 +9,9 @@
  * - Empty action arrays are silently skipped (no DB call, no revision bump).
  * - After each successful persistence: persistenceRevision MUST be updated to server newRevision.
  *   Failure to do this causes the next mutation to send a stale expectedBaseRevision.
- * - Stale revision (409 conflict): status = "conflict". No automatic retry in Phase 13.5.
+ * - Stale revision (409 conflict): P1.2 rebases (fetches the latest revision) and retries a few
+ *   times; status = "conflict" only if that still fails.
+ * - P1.2: saves from this tab run one at a time, so they cannot conflict with each other.
  * - Persistence failure: status = "error". Never silently claims "saved".
  * - Does NOT write during hydration. Caller passes workspaceId only after hydration completes.
  * - Client-only: no server/repository/database imports.
@@ -21,8 +23,11 @@ import { mapActionsToMutation, isMutationRequestEmpty, buildMoveNodeMutation } f
 import type { CanvasStateLike, CanvasNodeLike } from "./canvasActionMapper";
 import {
   persistCanvasMutation,
+  fetchCanvasRevisionApi,
   CanvasPersistenceConflictError,
 } from "./canvasApi";
+import type { CanvasPersistenceMutationPayload } from "./canvasApi";
+import { SaveAbandoned, createSaveQueue, saveWithRebase } from "./canvasSaveQueue";
 import type { CanvasAction } from "../../applyCanvasActions";
 
 export type CanvasPersistenceStatus =
@@ -81,6 +86,13 @@ export function useCanvasPersistence(
     persistenceRevisionRef.current = persistenceRevision;
   }, [persistenceRevision]);
 
+  // P1.2: saves run strictly one at a time, and only for the workspace they were made in.
+  const saveQueueRef = useRef(createSaveQueue());
+  const workspaceIdRef = useRef<string | null>(workspaceId);
+  useEffect(() => {
+    workspaceIdRef.current = workspaceId;
+  }, [workspaceId]);
+
   // Also update ref immediately when initialRevision first arrives
   useEffect(() => {
     if (initialRevision !== null && persistenceRevisionRef.current === null) {
@@ -116,6 +128,7 @@ export function useCanvasPersistence(
 
   const handleError = useCallback((err: unknown) => {
     if (isReadOnlyError(err)) return; // viewers never write; nothing to report
+    if (err instanceof SaveAbandoned) return; // workspace changed while the save was queued
     if (err instanceof CanvasPersistenceConflictError) {
       setPersistenceStatus("conflict");
       console.warn(
@@ -127,6 +140,35 @@ export function useCanvasPersistence(
       console.error("[useCanvasPersistence] Persistence error:", err);
     }
   }, []);
+
+  /**
+   * Queues a mutation. It is sent on the latest known revision; if another person saved
+   * first, the revision is refreshed and the same change is applied on top (P1.2).
+   */
+  const enqueueSave = useCallback(
+    (targetWorkspaceId: string, mutation: Omit<CanvasPersistenceMutationPayload, "expectedBaseRevision">) => {
+      setPersistenceStatus("saving");
+      clearSavedTimer();
+
+      void saveQueueRef.current
+        .enqueue(() =>
+          saveWithRebase(mutation, {
+            send: (m, baseRevision) =>
+              persistCanvasMutation(targetWorkspaceId, { ...m, expectedBaseRevision: baseRevision }),
+            fetchRevision: () => fetchCanvasRevisionApi(targetWorkspaceId),
+            getRevision: () => persistenceRevisionRef.current,
+            setRevision: (revision) => {
+              persistenceRevisionRef.current = revision;
+            },
+            isStale: (e) => e instanceof CanvasPersistenceConflictError,
+            shouldContinue: () => workspaceIdRef.current === targetWorkspaceId,
+          })
+        )
+        .then((result) => handleSuccess(result.newRevision))
+        .catch((err) => handleError(err));
+    },
+    [handleSuccess, handleError, clearSavedTimer]
+  );
 
   /**
    * Persists a batch of CanvasActions derived from applyCanvasActions().
@@ -164,28 +206,17 @@ export function useCanvasPersistence(
         return;
       }
 
-      // Fire async persistence — does NOT block canvas runtime
-      setPersistenceStatus("saving");
-      clearSavedTimer();
-
-      void (async () => {
-        try {
-          const result = await persistCanvasMutation(workspaceId, {
-            expectedBaseRevision: currentRevision,
-            upsertNodes: mutationPartial.upsertNodes,
-            deleteNodeIds: mutationPartial.deleteNodeIds,
-            upsertEdges: mutationPartial.upsertEdges,
-            deleteEdgeIds: mutationPartial.deleteEdgeIds,
-            upsertGroups: mutationPartial.upsertGroups,
-            deleteGroupIds: mutationPartial.deleteGroupIds,
-          });
-          handleSuccess(result.newRevision);
-        } catch (err) {
-          handleError(err);
-        }
-      })();
+      // Queue the save — does NOT block canvas runtime
+      enqueueSave(workspaceId, {
+        upsertNodes: mutationPartial.upsertNodes,
+        deleteNodeIds: mutationPartial.deleteNodeIds,
+        upsertEdges: mutationPartial.upsertEdges,
+        deleteEdgeIds: mutationPartial.deleteEdgeIds,
+        upsertGroups: mutationPartial.upsertGroups,
+        deleteGroupIds: mutationPartial.deleteGroupIds,
+      });
     },
-    [workspaceId, handleSuccess, handleError, clearSavedTimer]
+    [workspaceId, enqueueSave]
   );
 
   /**
@@ -208,22 +239,9 @@ export function useCanvasPersistence(
 
       const mutation = buildMoveNodeMutation(workspaceId, node);
 
-      setPersistenceStatus("saving");
-      clearSavedTimer();
-
-      void (async () => {
-        try {
-          const result = await persistCanvasMutation(workspaceId, {
-            expectedBaseRevision: currentRevision,
-            upsertNodes: mutation.upsertNodes,
-          });
-          handleSuccess(result.newRevision);
-        } catch (err) {
-          handleError(err);
-        }
-      })();
+      enqueueSave(workspaceId, { upsertNodes: mutation.upsertNodes });
     },
-    [workspaceId, handleSuccess, handleError, clearSavedTimer]
+    [workspaceId, enqueueSave]
   );
 
   return {

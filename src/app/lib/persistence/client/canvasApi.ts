@@ -102,7 +102,9 @@ export async function persistCanvasMutation(
     // Swallow JSON parse failure; fall through to status check
   }
 
-  if (res.status === 409) {
+  // Only a stale revision is a rebase-able conflict. Other 409s (e.g. a relationship to a node
+  // someone just deleted) are real errors and must not be retried as if the revision were old.
+  if (res.status === 409 && (json.code === undefined || json.code === "STALE_REVISION")) {
     const message =
       typeof json.message === "string"
         ? json.message
@@ -120,4 +122,30 @@ export async function persistCanvasMutation(
   }
 
   return json as unknown as CanvasPersistenceSuccessResult;
+}
+
+/**
+ * Reads the workspace's current revision, so a save rejected as stale can be rebased.
+ */
+export async function fetchCanvasRevisionApi(workspaceId: string, signal?: AbortSignal): Promise<number> {
+  const res = await fetch(`/api/workspace/${encodeURIComponent(workspaceId)}/canvas`, {
+    method: "GET",
+    cache: "no-store",
+    signal,
+  });
+  let json: Record<string, unknown> = {};
+  try {
+    json = (await res.json()) as Record<string, unknown>;
+  } catch {
+    // fall through to the status check
+  }
+  const revision = json.revision;
+  if (!res.ok || typeof revision !== "number" || !Number.isSafeInteger(revision) || revision < 1) {
+    throw new CanvasPersistenceApiError(
+      res.status,
+      typeof json.code === "string" ? json.code : "CANVAS_REVISION_ERROR",
+      typeof json.message === "string" ? json.message : `Failed to read canvas revision (HTTP ${res.status})`
+    );
+  }
+  return revision;
 }

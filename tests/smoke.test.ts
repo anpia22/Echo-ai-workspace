@@ -78,6 +78,7 @@ describe.skipIf(!BASE)("smoke: production build", () => {
       ["DELETE", `/api/workspace/${WS}/members/some-user`],
       ["POST", "/api/invites/accept"],
       ["GET", "/api/webrtc/ice"],
+      ["GET", `/api/workspace/${WS}/canvas`],
     ])("%s %s -> 401", async (method, route) => {
       const res = await get(route, { method, headers: { "Content-Type": "application/json" }, body: method === "GET" ? undefined : "{}" });
       expect(res.status).toBe(401);
