@@ -1,7 +1,4 @@
-import OpenAI, {
-  APIConnectionTimeoutError,
-  APIError,
-} from "openai";
+import OpenAI from "openai";
 import { NextResponse } from "next/server";
 import {
   buildExplicitGraphEvidence,
@@ -25,6 +22,7 @@ import { resolveServerActor } from "../../lib/persistence/server/auth";
 import { AI_ERROR_CODE_HEADER, AI_OUTCOME_HEADER, guardAiRequest } from "../../lib/usage/aiGuard";
 import { classifyAiError } from "../../lib/observability/aiHealth";
 import { logger } from "../../lib/observability/logger";
+import { AiCallFailed, classifyFailure, describeFailure, runWithResilience } from "../../lib/ai/resilience";
 import { PersistenceError } from "../../lib/persistence/server/errors";
 import {
   AIContextEngine,
@@ -37,8 +35,9 @@ import {
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 const ANALYZE_MODEL = "nvidia/nemotron-3-ultra-550b-a55b";
-const NVIDIA_REQUEST_TIMEOUT_MS = 60_000;
-const NVIDIA_503_RETRY_DELAY_MS = 750;
+// Optional second model tried once if the primary keeps failing with a transient error.
+// Unset by default: set ANALYZE_FALLBACK_MODEL to a model id available on the same endpoint.
+const ANALYZE_FALLBACK_MODEL = process.env.ANALYZE_FALLBACK_MODEL?.trim() || null;
 
 const client = new OpenAI({
   baseURL: "https://integrate.api.nvidia.com/v1",
@@ -837,47 +836,29 @@ function recoverAiJson(content: string): unknown | undefined {
   return undefined;
 }
 
-function isNvidiaTimeoutError(error: unknown): boolean {
-  return error instanceof APIConnectionTimeoutError;
-}
-
-function isNvidiaProviderUnavailableError(
-  error: unknown
-): boolean {
-  return (
-    error instanceof APIError &&
-    error.status === 503
-  );
-}
-
-function wait(ms: number): Promise<void> {
-  return new Promise((resolve) => {
-    setTimeout(resolve, ms);
-  });
-}
-
-async function withSingle503Retry<T>(
-  attempt: () => Promise<T>
+/**
+ * P1.4: retries transient provider failures (timeout, 429, 5xx, network) inside a hard
+ * 55 s budget, then optionally falls back to ANALYZE_FALLBACK_MODEL. Never hangs.
+ */
+async function callAnalyzeModel<T>(
+  call: (model: string, timeoutMs: number) => Promise<T>
 ): Promise<T> {
-  try {
-    return await attempt();
-  } catch (error) {
-    if (isNvidiaTimeoutError(error)) {
-      throw error;
-    }
-
-    if (!isNvidiaProviderUnavailableError(error)) {
-      throw error;
-    }
-
-    console.error(
-      "NVIDIA provider unavailable (503); retrying once"
-    );
-
-    await wait(NVIDIA_503_RETRY_DELAY_MS);
-
-    return await attempt();
+  const result = await runWithResilience({
+    primary: (timeoutMs) => call(ANALYZE_MODEL, timeoutMs),
+    fallback: ANALYZE_FALLBACK_MODEL
+      ? (timeoutMs) => call(ANALYZE_FALLBACK_MODEL, timeoutMs)
+      : undefined,
+    onRetry: ({ attempt, kind, delayMs }) =>
+      logger.warn("ai.request.retrying", { route: "analyze", attempt, kind, delayMs }),
+  });
+  if (result.attempts > 1 || result.usedFallback) {
+    logger.info("ai.request.recovered", {
+      route: "analyze",
+      attempts: result.attempts,
+      usedFallback: result.usedFallback,
+    });
   }
+  return result.value;
 }
 
 function parseAiResponseContent(
@@ -1077,10 +1058,10 @@ async function handleAnalyze(
     console.log("🚀 Sending request to NVIDIA...");
 
     const completion =
-      await withSingle503Retry(() => {
+      await callAnalyzeModel((model, timeoutMs) => {
         return client.chat.completions.create(
           {
-            model: ANALYZE_MODEL,
+            model,
 
           messages: [
             {
@@ -1148,7 +1129,7 @@ Keep message concise. If no canvas mutation, actions must be empty.`,
           reasoning_effort: "none",
         },
         {
-          timeout: NVIDIA_REQUEST_TIMEOUT_MS,
+          timeout: timeoutMs,
           maxRetries: 0,
         }
         );
@@ -1328,55 +1309,39 @@ Keep message concise. If no canvas mutation, actions must be empty.`,
       );
     }
 
-    if (isNvidiaTimeoutError(error)) {
-      console.error(
-        "NVIDIA request timed out after",
-        NVIDIA_REQUEST_TIMEOUT_MS,
-        "ms"
-      );
+    // P1.4: classify the failure, tell the user plainly, and never leak provider details.
+    const kind = error instanceof AiCallFailed ? error.kind : classifyFailure(error);
+    const cause = error instanceof AiCallFailed ? error.cause : error;
+    const failure = describeFailure(kind);
+    const errorCode = classifyAiError(cause);
 
-      return NextResponse.json(
-        {
-          message:
-            "Echo is taking longer than expected. Please try again.",
-          actions: [],
-        },
-        { headers: { [AI_OUTCOME_HEADER]: "timeout" } }
-      );
+    if (failure.retryable) {
+      logger.warn("ai.request.failed_transient", {
+        route: "analyze",
+        kind,
+        attempts: error instanceof AiCallFailed ? error.attempts : 1,
+      });
+    } else {
+      logger.reportError(cause, { route: "analyze", errorCode });
     }
 
-    if (isNvidiaProviderUnavailableError(error)) {
-      console.error(
-        "NVIDIA provider unavailable (503)"
-      );
-
-      return NextResponse.json(
-        {
-          message:
-            "Echo is temporarily unavailable. Please try again in a moment.",
-          actions: [],
-        },
-        { headers: { [AI_OUTCOME_HEADER]: "unavailable" } }
-      );
-    }
-
-    const errorCode = classifyAiError(error);
-    logger.reportError(error, { route: "analyze", errorCode });
+    const headers: Record<string, string> = { [AI_ERROR_CODE_HEADER]: errorCode };
+    if (kind === "timeout") headers[AI_OUTCOME_HEADER] = "timeout";
+    else if (failure.retryable) headers[AI_OUTCOME_HEADER] = "unavailable";
+    if (failure.retryAfterSeconds) headers["Retry-After"] = String(failure.retryAfterSeconds);
 
     return NextResponse.json(
       {
-        error: "Failed to analyze transcript",
-        message:
-          error?.message ||
-          error?.error?.message ||
-          "Unknown server error",
-        name: error?.name,
-        status: error?.status,
+        // `error` stays a string: the app shows it as-is in its error banner.
+        error: failure.message,
+        code: failure.code,
+        retryable: failure.retryable,
+        // Provider detail is for developers only and never sent in production.
+        ...(process.env.NODE_ENV !== "production"
+          ? { detail: (cause as { message?: string } | null)?.message }
+          : {}),
       },
-      {
-        status: 500,
-        headers: { [AI_ERROR_CODE_HEADER]: errorCode },
-      }
+      { status: failure.status, headers }
     );
   }
 }
