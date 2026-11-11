@@ -79,6 +79,9 @@ describe.skipIf(!BASE)("smoke: production build", () => {
       ["POST", "/api/invites/accept"],
       ["GET", "/api/webrtc/ice"],
       ["GET", `/api/workspace/${WS}/canvas`],
+      ["GET", `/api/workspace/${WS}/share`],
+      ["POST", `/api/workspace/${WS}/share`],
+      ["DELETE", `/api/workspace/${WS}/share/${WS}`],
     ])("%s %s -> 401", async (method, route) => {
       const res = await get(route, { method, headers: { "Content-Type": "application/json" }, body: method === "GET" ? undefined : "{}" });
       expect(res.status).toBe(401);
@@ -88,6 +91,24 @@ describe.skipIf(!BASE)("smoke: production build", () => {
       const res = await get("/admin");
       expect(res.status).toBe(404);
       expect(await res.text()).not.toMatch(/Echo admin/);
+    });
+
+    it("/api/public/<unknown token> never returns data, and is never cached or indexed", async () => {
+      const res = await get("/api/public/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+      // 404 with a real database; 503 here, where the database address is a placeholder.
+      expect([404, 503]).toContain(res.status);
+      expect(res.headers.get("x-robots-tag")).toContain("noindex");
+      expect(res.headers.get("cache-control")).toContain("no-store");
+      expect(await res.text()).not.toMatch(/workspace|conversation|message/i);
+    });
+
+    it("/api/public with a malformed token is also a 404", async () => {
+      expect((await get("/api/public/short")).status).toBe(404);
+    });
+
+    it("the public share page renders without signing in", async () => {
+      const res = await get("/share/AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA");
+      expect(res.status).toBe(200);
     });
 
     it("the invite landing page renders", async () => {

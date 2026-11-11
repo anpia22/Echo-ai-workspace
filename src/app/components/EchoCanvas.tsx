@@ -100,6 +100,8 @@ export type EchoCanvasProps = {
   onManualViewportChange?: (viewport: ViewportState) => void;
   isLeader?: boolean;
   roomId?: string | null;
+  /** View-only: nodes cannot be dragged (viewers, and the public share page). */
+  readOnly?: boolean;
 };
 
 type EchoNodeData = {
@@ -420,6 +422,7 @@ function EchoCanvasInner({
   onManualViewportChange,
   isLeader,
   roomId,
+  readOnly = false,
 }: EchoCanvasProps) {
   const { resolvedTheme } = useTheme();
   const isLight = resolvedTheme === "light";
@@ -907,6 +910,7 @@ function EchoCanvasInner({
         minZoom={0.2}
         maxZoom={2}
         nodesConnectable={false}
+        nodesDraggable={!readOnly}
         elementsSelectable
         colorMode={resolvedTheme}
       >

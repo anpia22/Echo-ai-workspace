@@ -19,6 +19,8 @@ type Invite = {
   useCount: number;
 };
 
+type ShareLink = { id: string; createdAt: string; expiresAt: string | null };
+
 type Props = { workspaceId: string; onClose: () => void };
 
 async function api<T>(url: string, init?: RequestInit): Promise<T> {
@@ -43,6 +45,10 @@ export function MembersDialog({ workspaceId, onClose }: Props) {
   const [newDays, setNewDays] = useState(7);
   const [freshLink, setFreshLink] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
+  const [shareLinks, setShareLinks] = useState<ShareLink[]>([]);
+  const [shareDays, setShareDays] = useState(30);
+  const [freshShareUrl, setFreshShareUrl] = useState<string | null>(null);
+  const [shareCopied, setShareCopied] = useState(false);
 
   const isManager = me ? canManageMembers(me.role) : false;
 
@@ -56,6 +62,8 @@ export function MembersDialog({ workspaceId, onClose }: Props) {
       if (canManageMembers(m.you.role)) {
         const i = await api<{ invites: Invite[] }>(`/api/workspace/${workspaceId}/invites`);
         setInvites(i.invites);
+        const sh = await api<{ links: ShareLink[] }>(`/api/workspace/${workspaceId}/share`);
+        setShareLinks(sh.links);
       }
       setError(null);
     } catch (e) {
@@ -96,6 +104,26 @@ export function MembersDialog({ workspaceId, onClose }: Props) {
       setFreshLink(`${window.location.origin}/invite/${r.token}`);
       setCopied(false);
     });
+
+  const createShare = () =>
+    run(async () => {
+      const r = await api<{ token: string }>(`/api/workspace/${workspaceId}/share`, {
+        method: "POST",
+        body: JSON.stringify({ expiresInDays: shareDays }),
+      });
+      setFreshShareUrl(`${window.location.origin}/share/${r.token}`);
+      setShareCopied(false);
+    });
+
+  const copyShare = async () => {
+    if (!freshShareUrl) return;
+    try {
+      await navigator.clipboard.writeText(freshShareUrl);
+      setShareCopied(true);
+    } catch {
+      setError("Could not copy automatically. Select the link and copy it.");
+    }
+  };
 
   const copyLink = async () => {
     if (!freshLink) return;
@@ -274,6 +302,79 @@ export function MembersDialog({ workspaceId, onClose }: Props) {
                       className="text-red-600 hover:underline dark:text-red-400"
                     >
                       Revoke
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        )}
+
+        {isManager && (
+          <section className="mt-4 border-t border-zinc-100 pt-4 dark:border-zinc-800">
+            <h3 className="mb-1 text-xs font-semibold text-zinc-900 dark:text-white">Public link</h3>
+            <p className="mb-2 text-[11px] text-zinc-500 dark:text-zinc-400">
+              Anyone with the link can read this workspace&apos;s canvas and conversations, without an account. They cannot
+              edit. Meeting transcripts are never shown. Turn it off at any time.
+            </p>
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <select
+                aria-label="Public link lifetime"
+                value={shareDays}
+                onChange={(e) => setShareDays(Number(e.target.value))}
+                className="rounded border border-zinc-200 bg-white px-1.5 py-1 dark:border-zinc-700 dark:bg-zinc-800"
+              >
+                <option value={7}>Expires in 7 days</option>
+                <option value={30}>Expires in 30 days</option>
+                <option value={90}>Expires in 90 days</option>
+                <option value={0}>Never expires</option>
+              </select>
+              <button
+                disabled={busy}
+                onClick={createShare}
+                className="rounded-lg bg-blue-600 px-3 py-1 font-semibold text-white hover:bg-blue-500 disabled:opacity-50"
+              >
+                Create public link
+              </button>
+            </div>
+
+            {freshShareUrl && (
+              <div className="mt-3">
+                <p className="mb-1 text-[11px] text-zinc-500">Copy this link now. For security it is not shown again.</p>
+                <div className="flex gap-2">
+                  <input
+                    readOnly
+                    value={freshShareUrl}
+                    onFocus={(e) => e.currentTarget.select()}
+                    className="min-w-0 flex-1 rounded border border-zinc-200 bg-zinc-50 px-2 py-1 text-[11px] dark:border-zinc-700 dark:bg-zinc-800"
+                  />
+                  <button onClick={copyShare} className="rounded border border-zinc-200 px-2 text-xs dark:border-zinc-700">
+                    {shareCopied ? "Copied" : "Copy"}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {shareLinks.length > 0 && (
+              <ul className="mt-3 space-y-1 text-[11px] text-zinc-600 dark:text-zinc-400">
+                {shareLinks.map((l) => (
+                  <li key={l.id} className="flex items-center justify-between gap-2">
+                    <span>
+                      Public link · created {new Date(l.createdAt).toLocaleDateString()} ·{" "}
+                      {l.expiresAt ? `expires ${new Date(l.expiresAt).toLocaleDateString()}` : "never expires"}
+                    </span>
+                    <button
+                      disabled={busy}
+                      onClick={() => {
+                        if (!window.confirm("Turn off this public link? Anyone using it will lose access.")) return;
+                        run(async () => {
+                          await api(`/api/workspace/${workspaceId}/share/${l.id}`, { method: "DELETE" });
+                          setFreshShareUrl(null);
+                        });
+                      }}
+                      className="text-red-600 hover:underline dark:text-red-400"
+                    >
+                      Turn off
                     </button>
                   </li>
                 ))}

@@ -255,12 +255,38 @@ async function realtimeProbes() {
   return out.filter((r) => !r.ok).length;
 }
 
+async function shareTableProbes() {
+  await seed();
+  const out = [];
+  const check = (name, ok, detail = "") => out.push({ name, ok, detail });
+  const exists = (await db.query(`SELECT to_regclass('public.workspace_public_links') AS t`)).rows[0].t;
+  if (!exists) {
+    console.log("\n(no public share links migration present; skipping)");
+    return 0;
+  }
+  await db.exec(`RESET ROLE; INSERT INTO workspace_public_links (workspace_id, token_hash, created_by) VALUES ('${WS}', 'hash-1', 'someone')`);
+  for (const [label, role, uid] of [["anon", "anon", null], ["a signed-in stranger", "authenticated", STRANGER], ["a workspace viewer", "authenticated", VIEWER], ["a workspace admin", "authenticated", ADMIN]]) {
+    const read = await as(role, uid, () => attempt(`SELECT token_hash FROM workspace_public_links`));
+    check(`${label} cannot read public link hashes`, !read.ok);
+    const write = await as(role, uid, () => attempt(`INSERT INTO workspace_public_links (workspace_id, token_hash, created_by) VALUES ($1, 'forged', 'x')`, [WS]));
+    check(`${label} cannot create a public link`, !write.ok);
+    const edit = await as(role, uid, () => attempt(`UPDATE workspace_public_links SET revoked_at = NULL, expires_at = NULL`));
+    check(`${label} cannot change a public link`, !edit.ok);
+  }
+  const server = await as("service_role", null, () => attempt(`SELECT count(*)::int AS n FROM workspace_public_links`));
+  check("the server can still use the table", server.ok && server.rows[0].n === 1);
+  await db.exec(`RESET ROLE; DELETE FROM workspace_public_links; DELETE FROM workspaces WHERE id = '${WS}'; DELETE FROM workspaces WHERE id = '99999999-9999-4999-8999-999999999999'`);
+  console.log("\n=== Public share links table ===");
+  for (const r of out) console.log(`${r.ok ? "ok        " : "FAILED    "}  ${r.name}${r.detail ? "  - " + r.detail : ""}`);
+  return out.filter((r) => !r.ok).length;
+}
+
 const before = await probes("BEFORE the hardening migration");
 await exec(clean(readFileSync(`${MIG}/${HARDEN}`, "utf8")), HARDEN);
 const after = await probes("AFTER the hardening migration");
 for (const f of LATER) await exec(clean(readFileSync(`${MIG}/${f}`, "utf8")), f);
 // Idempotent: re-applying the same later migrations must not fail.
 for (const f of LATER) await exec(clean(readFileSync(`${MIG}/${f}`, "utf8")), `${f} (second run)`);
-const realtimeFailures = await realtimeProbes();
+const realtimeFailures = (await realtimeProbes()) + (await shareTableProbes());
 console.log(`\nbefore: ${before.vulnerable} vulnerable | after: ${after.vulnerable} vulnerable, ${after.broken} broken legitimate paths | realtime rules failing: ${realtimeFailures}`);
 process.exit(after.vulnerable || after.broken || realtimeFailures ? 1 : 0);

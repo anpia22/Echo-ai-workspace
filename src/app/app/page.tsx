@@ -2822,6 +2822,7 @@ function Home() {
               <EchoCanvas
                 roomId={roomId}
                 canvas={canvas}
+                readOnly={isViewOnly}
                 onNodePositionChange={
                   updateNodePosition
                 }
