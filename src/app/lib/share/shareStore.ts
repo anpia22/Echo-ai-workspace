@@ -1,6 +1,7 @@
 /**
  * Public share links: database operations (server only, service-role client).
  * Authorization for create / list / revoke is enforced by the routes (owner or admin).
+ * A link belongs to one conversation of one workspace.
  */
 
 import type { SupabaseClient } from "@supabase/supabase-js";
@@ -10,26 +11,41 @@ import { LIMITS, buildPublicView, evaluateShareLink, type CreateShareInput, type
 
 export type ShareLinkSummary = {
   id: string;
+  conversationId: string;
+  conversationTitle: string;
   createdAt: string;
   expiresAt: string | null;
 };
 
+export type ShareableConversation = { id: string; title: string };
+
 type LinkRow = {
   id: string;
   workspace_id: string;
+  conversation_id: string | null;
   created_at: string;
   expires_at: string | null;
   revoked_at: string | null;
 };
 
-const LINK_COLUMNS = "id, workspace_id, created_at, expires_at, revoked_at";
+const LINK_COLUMNS = "id, workspace_id, conversation_id, created_at, expires_at, revoked_at";
 const DAY_MS = 24 * 60 * 60_000;
 
 function dbError(action: string, message: string) {
   return new PersistenceError("DATABASE_ERROR", `Failed to ${action}: ${message}`);
 }
 
-const toSummary = (r: LinkRow): ShareLinkSummary => ({ id: r.id, createdAt: r.created_at, expiresAt: r.expires_at });
+/** Conversations the owner can choose to share (id and title only), newest first. */
+export async function listShareableConversations(client: SupabaseClient, workspaceId: string): Promise<ShareableConversation[]> {
+  const { data, error } = await client
+    .from("conversations")
+    .select("id, title")
+    .eq("workspace_id", workspaceId)
+    .order("updated_at", { ascending: false })
+    .limit(100);
+  if (error) throw dbError("list conversations", error.message);
+  return (data ?? []).map((c) => ({ id: c.id as string, title: String(c.title ?? "") }));
+}
 
 export async function createShareLink(
   client: SupabaseClient,
@@ -38,11 +54,22 @@ export async function createShareLink(
   input: CreateShareInput,
   now: Date = new Date()
 ): Promise<{ link: ShareLinkSummary; token: string }> {
+  // The conversation must belong to this workspace: an owner can only publish their own.
+  const { data: conversation, error: cError } = await client
+    .from("conversations")
+    .select("id, title")
+    .eq("id", input.conversationId)
+    .eq("workspace_id", workspaceId)
+    .maybeSingle();
+  if (cError) throw dbError("read conversation", cError.message);
+  if (!conversation) throw new PersistenceError("NOT_FOUND", "Conversation not found");
+
   const token = generateInviteToken();
   const { data, error } = await client
     .from("workspace_public_links")
     .insert({
       workspace_id: workspaceId,
+      conversation_id: input.conversationId,
       token_hash: hashInviteToken(token),
       created_by: createdBy,
       expires_at: input.expiresInDays > 0 ? new Date(now.getTime() + input.expiresInDays * DAY_MS).toISOString() : null,
@@ -50,7 +77,17 @@ export async function createShareLink(
     .select(LINK_COLUMNS)
     .single();
   if (error || !data) throw dbError("create share link", error?.message ?? "no row returned");
-  return { link: toSummary(data as LinkRow), token };
+  const row = data as LinkRow;
+  return {
+    link: {
+      id: row.id,
+      conversationId: input.conversationId,
+      conversationTitle: String(conversation.title ?? ""),
+      createdAt: row.created_at,
+      expiresAt: row.expires_at,
+    },
+    token,
+  };
 }
 
 export async function listActiveShareLinks(client: SupabaseClient, workspaceId: string, now: Date = new Date()): Promise<ShareLinkSummary[]> {
@@ -61,9 +98,20 @@ export async function listActiveShareLinks(client: SupabaseClient, workspaceId: 
     .is("revoked_at", null)
     .order("created_at", { ascending: false });
   if (error) throw dbError("list share links", error.message);
-  return ((data ?? []) as LinkRow[])
-    .filter((r) => evaluateShareLink({ expiresAt: r.expires_at, revokedAt: r.revoked_at }, now).ok)
-    .map(toSummary);
+
+  const rows = ((data ?? []) as LinkRow[]).filter(
+    (r) => r.conversation_id && evaluateShareLink({ expiresAt: r.expires_at, revokedAt: r.revoked_at }, now).ok
+  );
+  if (rows.length === 0) return [];
+
+  const titles = new Map((await listShareableConversations(client, workspaceId)).map((c) => [c.id, c.title]));
+  return rows.map((r) => ({
+    id: r.id,
+    conversationId: r.conversation_id as string,
+    conversationTitle: titles.get(r.conversation_id as string) ?? "(deleted conversation)",
+    createdAt: r.created_at,
+    expiresAt: r.expires_at,
+  }));
 }
 
 export async function revokeShareLink(client: SupabaseClient, workspaceId: string, linkId: string, now: Date = new Date()): Promise<void> {
@@ -96,8 +144,8 @@ export function clearShareCache(linkId?: string): void {
 }
 
 /**
- * The public view for a token, or null when the token is unknown, revoked or expired. Callers
- * must answer all of those the same way (404) so a token's history is not revealed.
+ * The public view for a token, or null when the token is unknown, revoked, expired, or an old
+ * workspace-wide link. Callers must answer all of those the same way (404).
  */
 export async function loadPublicView(client: SupabaseClient, token: string, now: Date = new Date()): Promise<PublicView | null> {
   const hash = hashInviteToken(token);
@@ -117,44 +165,30 @@ export async function loadPublicView(client: SupabaseClient, token: string, now:
   if (!linkData) return null;
   const link = linkData as LinkRow;
   if (!evaluateShareLink({ expiresAt: link.expires_at, revokedAt: link.revoked_at }, now).ok) return null;
+  if (!link.conversation_id) return null; // old workspace-wide links never serve anything
 
-  const ws = link.workspace_id;
-  const [workspace, nodes, edges, groups, conversations] = await Promise.all([
-    client.from("workspaces").select("title, revision").eq("id", ws).maybeSingle(),
-    client.from("canvas_nodes").select("id, node_type, title, description, position_x, position_y").eq("workspace_id", ws).limit(LIMITS.nodes),
-    client.from("canvas_edges").select("id, source_id, target_id, relationship").eq("workspace_id", ws).limit(LIMITS.edges),
-    client.from("canvas_groups").select("id, title, member_ids").eq("workspace_id", ws).limit(LIMITS.groups),
-    client.from("conversations").select("id, title, updated_at").eq("workspace_id", ws).order("updated_at", { ascending: false }).limit(LIMITS.conversations),
-  ]);
-  for (const [name, res] of [["workspace", workspace], ["nodes", nodes], ["edges", edges], ["groups", groups], ["conversations", conversations]] as const) {
-    if (res.error) throw dbError(`read ${name}`, res.error.message);
-  }
-  if (!workspace.data) return null;
-
-  const conversationIds = (conversations.data ?? []).map((c) => c.id as string);
-  let messages: Array<Record<string, unknown>> = [];
-  if (conversationIds.length > 0) {
-    const res = await client
+  // Both reads are pinned to this link's workspace AND conversation.
+  const [conversation, messages] = await Promise.all([
+    client
+      .from("conversations")
+      .select("id, title, updated_at, metadata")
+      .eq("id", link.conversation_id)
+      .eq("workspace_id", link.workspace_id)
+      .maybeSingle(),
+    client
       .from("messages")
       .select("id, conversation_id, role, content, created_at")
-      .eq("workspace_id", ws)
-      .in("conversation_id", conversationIds)
+      .eq("workspace_id", link.workspace_id)
+      .eq("conversation_id", link.conversation_id)
       .in("role", ["user", "assistant"])
       .order("created_at", { ascending: false })
-      .limit(LIMITS.messages);
-    if (res.error) throw dbError("read messages", res.error.message);
-    messages = res.data ?? [];
-  }
+      .limit(LIMITS.messages),
+  ]);
+  if (conversation.error) throw dbError("read conversation", conversation.error.message);
+  if (messages.error) throw dbError("read messages", messages.error.message);
+  if (!conversation.data) return null; // the conversation was deleted
 
-  const view = buildPublicView({
-    workspace: workspace.data,
-    nodes: nodes.data ?? [],
-    edges: edges.data ?? [],
-    groups: groups.data ?? [],
-    conversations: conversations.data ?? [],
-    messages,
-    now,
-  });
+  const view = buildPublicView({ conversation: conversation.data, messages: messages.data ?? [], now });
 
   if (cache.size >= CACHE_MAX) {
     const oldest = [...cache.entries()].sort((a, b) => a[1].at - b[1].at)[0];

@@ -1,6 +1,6 @@
 /**
- * GET  /api/workspace/[workspaceId]/share — active public links (owner/admin).
- * POST /api/workspace/[workspaceId]/share — publish: create a read-only public link (owner/admin).
+ * GET  /api/workspace/[workspaceId]/share — active public links and the conversations that can be shared (owner/admin).
+ * POST /api/workspace/[workspaceId]/share — publish ONE conversation: { conversationId, expiresInDays } (owner/admin).
  * The raw token is returned once, by POST; only its hash is stored.
  */
 
@@ -9,7 +9,7 @@ import { resolveServerActor } from "../../../../lib/persistence/server/auth";
 import { getServerSupabaseClient } from "../../../../lib/persistence/server/db";
 import { requireWorkspaceRole } from "../../../../lib/persistence/server/authorization";
 import { parseCreateShare } from "../../../../lib/share/shareLogic";
-import { createShareLink, listActiveShareLinks } from "../../../../lib/share/shareStore";
+import { createShareLink, listActiveShareLinks, listShareableConversations } from "../../../../lib/share/shareStore";
 import { errorResponse, isUuid, readJsonBody, validationError } from "../../../../lib/invites/routeHelpers";
 
 type Ctx = { params: Promise<{ workspaceId: string }> };
@@ -21,7 +21,11 @@ export async function GET(request: Request, context: Ctx) {
     const actor = await resolveServerActor(request);
     const client = getServerSupabaseClient();
     await requireWorkspaceRole(client, workspaceId, actor, ["owner", "admin"]);
-    return NextResponse.json({ links: await listActiveShareLinks(client, workspaceId) }, { headers: { "Cache-Control": "no-store" } });
+    const [links, conversations] = await Promise.all([
+      listActiveShareLinks(client, workspaceId),
+      listShareableConversations(client, workspaceId),
+    ]);
+    return NextResponse.json({ links, conversations }, { headers: { "Cache-Control": "no-store" } });
   } catch (error) {
     return errorResponse(error, "Failed to list public links");
   }

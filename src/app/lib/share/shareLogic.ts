@@ -2,20 +2,30 @@
  * Public share links. Pure logic (no I/O): what is allowed in the public view, and how a link
  * is judged. The public view is built by an explicit allow-list mapper, so a column added to the
  * database later can never leak into it by accident.
+ *
+ * A link covers ONE conversation: its messages and its own canvas (the one the app shows when
+ * that conversation is open), never the workspace-wide canvas, which merges every conversation.
  */
 
 export const SHARE_EXPIRY_OPTIONS = [0, 7, 30, 90] as const; // 0 = never expires
 export const DEFAULT_SHARE_EXPIRY_DAYS = 30;
 
-export type CreateShareInput = { expiresInDays: number };
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
+export type CreateShareInput = { conversationId: string; expiresInDays: number };
 
 export function parseCreateShare(body: unknown): { ok: true; value: CreateShareInput } | { ok: false; message: string } {
   const b = (body && typeof body === "object" ? body : {}) as Record<string, unknown>;
+
+  if (typeof b.conversationId !== "string" || !UUID_RE.test(b.conversationId)) {
+    return { ok: false, message: "conversationId is required: choose the conversation to share" };
+  }
+
   const days = b.expiresInDays ?? DEFAULT_SHARE_EXPIRY_DAYS;
   if (typeof days !== "number" || !(SHARE_EXPIRY_OPTIONS as readonly number[]).includes(days)) {
     return { ok: false, message: `expiresInDays must be one of ${SHARE_EXPIRY_OPTIONS.join(", ")} (0 = never)` };
   }
-  return { ok: true, value: { expiresInDays: days } };
+  return { ok: true, value: { conversationId: b.conversationId, expiresInDays: days } };
 }
 
 export type ShareLinkState = { expiresAt: string | null; revokedAt: string | null };
@@ -31,7 +41,6 @@ export function evaluateShareLink(link: ShareLinkState, now: Date): { ok: true }
 // ---------------------------------------------------------------------------
 
 export const LIMITS = {
-  conversations: 30,
   messages: 1500,
   nodes: 1000,
   edges: 2000,
@@ -44,14 +53,13 @@ export type PublicNode = { id: string; nodeType: string; title: string; descript
 export type PublicEdge = { id: string; sourceId: string; targetId: string; relationship?: string };
 export type PublicGroup = { id: string; title: string; memberIds: string[] };
 export type PublicMessage = { id: string; role: "user" | "assistant"; content: string; createdAt: string };
-export type PublicConversation = { id: string; title: string; updatedAt: string; messages: PublicMessage[] };
 
 export type PublicView = {
-  workspace: { title: string };
-  revision: number;
+  /** The conversation's title. The workspace's name is deliberately not included. */
+  title: string;
   etag: string;
   canvas: { nodes: PublicNode[]; edges: PublicEdge[]; groups: PublicGroup[] };
-  conversations: PublicConversation[];
+  conversation: { id: string; updatedAt: string; messages: PublicMessage[] };
   generatedAt: string;
 };
 
@@ -59,74 +67,79 @@ type Row = Record<string, unknown>;
 
 const str = (v: unknown, max: number): string => (typeof v === "string" ? v.slice(0, max) : "");
 const num = (v: unknown): number => (typeof v === "number" && Number.isFinite(v) ? v : 0);
+const isObj = (v: unknown): v is Record<string, unknown> => typeof v === "object" && v !== null && !Array.isArray(v);
 
-/** Builds the public view from raw database rows. Only the fields named here can ever be exposed. */
-export function buildPublicView(input: {
-  workspace: Row;
-  nodes: Row[];
-  edges: Row[];
-  groups: Row[];
-  conversations: Row[];
-  messages: Row[];
-  now: Date;
-}): PublicView {
-  const nodes: PublicNode[] = input.nodes.slice(0, LIMITS.nodes).map((r) => ({
-    id: str(r.id, 64),
-    nodeType: str(r.node_type, 40),
-    title: str(r.title, LIMITS.titleChars),
-    ...(typeof r.description === "string" && r.description ? { description: r.description.slice(0, LIMITS.messageChars) } : {}),
-    position: { x: num(r.position_x), y: num(r.position_y) },
-  }));
+/**
+ * Turns a conversation's saved canvas (the app's own shape) into the public canvas. Anything
+ * unexpected is dropped; edges to missing nodes and group members that are not nodes are removed.
+ */
+export function sanitizeCanvas(raw: unknown): PublicView["canvas"] {
+  const src = isObj(raw) ? raw : {};
+  const nodes: PublicNode[] = (Array.isArray(src.nodes) ? src.nodes : [])
+    .filter(isObj)
+    .slice(0, LIMITS.nodes)
+    .map((n) => {
+      const pos = isObj(n.position) ? n.position : {};
+      const description = typeof n.description === "string" && n.description ? n.description.slice(0, LIMITS.messageChars) : undefined;
+      return {
+        id: str(n.id, 64),
+        nodeType: str(n.nodeType, 40),
+        title: str(n.title, LIMITS.titleChars),
+        ...(description ? { description } : {}),
+        position: { x: num(pos.x), y: num(pos.y) },
+      };
+    })
+    .filter((n) => n.id !== "");
 
   const nodeIds = new Set(nodes.map((n) => n.id));
-  const edges: PublicEdge[] = input.edges
+
+  const edges: PublicEdge[] = (Array.isArray(src.edges) ? src.edges : [])
+    .filter(isObj)
     .slice(0, LIMITS.edges)
-    .map((r) => ({
-      id: str(r.id, 64),
-      sourceId: str(r.source_id, 64),
-      targetId: str(r.target_id, 64),
-      ...(typeof r.relationship === "string" && r.relationship ? { relationship: r.relationship.slice(0, 80) } : {}),
+    .map((e) => ({
+      id: str(e.id, 64),
+      sourceId: str(e.sourceId, 64),
+      targetId: str(e.targetId, 64),
+      ...(typeof e.relationship === "string" && e.relationship ? { relationship: e.relationship.slice(0, 80) } : {}),
     }))
-    .filter((e) => nodeIds.has(e.sourceId) && nodeIds.has(e.targetId));
+    .filter((e) => e.id !== "" && nodeIds.has(e.sourceId) && nodeIds.has(e.targetId));
 
-  const groups: PublicGroup[] = input.groups.slice(0, LIMITS.groups).map((r) => ({
-    id: str(r.id, 64),
-    title: str(r.title, LIMITS.titleChars),
-    memberIds: Array.isArray(r.member_ids) ? r.member_ids.filter((m): m is string => typeof m === "string" && nodeIds.has(m)) : [],
-  }));
+  const groups: PublicGroup[] = (Array.isArray(src.groups) ? src.groups : [])
+    .filter(isObj)
+    .slice(0, LIMITS.groups)
+    .map((g) => ({
+      id: str(g.id, 64),
+      title: str(g.title, LIMITS.titleChars),
+      memberIds: Array.isArray(g.memberIds) ? g.memberIds.filter((m): m is string => typeof m === "string" && nodeIds.has(m)) : [],
+    }))
+    .filter((g) => g.id !== "");
 
-  const byConversation = new Map<string, PublicMessage[]>();
-  for (const m of input.messages.slice(0, LIMITS.messages)) {
-    if (m.role !== "user" && m.role !== "assistant") continue; // never system messages
-    const list = byConversation.get(str(m.conversation_id, 64)) ?? [];
-    list.push({
+  return { nodes, edges, groups };
+}
+
+/** Builds the public view from raw database rows. Only the fields named here can ever be exposed. */
+export function buildPublicView(input: { conversation: Row; messages: Row[]; now: Date }): PublicView {
+  const conversationId = str(input.conversation.id, 64);
+  const metadata = isObj(input.conversation.metadata) ? input.conversation.metadata : {};
+
+  const messages: PublicMessage[] = input.messages
+    .slice(0, LIMITS.messages)
+    .filter((m) => (m.role === "user" || m.role === "assistant") && str(m.conversation_id, 64) === conversationId) // never system messages, never another conversation
+    .map((m) => ({
       id: str(m.id, 64),
-      role: m.role,
+      role: m.role as "user" | "assistant",
       content: str(m.content, LIMITS.messageChars),
       createdAt: str(m.created_at, 40),
-    });
-    byConversation.set(str(m.conversation_id, 64), list);
-  }
-
-  const conversations: PublicConversation[] = input.conversations.slice(0, LIMITS.conversations).map((c) => ({
-    id: str(c.id, 64),
-    title: str(c.title, LIMITS.titleChars),
-    updatedAt: str(c.updated_at, 40),
-    messages: (byConversation.get(str(c.id, 64)) ?? []).sort((a, b) => a.createdAt.localeCompare(b.createdAt)),
-  }));
+    }))
+    .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 
   const content = {
-    workspace: { title: str(input.workspace.title, LIMITS.titleChars) },
-    revision: num(input.workspace.revision),
-    canvas: { nodes, edges, groups },
-    conversations,
+    title: str(input.conversation.title, LIMITS.titleChars),
+    canvas: sanitizeCanvas(metadata.canvas),
+    conversation: { id: conversationId, updatedAt: str(input.conversation.updated_at, 40), messages },
   };
 
-  return {
-    ...content,
-    etag: computeEtag(content),
-    generatedAt: input.now.toISOString(),
-  };
+  return { ...content, etag: computeEtag(content), generatedAt: input.now.toISOString() };
 }
 
 /**

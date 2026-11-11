@@ -19,7 +19,8 @@ type Invite = {
   useCount: number;
 };
 
-type ShareLink = { id: string; createdAt: string; expiresAt: string | null };
+type ShareLink = { id: string; conversationId: string; conversationTitle: string; createdAt: string; expiresAt: string | null };
+type ShareConversation = { id: string; title: string };
 
 type Props = { workspaceId: string; onClose: () => void };
 
@@ -47,6 +48,8 @@ export function MembersDialog({ workspaceId, onClose }: Props) {
   const [copied, setCopied] = useState(false);
   const [shareLinks, setShareLinks] = useState<ShareLink[]>([]);
   const [shareDays, setShareDays] = useState(30);
+  const [shareConversations, setShareConversations] = useState<ShareConversation[]>([]);
+  const [shareConversationId, setShareConversationId] = useState<string>("");
   const [freshShareUrl, setFreshShareUrl] = useState<string | null>(null);
   const [shareCopied, setShareCopied] = useState(false);
 
@@ -62,8 +65,16 @@ export function MembersDialog({ workspaceId, onClose }: Props) {
       if (canManageMembers(m.you.role)) {
         const i = await api<{ invites: Invite[] }>(`/api/workspace/${workspaceId}/invites`);
         setInvites(i.invites);
-        const sh = await api<{ links: ShareLink[] }>(`/api/workspace/${workspaceId}/share`);
+        const sh = await api<{ links: ShareLink[]; conversations: ShareConversation[] }>(`/api/workspace/${workspaceId}/share`);
         setShareLinks(sh.links);
+        setShareConversations(sh.conversations);
+        // Default to the conversation that is open in the app, if it can be shared.
+        const open = new URLSearchParams(window.location.search).get("conversation");
+        setShareConversationId((current) =>
+          sh.conversations.some((c) => c.id === current)
+            ? current
+            : sh.conversations.find((c) => c.id === open)?.id ?? sh.conversations[0]?.id ?? ""
+        );
       }
       setError(null);
     } catch (e) {
@@ -109,7 +120,7 @@ export function MembersDialog({ workspaceId, onClose }: Props) {
     run(async () => {
       const r = await api<{ token: string }>(`/api/workspace/${workspaceId}/share`, {
         method: "POST",
-        body: JSON.stringify({ expiresInDays: shareDays }),
+        body: JSON.stringify({ conversationId: shareConversationId, expiresInDays: shareDays }),
       });
       setFreshShareUrl(`${window.location.origin}/share/${r.token}`);
       setShareCopied(false);
@@ -314,10 +325,23 @@ export function MembersDialog({ workspaceId, onClose }: Props) {
           <section className="mt-4 border-t border-zinc-100 pt-4 dark:border-zinc-800">
             <h3 className="mb-1 text-xs font-semibold text-zinc-900 dark:text-white">Public link</h3>
             <p className="mb-2 text-[11px] text-zinc-500 dark:text-zinc-400">
-              Anyone with the link can read this workspace&apos;s canvas and conversations, without an account. They cannot
-              edit. Meeting transcripts are never shown. Turn it off at any time.
+              Anyone with the link can read ONE conversation and its canvas, without an account. They cannot edit, and
+              they cannot see your other conversations or meetings. Turn it off at any time.
             </p>
             <div className="flex flex-wrap items-center gap-2 text-xs">
+              <select
+                aria-label="Conversation to share"
+                value={shareConversationId}
+                onChange={(e) => setShareConversationId(e.target.value)}
+                className="min-w-0 max-w-full rounded border border-zinc-200 bg-white px-1.5 py-1 dark:border-zinc-700 dark:bg-zinc-800"
+              >
+                {shareConversations.length === 0 && <option value="">No conversations yet</option>}
+                {shareConversations.map((c) => (
+                  <option key={c.id} value={c.id}>
+                    {c.title}
+                  </option>
+                ))}
+              </select>
               <select
                 aria-label="Public link lifetime"
                 value={shareDays}
@@ -330,7 +354,7 @@ export function MembersDialog({ workspaceId, onClose }: Props) {
                 <option value={0}>Never expires</option>
               </select>
               <button
-                disabled={busy}
+                disabled={busy || !shareConversationId}
                 onClick={createShare}
                 className="rounded-lg bg-blue-600 px-3 py-1 font-semibold text-white hover:bg-blue-500 disabled:opacity-50"
               >
@@ -360,7 +384,7 @@ export function MembersDialog({ workspaceId, onClose }: Props) {
                 {shareLinks.map((l) => (
                   <li key={l.id} className="flex items-center justify-between gap-2">
                     <span>
-                      Public link · created {new Date(l.createdAt).toLocaleDateString()} ·{" "}
+                      &ldquo;{l.conversationTitle}&rdquo; · created {new Date(l.createdAt).toLocaleDateString()} ·{" "}
                       {l.expiresAt ? `expires ${new Date(l.expiresAt).toLocaleDateString()}` : "never expires"}
                     </span>
                     <button

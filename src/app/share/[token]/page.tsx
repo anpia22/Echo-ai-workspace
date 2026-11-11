@@ -12,7 +12,8 @@ const PAUSE_ON_LIMIT_MS = 30_000;
 type Status = "loading" | "live" | "reconnecting" | "gone";
 
 /**
- * Read-only public view of a workspace: the discussion and the canvas, for anyone with the link.
+ * Read-only public view of ONE conversation: its discussion and its own canvas, for anyone with
+ * the link.
  * No sign-in, no editing, no live channel: it re-checks every few seconds and only downloads
  * the content again when it changed.
  */
@@ -22,7 +23,6 @@ export default function SharePage() {
 
   const [view, setView] = useState<PublicView | null>(null);
   const [status, setStatus] = useState<Status>("loading");
-  const [conversationId, setConversationId] = useState<string | null>(null);
   const etagRef = useRef<string | null>(null);
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const stoppedRef = useRef(false);
@@ -80,17 +80,12 @@ export default function SharePage() {
     };
   }, [poll]);
 
-  // Keep the open conversation valid as content changes; default to the most recent one.
-  const activeConversation = useMemo(() => {
-    if (!view || view.conversations.length === 0) return null;
-    return view.conversations.find((c) => c.id === conversationId) ?? view.conversations[0];
-  }, [view, conversationId]);
-
-  const messageCount = activeConversation?.messages.length ?? 0;
+  const messages = view?.conversation.messages ?? [];
+  const messageCount = messages.length;
   useEffect(() => {
     const el = listRef.current;
     if (el && stickToBottomRef.current) el.scrollTop = el.scrollHeight;
-  }, [messageCount, activeConversation?.id]);
+  }, [messageCount]);
 
   const canvas = useMemo(
     () => ({ nodes: view?.canvas.nodes ?? [], edges: view?.canvas.edges ?? [], groups: view?.canvas.groups ?? [] }),
@@ -116,7 +111,7 @@ export default function SharePage() {
   return (
     <div className="flex h-dvh flex-col bg-zinc-50 text-zinc-900 dark:bg-zinc-950 dark:text-white">
       <header className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 border-b border-zinc-200 bg-white px-4 py-2.5 dark:border-zinc-800 dark:bg-zinc-900">
-        <h1 className="min-w-0 max-w-[60vw] truncate text-sm font-semibold">{view?.workspace.title ?? "Shared workspace"}</h1>
+        <h1 className="min-w-0 max-w-[60vw] truncate text-sm font-semibold">{view?.title ?? "Shared conversation"}</h1>
         <span className="rounded-full border border-amber-300/70 bg-amber-50 px-2.5 py-0.5 text-[11px] font-semibold text-amber-800 dark:border-amber-500/40 dark:bg-amber-950/40 dark:text-amber-300">
           Public · read-only
         </span>
@@ -151,23 +146,6 @@ export default function SharePage() {
         >
           <div className="flex items-center gap-2 border-b border-zinc-200 px-4 py-2.5 dark:border-zinc-800">
             <h2 className="text-xs font-semibold uppercase tracking-wider text-zinc-500 dark:text-zinc-400">Discussion</h2>
-            {view && view.conversations.length > 1 && (
-              <select
-                aria-label="Choose a conversation"
-                value={activeConversation?.id ?? ""}
-                onChange={(e) => {
-                  stickToBottomRef.current = true;
-                  setConversationId(e.target.value);
-                }}
-                className="ml-auto min-w-0 max-w-[60%] truncate rounded border border-zinc-200 bg-white px-1.5 py-1 text-xs dark:border-zinc-700 dark:bg-zinc-900"
-              >
-                {view.conversations.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.title}
-                  </option>
-                ))}
-              </select>
-            )}
           </div>
 
           <div
@@ -180,10 +158,10 @@ export default function SharePage() {
           >
             {!view ? (
               <p className="text-sm text-zinc-500 dark:text-zinc-400">Loading…</p>
-            ) : !activeConversation || activeConversation.messages.length === 0 ? (
+            ) : messages.length === 0 ? (
               <p className="text-sm text-zinc-500 dark:text-zinc-400">No messages yet.</p>
             ) : (
-              activeConversation.messages.map((m) => (
+              messages.map((m) => (
                 <div key={m.id} className={m.role === "assistant" ? "" : "rounded-xl bg-zinc-100 px-3 py-2 dark:bg-zinc-900"}>
                   <div className="mb-0.5 text-[10px] font-semibold uppercase tracking-wider text-zinc-400">
                     {m.role === "assistant" ? "Echo" : "Participant"}
