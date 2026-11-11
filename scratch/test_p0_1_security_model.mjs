@@ -7,6 +7,10 @@
  *   - AFTER it, every attack must fail and every legitimate path must still work.
  * Any future migration that reopens a hole fails this test.
  *
+ * It also checks the Realtime access rules (20261110010000): only signed-in members of a
+ * workspace may receive or send on that workspace's private room channels. Supabase's own
+ * enforcement plumbing is stubbed (realtime.messages + realtime.topic()); this tests the rules.
+ *
  * Run: node scratch/test_p0_1_security_model.mjs
  */
 import { PGlite } from "@electric-sql/pglite";
@@ -17,6 +21,7 @@ const MIG = fileURLToPath(new URL("../supabase/migrations", import.meta.url));
 const files = readdirSync(MIG).filter((f) => f.endsWith(".sql")).sort();
 const HARDEN = files.find((f) => f.includes("security_hardening"));
 const BEFORE = files.filter((f) => f < HARDEN);
+const LATER = files.filter((f) => f > HARDEN); // e.g. the Realtime authorization migration
 
 const db = new PGlite();
 
@@ -42,6 +47,14 @@ await exec(`
   ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO anon, authenticated, service_role;
   ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON FUNCTIONS TO anon, authenticated, service_role;
   ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO anon, authenticated, service_role;
+  -- Stand-in for Supabase Realtime's authorization table and topic helper.
+  CREATE SCHEMA realtime;
+  GRANT USAGE ON SCHEMA realtime TO anon, authenticated, service_role;
+  CREATE TABLE realtime.messages (id serial PRIMARY KEY, topic text NOT NULL, extension text NOT NULL, payload jsonb);
+  ALTER TABLE realtime.messages ENABLE ROW LEVEL SECURITY;
+  GRANT ALL ON realtime.messages, realtime.messages_id_seq TO anon, authenticated, service_role;
+  CREATE FUNCTION realtime.topic() RETURNS text LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('realtime.topic', true), '') $$;
+  GRANT EXECUTE ON FUNCTION realtime.topic() TO anon, authenticated, service_role;
 `, "environment");
 
 const clean = (sql) => sql.replace(/CREATE EXTENSION IF NOT EXISTS "?pgcrypto"?;?/gi, "").replace(/CREATE EXTENSION IF NOT EXISTS "?uuid-ossp"?;?/gi, "");
@@ -189,8 +202,65 @@ async function probes(phase) {
   return { vulnerable: res.filter((r) => r.bad).length, broken: keep.filter((k) => !k.ok).length };
 }
 
+async function realtimeProbes() {
+  await seed();
+  const OTHER_WS = "99999999-9999-4999-8999-999999999999";
+  await db.exec(`RESET ROLE; INSERT INTO workspaces (id, title) VALUES ('${OTHER_WS}', 'other');
+    INSERT INTO workspace_members (workspace_id, user_id, display_name, role) VALUES ('${OTHER_WS}', '${STRANGER}', 'Stranger at home', 'owner');`);
+  const topic = (ws, room = "room-1") => `echo-room:${ws}:${room}`;
+  const out = [];
+  const check = (name, ok, detail = "") => out.push({ name, ok, detail });
+
+  // The topic parser.
+  const parse = async (t) => (await db.query(`SELECT public.echo_room_workspace_id($1) AS ws`, [t])).rows[0].ws;
+  check("topic parser reads the workspace id", (await parse(topic(WS))) === WS);
+  check("topic parser accepts an upper-case id", (await parse(topic(WS.toUpperCase()))) === WS);
+  check("the old un-namespaced topic has no workspace", (await parse("echo-room:33333333-3333-4333-8333-333333333333")) === null);
+  check("topic with an extra segment is refused", (await parse(topic(WS, "a:b"))) === null);
+  check("topic with a space is refused", (await parse(topic(WS, "a b"))) === null);
+  check("topic with an empty room is refused", (await parse(`echo-room:${WS}:`)) === null);
+  check("topic for something else is refused", (await parse(`other:${WS}:room`)) === null && (await parse("")) === null && (await parse("echo-room:not-a-uuid:room")) === null);
+
+  const send = async (role, uid, t, ext = "broadcast") => {
+    await db.exec(`SELECT set_config('realtime.topic', '${t}', false)`);
+    const r = await as(role, uid, () => attempt(`INSERT INTO realtime.messages (topic, extension) VALUES ($1, $2)`, [t, ext]));
+    return r.ok;
+  };
+  const receive = async (role, uid, t, ext = "broadcast") => {
+    await db.exec(`RESET ROLE; INSERT INTO realtime.messages (topic, extension) VALUES ('${t}', '${ext}')`);
+    await db.exec(`SELECT set_config('realtime.topic', '${t}', false)`);
+    const r = await as(role, uid, () => attempt(`SELECT count(*)::int AS n FROM realtime.messages WHERE topic = $1 AND extension = $2`, [t, ext]));
+    return r.ok && r.rows[0].n > 0;
+  };
+
+  for (const [label, uid] of [["admin", ADMIN], ["editor", EDITOR], ["viewer", VIEWER]]) {
+    check(`${label} can SEND on their workspace's room (broadcast)`, await send("authenticated", uid, topic(WS)));
+    check(`${label} can SEND presence`, await send("authenticated", uid, topic(WS), "presence"));
+    check(`${label} can RECEIVE on their workspace's room`, await receive("authenticated", uid, topic(WS)));
+  }
+  check("a stranger cannot SEND on someone else's room", !(await send("authenticated", STRANGER, topic(WS))));
+  check("a stranger cannot RECEIVE on someone else's room", !(await receive("authenticated", STRANGER, topic(WS))));
+  check("a member of workspace A cannot reach workspace B's room", !(await send("authenticated", ADMIN, topic(OTHER_WS))) && !(await receive("authenticated", ADMIN, topic(OTHER_WS))));
+  check("an anonymous visitor cannot SEND", !(await send("anon", null, topic(WS))));
+  check("an anonymous visitor cannot RECEIVE", !(await receive("anon", null, topic(WS))));
+  check("the old un-namespaced topic is refused even for members", !(await send("authenticated", ADMIN, "echo-room:33333333-3333-4333-8333-333333333333")));
+  check("members cannot use other message kinds on the room topic", !(await send("authenticated", ADMIN, topic(WS), "postgres_changes")));
+  check("a member who leaves loses access", await (async () => {
+    await db.exec(`RESET ROLE; DELETE FROM workspace_members WHERE workspace_id='${WS}' AND user_id='${EDITOR}'`);
+    return !(await send("authenticated", EDITOR, topic(WS)));
+  })());
+
+  console.log("\n=== Realtime access rules ===");
+  for (const r of out) console.log(`${r.ok ? "ok        " : "FAILED    "}  ${r.name}${r.detail ? "  - " + r.detail : ""}`);
+  return out.filter((r) => !r.ok).length;
+}
+
 const before = await probes("BEFORE the hardening migration");
 await exec(clean(readFileSync(`${MIG}/${HARDEN}`, "utf8")), HARDEN);
 const after = await probes("AFTER the hardening migration");
-console.log(`\nbefore: ${before.vulnerable} vulnerable | after: ${after.vulnerable} vulnerable, ${after.broken} broken legitimate paths`);
-process.exit(after.vulnerable || after.broken ? 1 : 0);
+for (const f of LATER) await exec(clean(readFileSync(`${MIG}/${f}`, "utf8")), f);
+// Idempotent: re-applying the same later migrations must not fail.
+for (const f of LATER) await exec(clean(readFileSync(`${MIG}/${f}`, "utf8")), `${f} (second run)`);
+const realtimeFailures = await realtimeProbes();
+console.log(`\nbefore: ${before.vulnerable} vulnerable | after: ${after.vulnerable} vulnerable, ${after.broken} broken legitimate paths | realtime rules failing: ${realtimeFailures}`);
+process.exit(after.vulnerable || after.broken || realtimeFailures ? 1 : 0);

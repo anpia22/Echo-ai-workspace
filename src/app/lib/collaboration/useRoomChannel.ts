@@ -66,7 +66,7 @@ import {
   type Participant,
 } from "./participant";
 import { parsePresenceState } from "./presence";
-import { getRoomChannelName, type RoomId } from "./room";
+import { getRoomChannelName, getSecureRoomChannelName, type RoomId } from "./room";
 import {
   getBrowserSupabaseClient,
   getBrowserSupabaseConfig,
@@ -245,10 +245,43 @@ const NOOP_BROADCAST: RoomBroadcast = {
   broadcastMeetingSignal: () => {},
 };
 
+export type RoomChannelOptions = {
+  /**
+   * The workspace the room belongs to. Signed-in users join a PRIVATE channel scoped to this
+   * workspace; the database only lets that workspace's members in (P0.1 Realtime authorization).
+   */
+  workspaceId?: string | null;
+};
+
 export function useRoomChannel(
   roomId: RoomId | null,
-  syncHandlers?: RoomChannelSyncHandlers
+  syncHandlers?: RoomChannelSyncHandlers,
+  options?: RoomChannelOptions
 ): RoomConnection & RoomBroadcast {
+  const workspaceId = options?.workspaceId ?? null;
+
+  // Whether this browser has a signed-in session decides public (demo) or private channel.
+  const [realtimeAuth, setRealtimeAuth] = useState<"unknown" | "authed" | "anon">("unknown");
+  useEffect(() => {
+    const client = getBrowserSupabaseClient();
+    if (!client) {
+      return;
+    }
+    let cancelled = false;
+    client.auth
+      .getSession()
+      .then(({ data }) => {
+        if (!cancelled) setRealtimeAuth(data.session ? "authed" : "anon");
+      })
+      .catch(() => {
+        if (!cancelled) setRealtimeAuth("anon");
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+  const secureChannel = realtimeAuth === "authed" && workspaceId !== null;
+
   const [trackedRoomId, setTrackedRoomId] = useState(roomId);
   const [subscription, setSubscription] = useState<ActiveSubscription | null>(
     null
@@ -332,9 +365,18 @@ export function useRoomChannel(
       return;
     }
 
+    // Wait until we know whether the user is signed in, and, when they are, until the
+    // workspace is known: never fall back to the public channel for a signed-in user.
+    if (realtimeAuth === "unknown" || (realtimeAuth === "authed" && workspaceId === null)) {
+      return;
+    }
+
     const participant = getOrCreateParticipant();
 
-    const channelName = getRoomChannelName(roomId);
+    const channelName =
+      secureChannel && workspaceId !== null
+        ? getSecureRoomChannelName(workspaceId, roomId)
+        : getRoomChannelName(roomId);
     const supabase = getBrowserSupabaseClient();
 
     if (!supabase) {
@@ -360,6 +402,9 @@ export function useRoomChannel(
 
     const channel = supabase.channel(channelName, {
       config: {
+        // Private channels are checked against the workspace-membership policies on
+        // realtime.messages for every join and message.
+        private: secureChannel,
         broadcast: {
           ack: false,
           self: false,
@@ -893,7 +938,7 @@ export function useRoomChannel(
       void channel.untrack();
       void supabase.removeChannel(channel);
     };
-  }, [roomId]);
+  }, [roomId, realtimeAuth, workspaceId, secureChannel]);
 
   const broadcastNodeUpsert = useCallback((node: CanvasNode) => {
     const channel = channelRef.current;
@@ -1211,7 +1256,10 @@ export function useRoomChannel(
     };
   }
 
-  const channelName = getRoomChannelName(roomId);
+  const channelName =
+    secureChannel && workspaceId !== null
+      ? getSecureRoomChannelName(workspaceId, roomId)
+      : getRoomChannelName(roomId);
 
   if (!getBrowserSupabaseConfig()) {
     return {

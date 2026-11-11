@@ -49,6 +49,18 @@ export function getRoomChannelName(roomId: RoomId): string {
   return `echo-room:${roomId}`;
 }
 
+/**
+ * Private (access-controlled) channel name. The workspace id is part of the name so the
+ * database can check workspace membership for every join and message (see the
+ * 20261110010000_p0_1_realtime_authorization.sql migration).
+ */
+export function getSecureRoomChannelName(
+  workspaceId: string,
+  roomId: RoomId
+): string {
+  return `echo-room:${workspaceId}:${roomId}`;
+}
+
 export function buildRoomPath(
   roomId: RoomId,
   existingSearch?: string | URLSearchParams
@@ -64,9 +76,12 @@ export function buildRoomPath(
 
 export function buildRoomUrl(
   roomId: RoomId,
-  origin?: string
+  origin?: string,
+  existingSearch?: string | URLSearchParams
 ): string {
-  const path = buildRoomPath(roomId);
+  // Pass the current search so the link keeps ?workspace=: the room's access control is
+  // per workspace, so a link without it would open the recipient's own workspace instead.
+  const path = buildRoomPath(roomId, existingSearch);
 
   if (origin) {
     return new URL(path, origin).toString();

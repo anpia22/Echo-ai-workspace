@@ -677,7 +677,7 @@ function Home() {
     onMeetingSignal: (payload) => {
       void meetingHandleSignalRef.current?.(payload);
     },
-  });
+  }, { workspaceId: workspaceHydration.workspaceId });
 
   const broadcastMeetingSignalRef = useRef(roomConnection.broadcastMeetingSignal);
   useEffect(() => {

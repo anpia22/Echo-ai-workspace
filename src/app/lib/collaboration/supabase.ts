@@ -1,6 +1,7 @@
 "use client";
 
-import { createClient, type SupabaseClient } from "@supabase/supabase-js";
+import { createBrowserClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 type BrowserSupabaseConfig = {
   url: string;
@@ -37,13 +38,9 @@ export function getBrowserSupabaseClient(): SupabaseClient | null {
   }
 
   if (!browserClient) {
-    browserClient = createClient(config.url, config.anonKey, {
-      auth: {
-        persistSession: false,
-        autoRefreshToken: false,
-        detectSessionInUrl: false,
-      },
-    });
+    // The cookie-session client: Realtime then connects with the signed-in user's token, which
+    // the private-channel access rules need. (It used to be an anonymous client.)
+    browserClient = createBrowserClient(config.url, config.anonKey);
   }
 
   return browserClient;

@@ -98,7 +98,11 @@ export default function RoomControls({
       return;
     }
 
-    const url = buildRoomUrl(roomId);
+    const url = buildRoomUrl(
+      roomId,
+      undefined,
+      typeof window !== "undefined" ? window.location.search : undefined
+    );
 
     try {
       await navigator.clipboard.writeText(url);
