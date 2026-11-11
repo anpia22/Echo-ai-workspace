@@ -33,6 +33,7 @@ import type { OutboxItem } from "./outbox";
 import { enqueueCanvasSave, outbox, registerExecutor } from "./outboxRuntime";
 import { KIND_CANVAS, classifySaveError, type CanvasMutation, type CanvasSavePayload } from "./saveOutbox";
 import type { CanvasAction } from "../../applyCanvasActions";
+import { canvasDiffToMutation } from "../../canvasHistory";
 
 export type CanvasPersistenceStatus =
   | "idle"
@@ -53,6 +54,8 @@ export type UseCanvasPersistenceResult = {
   ) => void;
   /** Persist a single drag-end MOVE_NODE. Non-blocking — returns immediately. */
   persistNodeMove: (node: CanvasNodeLike) => void;
+  /** P1.7: persist whatever differs between two canvases (an undo or a redo). Non-blocking. */
+  persistCanvasChange: (prev: CanvasStateLike, next: CanvasStateLike) => void;
 };
 
 const SAVED_DISPLAY_MS = 2000;
@@ -266,10 +269,25 @@ export function useCanvasPersistence(
     [workspaceId, enqueueSave]
   );
 
+  const persistCanvasChange = useCallback(
+    (prev: CanvasStateLike, next: CanvasStateLike): void => {
+      if (!workspaceId || persistenceRevisionRef.current === null) {
+        return;
+      }
+      const mutation = canvasDiffToMutation(prev as never, next as never);
+      if (!mutation) {
+        return;
+      }
+      enqueueSave(workspaceId, mutation);
+    },
+    [workspaceId, enqueueSave]
+  );
+
   return {
     persistenceStatus,
     persistenceRevision,
     persistCanvas,
     persistNodeMove,
+    persistCanvasChange,
   };
 }

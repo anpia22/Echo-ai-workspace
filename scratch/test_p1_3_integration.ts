@@ -223,7 +223,7 @@ async function main() {
   check("a message that fails for connection reasons is queued, not lost", (conv.match(/classifySaveError\(\w+\) === "retry"/g) ?? []).length === 2 && (conv.match(/enqueueMessageSave\(/g) ?? []).length === 2);
   check("the local message is still never removed", /Never delete or revert local message/.test(conv));
   const page = read("src/app/app/page.tsx");
-  check("conversation canvases are saved through the outbox", (page.match(/enqueueConversationCanvasSave\(/g) ?? []).length === 2 && !/updateConversationApi\(/.test(page));
+  check("conversation canvases are saved through the outbox", (page.match(/enqueueConversationCanvasSave\(/g) ?? []).length === 3 && !/updateConversationApi\(/.test(page));
   check("the page installs the browser hooks once", /useEffect\(\(\) => installOutboxBrowserHooks\(\), \[\]\)/.test(page));
   check("the status badge shows offline / retrying with the waiting count", /system-persistence-offline/.test(page) && /useOutboxStatus\(\)/.test(page) && /\$\{outboxStatus\.pending\} waiting/.test(page));
   check("the offline badge takes priority over a generic save error", page.indexOf("system-persistence-offline") < page.indexOf('data-testid="system-persistence-error"'));

@@ -4,6 +4,7 @@ import {
   Suspense,
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
 } from "react";
@@ -62,6 +63,7 @@ import {
   loadConversationCanvasApi,
 } from "../lib/persistence/client";
 import { startIceServerRefresh } from "../lib/webrtc/iceServersClient";
+import { createCanvasHistory, diffToChange } from "../lib/canvasHistory";
 import {
   enqueueConversationCanvasSave,
   installOutboxBrowserHooks,
@@ -586,7 +588,7 @@ function Home() {
   // --------------------------------------------------
   const [persistenceRevision, setPersistenceRevision] = useState<number | null>(null);
 
-  const { persistenceStatus, persistCanvas, persistNodeMove } = useCanvasPersistence(
+  const { persistenceStatus, persistCanvas, persistNodeMove, persistCanvasChange } = useCanvasPersistence(
     workspaceHydration.workspaceId,
     persistenceRevision,
     (newRevision) => setPersistenceRevision(newRevision)
@@ -890,6 +892,11 @@ function Home() {
   const SLOW_RESPONSE_MS = 8000;
 
   const [loading, setLoading] = useState(false);
+
+  // P1.7: undo / redo of this user's own canvas changes (their drags and the AI changes they asked for),
+  // kept separately for each conversation, in memory.
+  const canvasHistory = useMemo(() => createCanvasHistory(), []);
+  const [historyVersion, setHistoryVersion] = useState(0);
 
   const [slowThinking, setSlowThinking] =
     useState(false);
@@ -2035,6 +2042,10 @@ function Home() {
         canvasOwnerConversationIdRef.current = saveConversationId;
       }
       setCanvas(nextCanvas);
+      if (saveConversationId) {
+        canvasHistory.record(saveConversationId, diffToChange(currentCanvas, nextCanvas), "Move node");
+        setHistoryVersion(canvasHistory.getVersion());
+      }
       roomConnection.broadcastNodeMoved(nodeId, position);
       // Phase 13.5: persist drag-end position (called only at drag-end by EchoCanvas)
       const movedNode = nextCanvas.nodes.find((n) => n.id === nodeId);
@@ -2059,6 +2070,76 @@ function Home() {
   // --------------------------------------------------
   // Analyze transcript
   // --------------------------------------------------
+
+  // --------------------------------------------------
+  // P1.7: undo / redo
+  // --------------------------------------------------
+
+  const stepCanvasHistory = (direction: "undo" | "redo") => {
+    // Viewers cannot change the canvas, and an AI answer that is still arriving would land on top of the undo.
+    if (isWorkspaceReadOnly() || analyzeInFlightRef.current) return;
+
+    const convId = activeConversationIdRef.current;
+    const wsId = currentWorkspaceIdRef.current;
+    if (!convId || !wsId) return;
+
+    const current = canvasRef.current;
+    const step = direction === "undo" ? canvasHistory.undo(convId, current) : canvasHistory.redo(convId, current);
+    setHistoryVersion(canvasHistory.getVersion());
+
+    if (!step) {
+      setVoiceFeedback({ kind: "info", message: direction === "undo" ? "Nothing to undo" : "Nothing to redo" });
+      return;
+    }
+
+    const next = step.canvas;
+
+    // Same path as any other local edit: screen, other people's screens, database, saved snapshot.
+    canvasRef.current = next;
+    canvasOwnerConversationIdRef.current = convId;
+    setCanvas(next);
+    publishLocalNodeMutations(diffLocalNodeMutations(current, next), roomConnection);
+    publishLocalEdgeMutations(diffLocalEdgeMutations(current, next), roomConnection);
+    publishLocalGroupMutations(diffLocalGroupMutations(current, next), roomConnection);
+    persistCanvasChange(current, next);
+    setConversations((prev) => prev.map((c) => (c.id === convId ? { ...c, canvas: next } : c)));
+    enqueueConversationCanvasSave({ workspaceId: wsId, conversationId: convId, canvas: next });
+
+    setVoiceFeedback({
+      kind: "info",
+      message: `${direction === "undo" ? "Undid" : "Redid"}: ${step.label}${step.skipped > 0 ? " (some parts no longer apply)" : ""}`,
+    });
+    setTimeout(() => {
+      if (isMountedRef.current) {
+        setVoiceFeedback((prev) => (prev.kind === "info" ? { kind: "idle" } : prev));
+      }
+    }, 3000);
+  };
+
+  // The keyboard handler lives in an effect that must not re-subscribe every render, so it calls the latest version through a ref.
+  const stepCanvasHistoryRef = useRef(stepCanvasHistory);
+  useEffect(() => {
+    stepCanvasHistoryRef.current = stepCanvasHistory;
+  });
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (!(e.ctrlKey || e.metaKey)) return;
+      const key = e.key.toLowerCase();
+      if (key !== "z" && key !== "y") return;
+      // In a text box, Ctrl+Z belongs to the browser's own text undo.
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === "INPUT" || t.tagName === "TEXTAREA" || t.tagName === "SELECT" || t.isContentEditable)) return;
+      e.preventDefault();
+      stepCanvasHistoryRef.current(key === "y" || e.shiftKey ? "redo" : "undo");
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, []);
+
+  // Read on every render; historyVersion makes the buttons redraw when the stacks change.
+  void historyVersion;
+  const canUndo = Boolean(conversationId) && canvasHistory.canUndo(conversationId as string);
+  const canRedo = Boolean(conversationId) && canvasHistory.canRedo(conversationId as string);
 
   const analyzeTranscript = async (options?: { retry?: boolean }) => {
     // Called from onClick too, so only an explicit { retry: true } counts.
@@ -2323,6 +2404,14 @@ function Home() {
         publishLocalNodeMutations(nodeMutations, roomConnection);
         publishLocalEdgeMutations(edgeMutations, roomConnection);
         publishLocalGroupMutations(groupMutations, roomConnection);
+
+        // P1.7: remember what the AI changed, so the user can undo it.
+        canvasHistory.record(
+          requestConversationId,
+          diffToChange(currentCanvas, nextCanvas),
+          data.actions.length === 1 ? "AI change" : `AI changes (${data.actions.length})`
+        );
+        setHistoryVersion(canvasHistory.getVersion());
 
         // Phase 13.5: persist canvas mutation (non-blocking, after runtime state committed)
         if (data.actions.length > 0) {
@@ -2861,6 +2950,43 @@ function Home() {
                 }
                 onManualViewportChange={handleManualViewportChange}
               />
+
+              {/* P1.7: undo / redo (hidden for viewers, who cannot change the canvas) */}
+              {!isViewOnly && (
+                <div
+                  data-testid="canvas-history-controls"
+                  className="absolute left-4 top-4 z-20 flex items-center gap-0.5 rounded-xl border border-zinc-200 bg-white/90 p-1 shadow-md backdrop-blur-md dark:border-zinc-700 dark:bg-zinc-900/90"
+                >
+                  <button
+                    type="button"
+                    data-testid="canvas-undo"
+                    aria-label="Undo"
+                    title="Undo (Ctrl+Z)"
+                    disabled={!canUndo || loading}
+                    onClick={() => stepCanvasHistory("undo")}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent dark:text-zinc-200 dark:hover:bg-zinc-800"
+                  >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="M9 14 4 9l5-5" />
+                      <path d="M4 9h10.5a5.5 5.5 0 0 1 0 11H11" />
+                    </svg>
+                  </button>
+                  <button
+                    type="button"
+                    data-testid="canvas-redo"
+                    aria-label="Redo"
+                    title="Redo (Ctrl+Shift+Z)"
+                    disabled={!canRedo || loading}
+                    onClick={() => stepCanvasHistory("redo")}
+                    className="flex h-8 w-8 items-center justify-center rounded-lg text-zinc-700 transition hover:bg-zinc-100 disabled:cursor-not-allowed disabled:opacity-35 disabled:hover:bg-transparent dark:text-zinc-200 dark:hover:bg-zinc-800"
+                  >
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+                      <path d="m15 14 5-5-5-5" />
+                      <path d="M20 9H9.5a5.5 5.5 0 0 0 0 11H13" />
+                    </svg>
+                  </button>
+                </div>
+              )}
 
               {/* Floating AI Status Pill (Phase 15.2) */}
               {loading ? (
