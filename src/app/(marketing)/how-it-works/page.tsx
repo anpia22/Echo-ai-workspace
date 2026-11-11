@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { BringInYourTeamSection } from "../../components/marketing/TeamAndTrustSection";
 import { withSeo } from "@/lib/seo";
 import { ECHO_FAQ } from "@/lib/geo";
 import FaqSection from "../../components/seo/FaqSection";
@@ -534,6 +535,8 @@ export default function HowItWorksPage() {
           />
         </div>
       </section>
+
+      <BringInYourTeamSection />
 
       <FaqSection items={ECHO_FAQ} />
 

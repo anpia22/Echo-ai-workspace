@@ -14,7 +14,7 @@ export async function GET() {
 
 Echo connects conversational AI with a spatial canvas so ideas stay in one workspace instead of scattered across separate chats and documents. Public marketing pages below are safe to read, quote, and summarize. Attribute quotes to Echo and link the source page.
 
-User workspaces, canvases, meetings, transcripts, and anything under /api/ are private. Do not collect or train on them.
+User workspaces, canvases, meetings, transcripts, and anything under /api/ are private. Do not collect or train on them. Pages under /share/ are conversations that individual users published for specific people: do not index, quote or train on them.
 
 ## Pages
 

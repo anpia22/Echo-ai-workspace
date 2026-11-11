@@ -130,7 +130,8 @@ export const PUBLIC_PAGES = [
 ];
 
 /** Paths that must not be crawled or used as AI training material. */
-export const PRIVATE_PATHS = ["/api/", "/meeting-test", "/app"];
+// Shared conversations (/share/), invite links and the admin page are private even though the first two work without signing in.
+export const PRIVATE_PATHS = ["/api/", "/meeting-test", "/app", "/share/", "/invite/", "/admin"];
 
 export async function getSiteUrl(): Promise<string> {
   const fromEnv = process.env.NEXT_PUBLIC_SITE_URL || process.env.SITE_URL;

@@ -15,7 +15,7 @@ export const metadata: Metadata = withSeo("/terms", {
   },
 });
 
-const UPDATED = "November 2, 2026";
+const UPDATED = "November 11, 2026";
 
 export default function TermsPage() {
   return (
@@ -55,10 +55,13 @@ export default function TermsPage() {
 
       <Section title="Rooms and shared work">
         <p>
-          A room link grants access to that workspace. You are responsible for
-          who you invite. Other people in the room can see the shared canvas,
-          presence, cursors, and the meeting you join. Do not rely on a room
-          link as a secret if you have shared it widely.
+          Workspaces are private to their members. You are responsible for who
+          you invite and which role you give them. Other members can see the
+          shared canvas, presence, cursors, and the meeting you join, within
+          their role. If you create a public link, anyone who has it can read
+          the conversation and canvas you published, without signing in, until
+          the link expires or you turn it off. Do not publish anything you
+          would not show to everyone.
         </p>
         <p>
           You keep ownership of the content you create. You give the operator

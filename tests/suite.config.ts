@@ -11,6 +11,7 @@
 
 export const RUN: string[] = [
   "test_group_nodes.ts",
+  "test_marketing_claims.ts",
   "test_p0_1_auth_actor.ts",
   "test_p0_1_invites.ts",
   "test_p0_1_list_workspaces.ts",

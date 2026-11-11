@@ -33,6 +33,10 @@ const PRICING_FAQS = [
     a: "Echo does not use your private architecture graphs or workspace conversations to train AI models. Under NVIDIA's developer API terms, prompts and outputs are processed ephemerally and are not retained or used by NVIDIA to train foundation models. Enterprise custom deployments can also run on your own private LLM endpoint (such as vLLM or Ollama). SAML SSO and SOC 2 Type II certification are on our enterprise roadmap.",
   },
   {
+    q: "Can I share a conversation with people outside my team?",
+    a: "Yes, and it is included during the free beta. Create a read-only public link to a single conversation and its canvas. Visitors don't need an account and can't edit. Links can expire, and you can turn them off at any time.",
+  },
+  {
     q: "What makes Echo different from Miro or ChatGPT?",
     a: "In ChatGPT or Slack, decisions get lost in linear scrollback with zero traceability. In Miro, you get an unstructured geometric canvas with no semantic awareness. Echo combines both: an explicit decision schema ([Problem] → [Option] → [Decision] → [Task]) where the map is the AI's living memory.",
   },

@@ -15,7 +15,7 @@ export const metadata: Metadata = withSeo("/privacy", {
   },
 });
 
-const UPDATED = "November 2, 2026";
+const UPDATED = "November 11, 2026";
 
 export default function PrivacyPage() {
   return (
@@ -67,13 +67,37 @@ export default function PrivacyPage() {
             workspace.
           </li>
           <li>
+            Account details you give when signing in, such as your email
+            address and display name, and which workspaces you belong to and in
+            what role (owner, admin, editor or viewer).
+          </li>
+          <li>
+            Invitations and public links. Echo stores only a one-way hash of
+            each secret link, who created it, when it expires, and whether it
+            was turned off.
+          </li>
+          <li>
+            Usage records for AI requests: which account (or, for visitors who
+            are not signed in, a one-way hash of the network address), which
+            feature and model, when, how long it took and whether it worked.
+            They contain no message, canvas or transcript content. They are
+            used to run the service, limit abuse and understand load.
+          </li>
+          <li>
+            Changes that are waiting to be saved while your connection is down.
+            They are held in your browser until they are saved.
+          </li>
+          <li>
             A theme preference and, on older browsers, a local copy of
             conversations kept in your browser until it is moved to the
             workspace.
           </li>
         </ul>
         <p>
-          Echo does not require an account to try or view a room. You can optionally sign in with an email link or provider to sync your workspaces across devices. Echo does not run third-party advertising or analytics cookies.
+          You can try the demo on the home page without an account. To use a
+          workspace you sign in with an email link or a provider, so your
+          workspaces follow you across devices. Echo does not run third-party
+          advertising or analytics cookies.
         </p>
       </Section>
 
@@ -83,6 +107,11 @@ export default function PrivacyPage() {
           <li>Show the shared canvas and keep a room in sync.</li>
           <li>Show presence, cursors, and who is presenting.</li>
           <li>Connect an audio, video, or screen-share meeting inside the workspace.</li>
+          <li>
+            Use a relay server so a call can connect when a direct connection is
+            not possible. The relay forwards encrypted call media; it can see
+            technical details such as network addresses and timing.
+          </li>
           <li>
             Send the relevant conversation, canvas context, and transcript
             excerpts to the AI model so Echo can reply and suggest canvas
@@ -94,10 +123,14 @@ export default function PrivacyPage() {
 
       <Section title="Who else can see it">
         <p>
-          Anyone with the room link can join that workspace and see the shared
-          canvas, presence, and meeting, within what the room allows. Do not
-          put secrets on a canvas or share a screen you would not show to every
-          person who has the link.
+          People you invite can join your workspace as editors or viewers, and
+          live rooms are limited to signed-in members of that workspace. Members
+          can see the shared canvas, presence, and meeting, within their role. A
+          public link is different: anyone who has it can read the one
+          conversation and canvas you published, without signing in, until it
+          expires or you turn it off. Do not put secrets on a canvas, do not
+          publish what you would not show to everyone, and do not share a screen
+          you would not show to every person in the room.
         </p>
         <p>Operators and providers that process data for the product:</p>
         <ul>
@@ -116,7 +149,16 @@ export default function PrivacyPage() {
             A speech-to-text provider may process meeting audio when
             transcription is on, and Echo keeps the resulting text.
           </li>
+          <li>
+            A call relay provider, when the operator has set one up, forwards
+            encrypted call media when a direct connection is not possible.
+          </li>
         </ul>
+        <p>
+          The operator can see totals and usage statistics, for example how
+          many accounts and AI requests there are, on an admin page. That page
+          does not show conversation, canvas or transcript content.
+        </p>
         <p>
           Echo does not sell personal information. Content is shared with a
           provider only so the workspace, the meeting, or the AI response can
@@ -131,15 +173,18 @@ export default function PrivacyPage() {
           older conversations stays on that device until you clear site data.
           Meeting audio and video are live between participants and are not
           kept as a recording by Echo. Transcript text that was saved with the
-          workspace remains with that workspace.
+          workspace remains with that workspace. Public links stop working as
+          soon as they expire or are turned off. Usage records are kept for
+          operating and protecting the service.
         </p>
       </Section>
 
       <Section title="Your choices">
         <p>
           You choose what to type, what to say, and what to put on a shared
-          screen. You can leave a room, stop a screen share, and clear this
-          site&apos;s data in your browser. To ask for access to or deletion of
+          screen. Owners and admins can remove members, change roles and turn
+          public links off. You can leave a room, stop a screen share, and
+          clear this site&apos;s data in your browser. To ask for access to or deletion of
           workspace content stored on the server, email{" "}
           <a href="mailto:echoaiworkspace@gmail.com">echoaiworkspace@gmail.com</a>.
           Echo is run by Anup, the founder.

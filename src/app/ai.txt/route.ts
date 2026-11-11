@@ -15,7 +15,7 @@ ${disallows}
 # Search and answers: yes, for the public pages listed in llms.txt.
 # Attribution: quote Echo and link the source URL.
 # Training: public marketing pages only. Do not train on user workspaces,
-# canvases, meetings, transcripts, or API responses.
+# canvases, meetings, transcripts, shared conversation pages (/share/), or API responses.
 
 Sitemap: ${siteUrl}/sitemap.xml
 Llms-Txt: ${siteUrl}/llms.txt

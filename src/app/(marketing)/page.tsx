@@ -16,6 +16,8 @@ import { BeforeAfterComparison } from "../components/marketing/BeforeAfterCompar
 import { ArchitectureAndVoiceSection } from "../components/marketing/ArchitectureAndVoiceSection";
 import { PricingSection } from "../components/marketing/PricingSection";
 
+import { TeamAndTrustSection } from "../components/marketing/TeamAndTrustSection";
+
 const title = "Echo: The AI Workspace That Thinks With You";
 const description =
   "Talk or type through messy product and architecture decisions. Echo maps them into problems, evaluated options, decisions, and actionable tasks in real time.";
@@ -115,6 +117,9 @@ export default function HomePage() {
           ))}
         </div>
       </section>
+
+      {/* What a team gets: access, sharing, resilience */}
+      <TeamAndTrustSection />
 
       {/* One audience, concrete jobs */}
       <section className="py-14 sm:py-20">

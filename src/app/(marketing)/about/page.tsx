@@ -49,6 +49,21 @@ const WORKSPACE_BLOCKS = [
     body: "The workspace keeps ideas connected. Discussion and visual thinking stay aligned in one unified space, so thoughts don't get lost as your project develops.",
     icon: Icons.layers,
   },
+  {
+    title: "Teams",
+    body: "Invite people as editors or viewers. Owners and admins decide who can change what, and workspaces stay private to their members.",
+    icon: Icons.users,
+  },
+  {
+    title: "Sharing",
+    body: "Publish one conversation and its canvas as a read-only link for people outside the workspace, with an expiry you choose and an off switch you control.",
+    icon: Icons.link,
+  },
+  {
+    title: "Resilience",
+    body: "Dropped connections, slow AI and your own mistakes are handled: edits wait and save when you're back, failures are explained, and undo reverses only your own changes.",
+    icon: Icons.refresh,
+  },
 ];
 
 export default function AboutPage() {

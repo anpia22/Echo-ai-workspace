@@ -14,6 +14,10 @@ export const ECHO_FEATURES = [
   "Real-time collaboration with shared cursors in the same workspace",
   "Live meetings with screen sharing and a single presenter",
   "Persistent workspace so ideas can be continued where they were left",
+  "Team invites with editor and viewer roles",
+  "Read-only public links for sharing a single conversation",
+  "Undo and redo of your own changes, without undoing teammates' work",
+  "Edits that wait and save automatically after a dropped connection",
 ];
 
 export const ECHO_FAQ: { question: string; answer: string }[] = [
@@ -34,7 +38,17 @@ export const ECHO_FAQ: { question: string; answer: string }[] = [
   {
     question: "Can I use Echo with my team?",
     answer:
-      "Yes. Start alone, then share a room link. Teammates see the same canvas with live cursors, and you can meet and share your screen in the same room.",
+      "Yes. Start alone, then invite teammates with a link and choose whether they can edit or only view. Members see the same canvas with live cursors, and you can meet and share your screen in a live room.",
+  },
+  {
+    question: "Can I share a conversation with someone outside my team?",
+    answer:
+      "Yes. Create a public read-only link to one conversation and its canvas. Anyone with the link can read it without an account, but cannot edit it. Links can expire, and you can turn them off at any time.",
+  },
+  {
+    question: "Who can see my workspace?",
+    answer:
+      "Only the people you invite. Workspaces are private to their members, who can be editors or viewers. Nothing is public unless you create a public link for a specific conversation. See the privacy policy for how data is handled.",
   },
   {
     question: "How is Echo different from a chat assistant or a whiteboard?",

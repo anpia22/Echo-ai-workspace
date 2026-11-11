@@ -394,7 +394,7 @@ export default function DemoPage() {
           <BentoCard
             icon={Icons.users}
             title="Work in the same space without getting in the way"
-            body="Share a room link to invite teammates. See everyone with live presence indicators and colored remote cursors gliding across the canvas as ideas develop."
+            body="Invite teammates to your workspace, then open a live room. See everyone with live presence indicators and colored remote cursors gliding across the canvas as ideas develop."
           >
             <CollaborationVisual />
           </BentoCard>

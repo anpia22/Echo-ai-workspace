@@ -261,7 +261,7 @@ export const BLOG_POSTS: BlogPost[] = [
         heading: "How teams use it during the call",
         paragraphs: [
           "Start the meeting inside the workspace and keep the canvas visible. Explore the problem as questions and relationships. When the discussion turns sequential (owners, dependencies, order of work), plan those as connected nodes. When two options are on the table, put the trade-offs where everyone can point at them.",
-          "Voice input helps when hands are already on the canvas. Real-time collaboration means a teammate can follow the presenter, see remote cursors, and join from a room link without exporting a snapshot. The meeting stays a working session.",
+          "Voice input helps when hands are already on the canvas. Real-time collaboration means a teammate can follow the presenter, see remote cursors, and join the workspace's live room without exporting a snapshot. The meeting stays a working session.",
         ],
       },
       {
@@ -360,7 +360,7 @@ export const BLOG_POSTS: BlogPost[] = [
       {
         heading: "Why real-time collaboration changes the notes",
         paragraphs: [
-          "A visual AI workspace is not a private summary generated after everyone hangs up. Real-time collaboration means the people in the meeting watch the structure form. Remote cursors and presence show who is editing which region. A shared room link is the workspace, so a teammate who joins late lands in the same map.",
+          "A visual AI workspace is not a private summary generated after everyone hangs up. Real-time collaboration means the people in the meeting watch the structure form. Remote cursors and presence show who is editing which region. The live room is the workspace, so a teammate who joins late lands in the same map.",
           "That also changes what “AI meeting notes” should mean. The useful record is the canvas the room already agreed to look at: the decision node, the rejected alternative, the next step. A paragraph that restates the call is optional. The graph is the note.",
         ],
       },
