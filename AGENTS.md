@@ -26,3 +26,9 @@ Before inspecting code or executing tasks, adhere to the following rules:
 
 4. **Targeted Verification**:
    - Run verification only for the files or phase being touched (e.g. `npx tsc --noEmit` or task-specific test runner). Do not trigger full multi-suite regressions on routine incremental edits.
+
+5. **Use the graphify knowledge graph to find code** (`graphify-out/`):
+   - The `graphify` command is not on PATH here; run it as `python -m graphify ...`.
+   - For "where is X / how does X connect to Y" questions, first run `python -m graphify query "<question>"`, `python -m graphify path "<A>" "<B>"` or `python -m graphify explain "<concept>"`. They return a small scoped map (symbol, file, line), much cheaper than grep sweeps or reading `GRAPH_REPORT.md`.
+   - The graph is a map, not the code: still read the specific files you are about to edit.
+   - After changing code files in a session, run `python -m graphify update .` (AST only, no API cost) so the graph stays current. `graphify-out/` is generated and git-ignored; rebuild it rather than committing it.
