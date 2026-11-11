@@ -212,6 +212,7 @@ export function useConversationPersistence(workspaceId: string | null) {
         }
 
         onLoaded(conversationId, messages);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- caught errors have no fixed shape (frozen persistence code)
       } catch (err: any) {
         if (
           controller.signal.aborted ||

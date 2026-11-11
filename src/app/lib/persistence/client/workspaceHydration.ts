@@ -108,12 +108,16 @@ export function normalizePersistedCanvas(
       position: {
         x: typeof node.positionX === "number"
           ? node.positionX
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- reads loosely shaped saved canvas data (frozen persistence code)
           : typeof (node as any).position?.x === "number"
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- reads loosely shaped saved canvas data (frozen persistence code)
           ? (node as any).position.x
           : 0,
         y: typeof node.positionY === "number"
           ? node.positionY
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- reads loosely shaped saved canvas data (frozen persistence code)
           : typeof (node as any).position?.y === "number"
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any -- reads loosely shaped saved canvas data (frozen persistence code)
           ? (node as any).position.y
           : 0,
       },
@@ -233,6 +237,7 @@ export function normalizePersistedConversations(
 
     let convCanvas: RuntimeCanvasState;
     if (record.metadata?.canvas && typeof record.metadata.canvas === "object") {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any -- reads loosely shaped saved canvas data (frozen persistence code)
       convCanvas = normalizePersistedCanvas(record.metadata.canvas as any);
     } else {
       const hasAnyMetadataCanvas = records.some((r) => r.metadata?.canvas);

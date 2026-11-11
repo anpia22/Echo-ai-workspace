@@ -6,7 +6,7 @@ npm test              # Vitest: configuration checks + every legacy script (abou
 npm run test:smoke    # HTTP smoke tests; needs SMOKE_BASE_URL (see below)
 ```
 
-CI (`.github/workflows/ci.yml`) runs typecheck, lint (report only), `npm test`, `npm run build`,
+CI (`.github/workflows/ci.yml`) runs typecheck, lint (a gate: no errors, warnings capped), `npm test`, `npm run build`,
 then starts the production build and runs the smoke tests. It needs no secrets.
 
 ## How `npm test` works

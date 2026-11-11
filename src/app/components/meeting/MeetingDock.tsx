@@ -57,7 +57,9 @@ export function MeetingDock({
 
   // Auto-spotlight when active presenter appears
   useEffect(() => {
+    // Follows the presenter as they start and stop sharing. Frozen meeting UI: behaviour kept as is.
     if (activePresenterId && dismissedPresenterId !== activePresenterId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setSpotlightUserId(activePresenterId);
     } else if (!activePresenterId) {
       setSpotlightUserId(null);

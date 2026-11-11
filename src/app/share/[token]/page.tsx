@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import EchoCanvas from "../../components/EchoCanvas";
@@ -23,62 +23,66 @@ export default function SharePage() {
 
   const [view, setView] = useState<PublicView | null>(null);
   const [status, setStatus] = useState<Status>("loading");
-  const etagRef = useRef<string | null>(null);
-  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const stoppedRef = useRef(false);
   const listRef = useRef<HTMLDivElement>(null);
   const stickToBottomRef = useRef(true);
 
-  const poll = useCallback(async () => {
-    if (stoppedRef.current) return;
-    let nextDelay = POLL_MS;
-    try {
-      const url = `/api/public/${encodeURIComponent(token)}${etagRef.current ? `?v=${encodeURIComponent(etagRef.current)}` : ""}`;
-      const res = await fetch(url, { cache: "no-store" });
-      if (res.status === 404) {
-        stoppedRef.current = true;
-        setStatus("gone");
-        return;
-      }
-      if (res.status === 429) {
-        nextDelay = PAUSE_ON_LIMIT_MS;
-        setStatus("reconnecting");
-      } else if (!res.ok) {
-        setStatus("reconnecting");
-      } else {
-        const body = await res.json();
-        if (!body.unchanged) {
-          etagRef.current = body.etag;
-          setView(body as PublicView);
-        }
-        setStatus("live");
-      }
-    } catch {
-      setStatus("reconnecting");
-    }
-    if (!stoppedRef.current) timerRef.current = setTimeout(poll, nextDelay);
-  }, [token]);
-
+  // All polling state lives inside the effect, so there is nothing to leak between renders.
   useEffect(() => {
-    stoppedRef.current = false;
-    void poll();
+    let stopped = false;
+    let timer: ReturnType<typeof setTimeout> | null = null;
+    let etag: string | null = null;
 
-    // Do not poll while the tab is hidden.
+    async function poll() {
+      timer = null;
+      if (stopped) return;
+      let nextDelay = POLL_MS;
+      try {
+        const url = `/api/public/${encodeURIComponent(token)}${etag ? `?v=${encodeURIComponent(etag)}` : ""}`;
+        const res = await fetch(url, { cache: "no-store" });
+        if (stopped) return;
+        if (res.status === 404) {
+          stopped = true;
+          setStatus("gone");
+          return;
+        }
+        if (res.status === 429) {
+          nextDelay = PAUSE_ON_LIMIT_MS;
+          setStatus("reconnecting");
+        } else if (!res.ok) {
+          setStatus("reconnecting");
+        } else {
+          const body = await res.json();
+          if (stopped) return;
+          if (!body.unchanged) {
+            etag = body.etag;
+            setView(body as PublicView);
+          }
+          setStatus("live");
+        }
+      } catch {
+        if (!stopped) setStatus("reconnecting");
+      }
+      // Do not keep polling while the tab is hidden; the visibility handler restarts it.
+      if (!stopped && !document.hidden) timer = setTimeout(poll, nextDelay);
+    }
+
     const onVisibility = () => {
       if (document.hidden) {
-        if (timerRef.current) clearTimeout(timerRef.current);
-        timerRef.current = null;
-      } else if (!stoppedRef.current && timerRef.current === null) {
+        if (timer) clearTimeout(timer);
+        timer = null;
+      } else if (!stopped && timer === null) {
         void poll();
       }
     };
+
     document.addEventListener("visibilitychange", onVisibility);
+    void poll();
     return () => {
-      stoppedRef.current = true;
-      if (timerRef.current) clearTimeout(timerRef.current);
+      stopped = true;
+      if (timer) clearTimeout(timer);
       document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [poll]);
+  }, [token]);
 
   const messages = view?.conversation.messages ?? [];
   const messageCount = messages.length;

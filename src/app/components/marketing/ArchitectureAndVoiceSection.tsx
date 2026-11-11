@@ -11,7 +11,7 @@ export function ArchitectureAndVoiceSection() {
           Real voice meetings. Zero-lag distributed state.
         </h2>
         <p className="mt-4 text-base leading-relaxed text-zinc-600 dark:text-zinc-300">
-          "Thinking out loud" isn't a metaphor. Echo pairs a P2P WebRTC mesh with a deterministic canvas engine, transcribing live founder debates into visual decision graphs without server bottlenecks.
+          &quot;Thinking out loud&quot; isn&apos;t a metaphor. Echo pairs a P2P WebRTC mesh with a deterministic canvas engine, transcribing live founder debates into visual decision graphs without server bottlenecks.
         </p>
       </div>
 
@@ -56,7 +56,7 @@ export function ArchitectureAndVoiceSection() {
               Deterministic Action Engine
             </h3>
             <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">
-              Canvas updates don't blast massive graph states across WebSockets. AI dispatches atomic graph diffs with deduplication hash guards, preventing viewport desync and race conditions.
+              Canvas updates don&apos;t blast massive graph states across WebSockets. AI dispatches atomic graph diffs with deduplication hash guards, preventing viewport desync and race conditions.
             </p>
           </div>
           <div className="mt-6 rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-xs font-mono text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-400">
@@ -80,7 +80,7 @@ export function ArchitectureAndVoiceSection() {
               Smart Context Window Budget
             </h3>
             <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">
-              Large canvases don't explode LLM token budgets. Echo serializes connected decision nodes and causal paths directly from the graph, omitting unrelated canvas branches so prompts stay compact and responses return quickly.
+              Large canvases don&apos;t explode LLM token budgets. Echo serializes connected decision nodes and causal paths directly from the graph, omitting unrelated canvas branches so prompts stay compact and responses return quickly.
             </p>
           </div>
           <div className="mt-6 rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-xs font-mono text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-400">

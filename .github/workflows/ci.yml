@@ -41,11 +41,10 @@ jobs:
       - name: Typecheck
         run: npm run typecheck
 
-      # Report-only for now: src/ and tests/ still carry ~36 older style errors (see ROADMAP P0.4).
-      # Remove continue-on-error once they are cleaned up so lint becomes a gate.
-      - name: Lint (report only)
-        run: npx eslint src tests
-        continue-on-error: true
+      # A real gate: any lint error fails the build. Warnings are capped at today's count (11), so they
+      # can only go down. Lower --max-warnings whenever you fix some.
+      - name: Lint
+        run: npx eslint src tests --max-warnings 11
 
       - name: Tests (legacy scripts + configuration checks)
         run: npm test

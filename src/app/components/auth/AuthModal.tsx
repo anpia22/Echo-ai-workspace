@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useIsClient } from "@/lib/useIsClient";
 import { createPortal } from "react-dom";
 import { useRouter } from "next/navigation";
 import {
@@ -25,7 +26,7 @@ export function AuthModal({
   onSuccess,
 }: AuthModalProps) {
   const router = useRouter();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsClient();
   const [isSignUp, setIsSignUp] = useState(defaultMode === "signup");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -34,15 +35,15 @@ export function AuthModal({
   const [infoMsg, setInfoMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  useEffect(() => {
+  // Start from a clean form each time the dialog opens (or its mode changes). Done while
+  // rendering, which is React's recommended way to reset state when an input changes.
+  const [formKey, setFormKey] = useState(`${defaultMode}:${isOpen}`);
+  if (formKey !== `${defaultMode}:${isOpen}`) {
+    setFormKey(`${defaultMode}:${isOpen}`);
     setIsSignUp(defaultMode === "signup");
     setErrorMsg(null);
     setInfoMsg(null);
-  }, [defaultMode, isOpen]);
+  }
 
   useEffect(() => {
     if (!isOpen) return;

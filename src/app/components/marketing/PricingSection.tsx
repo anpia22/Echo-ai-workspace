@@ -120,7 +120,7 @@ export function PricingSection({ showHeader = true }: { showHeader?: boolean }) 
               <div className="my-6 h-px w-full bg-zinc-100 dark:bg-zinc-800" />
 
               <p className="text-[11px] font-semibold uppercase tracking-wider text-zinc-400 dark:text-zinc-500">
-                What's included
+                What&apos;s included
               </p>
               <ul className="mt-3 space-y-2.5 text-xs text-zinc-600 dark:text-zinc-300">
                 {tier.features.map((feat) => (

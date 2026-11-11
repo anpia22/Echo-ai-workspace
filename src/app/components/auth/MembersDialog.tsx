@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useState } from "react";
 import { createPortal } from "react-dom";
+import { useIsClient } from "@/lib/useIsClient";
 import {
   canManageMembers,
   decideRemoval,
@@ -36,7 +37,7 @@ async function api<T>(url: string, init?: RequestInit): Promise<T> {
 
 export function MembersDialog({ workspaceId, onClose }: Props) {
   const titleId = useId();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useIsClient();
   const [members, setMembers] = useState<Member[]>([]);
   const [me, setMe] = useState<{ userId: string; role: WorkspaceMemberRole } | null>(null);
   const [invites, setInvites] = useState<Invite[]>([]);
@@ -83,8 +84,9 @@ export function MembersDialog({ workspaceId, onClose }: Props) {
   }, [workspaceId]);
 
   useEffect(() => {
-    setMounted(true);
-    load();
+    // Loads when the dialog opens; state is only set after the requests finish.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void load();
   }, [load]);
 
   useEffect(() => {

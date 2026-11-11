@@ -28,6 +28,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   // Initialize from localStorage and system preference once mounted
   useEffect(() => {
+    // One-time client initialisation after hydration. Deliberately kept as is: moving it risks a
+    // flash of the wrong theme.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMounted(true);
     try {
       const stored = localStorage.getItem(THEME_STORAGE_KEY) as ThemePreference | null;

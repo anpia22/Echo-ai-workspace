@@ -125,6 +125,7 @@ export async function loadConversationCanvasApi(
   workspaceId: string,
   conversationId: string,
   options?: { signal?: AbortSignal }
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- saved canvas JSON has no fixed shape (frozen persistence code)
 ): Promise<{ nodes: any[]; edges: any[]; groups: any[] }> {
   const response = await fetch(
     `/api/workspace/${encodeURIComponent(workspaceId)}/conversations/${encodeURIComponent(conversationId)}`,

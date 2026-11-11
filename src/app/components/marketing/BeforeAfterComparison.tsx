@@ -37,16 +37,16 @@ export function BeforeAfterComparison() {
 
           <div className="mt-5 space-y-3 font-mono text-xs text-zinc-700 dark:text-zinc-300">
             <div className="rounded-xl border border-zinc-200/70 bg-white p-3 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
-              <span className="font-semibold text-zinc-900 dark:text-white">Staff Eng:</span> "API is choking at 15k QPS. Should we shard with Citus or add a Redis caching layer?"
+              <span className="font-semibold text-zinc-900 dark:text-white">Staff Eng:</span> &quot;API is choking at 15k QPS. Should we shard with Citus or add a Redis caching layer?&quot;
             </div>
             <div className="rounded-xl border border-zinc-200/70 bg-white p-3 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
-              <span className="font-semibold text-zinc-900 dark:text-white">AI Assistant:</span> "Sharding distributes load horizontally across multiple nodes. Redis provides sub-millisecond in-memory lookups. Both have pros and cons [400 words clipped]..."
+              <span className="font-semibold text-zinc-900 dark:text-white">AI Assistant:</span> &quot;Sharding distributes load horizontally across multiple nodes. Redis provides sub-millisecond in-memory lookups. Both have pros and cons [400 words clipped]...&quot;
             </div>
             <div className="rounded-xl border border-zinc-200/70 bg-white p-3 shadow-xs dark:border-zinc-800 dark:bg-zinc-900">
-              <span className="font-semibold text-zinc-900 dark:text-white">Tech Lead:</span> "Wait, Citus introduces distributed deadlocks with our current schema. What about cache invalidation in Redis?"
+              <span className="font-semibold text-zinc-900 dark:text-white">Tech Lead:</span> &quot;Wait, Citus introduces distributed deadlocks with our current schema. What about cache invalidation in Redis?&quot;
             </div>
             <div className="rounded-xl border border-dashed border-rose-300/80 bg-rose-100/50 p-3 text-rose-800 dark:border-rose-800/60 dark:bg-rose-950/40 dark:text-rose-300">
-              <span className="font-semibold">3 weeks later:</span> "Wait, why did we reject Citus again? Who agreed to this? Where are the follow-up tickets?"
+              <span className="font-semibold">3 weeks later:</span> &quot;Wait, why did we reject Citus again? Who agreed to this? Where are the follow-up tickets?&quot;
             </div>
           </div>
 
@@ -55,8 +55,8 @@ export function BeforeAfterComparison() {
               <p className="font-semibold text-rose-700 dark:text-rose-400">The Failure Mode:</p>
               <ul className="mt-1.5 space-y-1 text-zinc-600 dark:text-zinc-400">
                 <li>❌ Trade-offs and rationale disappear into chat scrollback.</li>
-                <li>❌ No institutional memory: new hires can't see why options were rejected.</li>
-                <li>❌ Thinking doesn't lead to action; tickets must be manually recreated.</li>
+                <li>❌ No institutional memory: new hires can&apos;t see why options were rejected.</li>
+                <li>❌ Thinking doesn&apos;t lead to action; tickets must be manually recreated.</li>
               </ul>
             </div>
           </div>

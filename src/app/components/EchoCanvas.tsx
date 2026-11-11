@@ -626,6 +626,7 @@ function EchoCanvasInner({
   }, []);
 
   const generatedNodes: Node<EchoNodeData | EchoGroupData>[] = useMemo(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- reads loosely shaped node data
     const getNodePos = (n: any): { x: number; y: number } => {
       if (n?.position && typeof n.position.x === "number" && typeof n.position.y === "number") {
         return n.position;

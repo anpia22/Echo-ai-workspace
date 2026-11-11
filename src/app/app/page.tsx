@@ -163,7 +163,9 @@ function normalizeLoadedCanvas(
   }
   const nodes: CanvasNode[] = Array.isArray(canvas.nodes)
     ? canvas.nodes
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- reads loosely shaped saved canvas data (older field names)
         .filter((node): node is CanvasNode => Boolean(node && typeof node === "object" && (node as any).id))
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- reads loosely shaped saved canvas data (older field names)
         .map((node: any) => ({
           id: String(node.id),
           nodeType: String(node.nodeType || "problem"),
@@ -186,7 +188,9 @@ function normalizeLoadedCanvas(
 
   const edges: CanvasEdge[] = Array.isArray(canvas.edges)
     ? canvas.edges
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- reads loosely shaped saved canvas data (older field names)
         .filter((edge): edge is CanvasEdge => Boolean(edge && typeof edge === "object" && (edge as any).id))
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- reads loosely shaped saved canvas data (older field names)
         .map((edge: any) => ({
           id: String(edge.id),
           sourceId: String(edge.sourceId || edge.source || ""),
@@ -197,7 +201,9 @@ function normalizeLoadedCanvas(
 
   const groups: CanvasGroup[] = Array.isArray(canvas.groups)
     ? canvas.groups
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- reads loosely shaped saved canvas data (older field names)
         .filter((group): group is CanvasGroup => Boolean(group && typeof group === "object" && (group as any).id))
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any -- reads loosely shaped saved canvas data (older field names)
         .map((group: any) => ({
           id: String(group.id),
           title: String(group.title || ""),
