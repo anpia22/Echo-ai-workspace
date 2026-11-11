@@ -95,7 +95,12 @@ async function run() {
 
     await revokeShareLink(svc, WS, link.id);
     check("after revoking, the link stops working immediately", (await loadPublicView(svc, token)) === null);
-    if (base) check("HTTP: and the running app answers 404", (await fetch(`${base}/api/public/${token}`)).status === 404);
+    if (base) {
+      // The running app is another process with its own 4 s cache, so a revoke made elsewhere can take
+      // up to that long to show (a revoke made through the app itself is immediate).
+      await new Promise((r) => setTimeout(r, 5000));
+      check("HTTP: and the running app answers 404 within the 4 s cache window", (await fetch(`${base}/api/public/${token}`)).status === 404);
+    }
   } catch (e) {
     failure = e;
   } finally {
