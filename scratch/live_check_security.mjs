@@ -169,6 +169,37 @@ async function main() {
     note("admin cannot delete the workspace (only the owner may)", Boolean(data?.length), error ? error.message.slice(0, 60) : `rows deleted=${data?.length ?? 0}`);
     if (data?.length) created.workspace = false; // it is already gone
   }
+
+  console.log("\n== 5. Things that MUST still work ==");
+  const works = (name, ok, detail = "") => {
+    results.push({ name, vulnerable: !ok });
+    console.log(`${ok ? "works     " : "BROKEN    "}  ${name}${detail ? "  — " + detail : ""}`);
+  };
+  {
+    // A real member reads their own workspace through the public API, as the browser would.
+    const { data, error } = await viewer.client.from("workspaces").select("id,title").eq("id", WS);
+    works("a member can read their own workspace", data?.length === 1, error?.message?.slice(0, 60));
+    const { data: convs } = await viewer.client.from("conversations").select("id").eq("workspace_id", WS);
+    works("a member can read their workspace's conversations", (convs?.length ?? 0) === 1);
+    const { data: mem } = await viewer.client.from("workspace_members").select("user_id").eq("workspace_id", WS);
+    works("a member can read the member list", (mem?.length ?? 0) >= 3, `members=${mem?.length ?? 0}`);
+    const { data: me } = await viewer.client.rpc("is_workspace_member", { p_workspace_id: WS });
+    works("a member can ask about their own membership", me === true, `answer=${me}`);
+  }
+  {
+    // The server (service role) runs the same functions the API uses.
+    const call = async (fn, args) => (await svc.rpc(fn, args)).error?.message?.slice(0, 80);
+    works("server can append a message", !(await call("append_message_tx", { p_workspace_id: WS, p_conversation_id: CONV, p_role: "user", p_content: "server write", p_sender_id: OWNER_ID })));
+    works("server can create a meeting", !(await call("create_meeting_tx", { p_workspace_id: WS, p_meeting_id: `ok-${stamp}`, p_title: "ok", p_actor_id: OWNER_ID })));
+    works("server can create a room", !(await call("create_collaboration_room_tx", { p_workspace_id: WS, p_room_id: `ok-room-${stamp}`, p_title: "ok", p_actor_id: OWNER_ID })));
+    works("server can save the canvas", !(await call("apply_canvas_mutation_tx", { p_workspace_id: WS, p_actor_id: OWNER_ID, p_expected_revision: 1, p_upsert_nodes: [], p_delete_node_ids: [], p_upsert_edges: [], p_delete_edge_ids: [], p_upsert_groups: [], p_delete_group_ids: [] })));
+    const { error: wErr } = await svc.from("workspace_members").insert({ workspace_id: WS, user_id: `srv-${stamp}`, display_name: "S", role: "editor" });
+    works("server can still write tables directly (invites, profile sync)", !wErr, wErr?.message?.slice(0, 60));
+    const { error: iErr } = await svc.from("workspace_invites").select("id", { head: true, count: "exact" });
+    works("server can use the invites table", !iErr, iErr?.message?.slice(0, 60));
+    const { data: oracle } = await svc.rpc("is_workspace_member", { p_workspace_id: WS, p_user_id: OWNER_ID });
+    works("server can ask about any user's membership", oracle === true, `answer=${oracle}`);
+  }
 }
 
 let failure = null;
@@ -188,5 +219,5 @@ if (failure) {
   process.exit(2);
 }
 const bad = results.filter((r) => r.vulnerable);
-console.log(`\n${results.length} probes, ${bad.length} vulnerable`);
+console.log(`\n${results.length} probes, ${bad.length} vulnerable or broken`);
 process.exit(bad.length ? 1 : 0);
