@@ -32,7 +32,7 @@ async function main() {
   await svc.from("messages").insert([
     { conversation_id: CONV, workspace_id: WS, role: "user", content: "Hello from a participant", sender_id: PRIVATE_USER, created_at: new Date(Date.now() - 2000).toISOString() },
     { conversation_id: CONV, workspace_id: WS, role: "assistant", content: "Hello from Echo", created_at: new Date(Date.now() - 1000).toISOString() },
-    { conversation_id: CONV, workspace_id: WS, role: "system", content: "SYSTEM-SECRET" },
+    { conversation_id: CONV, workspace_id: WS, role: "system", content: "SYSTEM-SECRET", created_at: new Date(Date.now() - 3000).toISOString() },
   ]).throwOnError();
   await svc.from("canvas_nodes").insert([
     { id: N1, workspace_id: WS, node_type: "problem", title: "A problem", position_x: 0, position_y: 0 },
@@ -72,19 +72,23 @@ async function main() {
   if (base) check("HTTP: and the running app answers 404", (await fetch(`${base}/api/public/${token}`)).status === 404);
 }
 
-let failure: unknown = null;
-try {
-  await main();
-} catch (e) {
-  failure = e;
-} finally {
-  await svc.from("workspaces").delete().eq("id", WS); // cascades to everything above
-  const { count } = await svc.from("workspaces").select("id", { count: "exact", head: true }).eq("id", WS);
-  console.log(`\ncleanup: temp workspace remaining=${count ?? 0}`);
+async function run() {
+  let failure: unknown = null;
+  try {
+    await main();
+  } catch (e) {
+    failure = e;
+  } finally {
+    await svc.from("workspaces").delete().eq("id", WS); // cascades to everything above
+    const { count } = await svc.from("workspaces").select("id", { count: "exact", head: true }).eq("id", WS);
+    console.log(`\ncleanup: temp workspace remaining=${count ?? 0}`);
+  }
+  if (failure) {
+    console.error("\nPROBE ERROR:", failure instanceof Error ? failure.message : failure);
+    process.exit(2);
+  }
+  console.log(`\n${bad === 0 ? "all checks passed" : bad + " problem(s)"}`);
+  process.exit(bad ? 1 : 0);
 }
-if (failure) {
-  console.error("\nPROBE ERROR:", failure instanceof Error ? failure.message : failure);
-  process.exit(2);
-}
-console.log(`\n${bad === 0 ? "all checks passed" : bad + " problem(s)"}`);
-process.exit(bad ? 1 : 0);
+
+void run();
