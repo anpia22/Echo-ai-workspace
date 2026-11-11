@@ -12,6 +12,8 @@
  */
 
 import { isReadOnlyError } from "./readOnly";
+import { enqueueMessageSave } from "./outboxRuntime";
+import { classifySaveError } from "./saveOutbox";
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   appendMessageApi,
@@ -150,6 +152,11 @@ export function useConversationPersistence(workspaceId: string | null) {
             setSavedWithAutoClear();
             return true;
           } catch (retryErr) {
+            if (classifySaveError(retryErr) === "retry") {
+              // Offline or server trouble: keep the message waiting and send it when the connection returns.
+              enqueueMessageSave({ workspaceId, conversationId, conversationTitle, message: { id: message.id, role: message.role, content: message.content } });
+              return false;
+            }
             console.error("[useConversationPersistence] Failed to auto-provision conversation and persist message:", retryErr);
             setConversationPersistenceStatus("error");
             return false;
@@ -160,6 +167,10 @@ export function useConversationPersistence(workspaceId: string | null) {
           // keep the local message; viewers do not save
         } else if (err instanceof ConversationPersistenceConflictError) {
           setConversationPersistenceStatus("conflict");
+        } else if (classifySaveError(err) === "retry") {
+          // Offline or server trouble: keep the message waiting and send it when the connection returns.
+          // (It is idempotent: the message id makes a repeat harmless.)
+          enqueueMessageSave({ workspaceId, conversationId, conversationTitle, message: { id: message.id, role: message.role, content: message.content } });
         } else {
           console.error("[useConversationPersistence] Failed to persist message:", err);
           setConversationPersistenceStatus("error");

@@ -250,9 +250,9 @@ async function main() {
   console.log("wiring");
   const read = (p: string) => readFileSync(new URL(`../${p}`, import.meta.url), "utf8");
   const hook = read("src/app/lib/persistence/client/useCanvasPersistence.ts");
-  check("both save paths go through the queue", (hook.match(/enqueueSave\(/g) ?? []).length === 2 && /saveQueueRef\.current/.test(hook) && /saveWithRebase\(/.test(hook));
+  check("both save paths go through the shared outbox (P1.3), which rebases", (hook.match(/enqueueSave\(/g) ?? []).length === 2 && /enqueueCanvasSave\(/.test(hook) && /saveWithRebase\(/.test(hook));
   check("the hook no longer sends saves directly", !/await persistCanvasMutation\(workspaceId/.test(hook));
-  check("a save queued for another workspace is dropped", /workspaceIdRef\.current === targetWorkspaceId/.test(hook));
+  check("a save queued for another workspace is dropped", /workspaceIdRef\.current === target\b/.test(hook));
   check("abandoned saves are not reported as errors", /err instanceof SaveAbandoned\) return/.test(hook));
   const route = read("src/app/api/workspace/[workspaceId]/canvas/route.ts");
   const get = route.slice(route.indexOf("export async function GET"), route.indexOf("export async function POST"));

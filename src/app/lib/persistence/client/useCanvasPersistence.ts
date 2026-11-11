@@ -12,6 +12,8 @@
  * - Stale revision (409 conflict): P1.2 rebases (fetches the latest revision) and retries a few
  *   times; status = "conflict" only if that still fails.
  * - P1.2: saves from this tab run one at a time, so they cannot conflict with each other.
+ * - P1.3: saves go through the shared outbox: a dropped connection keeps them waiting and replays
+ *   them in order when the connection returns, instead of losing them.
  * - Persistence failure: status = "error". Never silently claims "saved".
  * - Does NOT write during hydration. Caller passes workspaceId only after hydration completes.
  * - Client-only: no server/repository/database imports.
@@ -26,8 +28,10 @@ import {
   fetchCanvasRevisionApi,
   CanvasPersistenceConflictError,
 } from "./canvasApi";
-import type { CanvasPersistenceMutationPayload } from "./canvasApi";
-import { SaveAbandoned, createSaveQueue, saveWithRebase } from "./canvasSaveQueue";
+import { SaveAbandoned, saveWithRebase } from "./canvasSaveQueue";
+import type { OutboxItem } from "./outbox";
+import { enqueueCanvasSave, outbox, registerExecutor } from "./outboxRuntime";
+import { KIND_CANVAS, classifySaveError, type CanvasMutation, type CanvasSavePayload } from "./saveOutbox";
 import type { CanvasAction } from "../../applyCanvasActions";
 
 export type CanvasPersistenceStatus =
@@ -86,8 +90,7 @@ export function useCanvasPersistence(
     persistenceRevisionRef.current = persistenceRevision;
   }, [persistenceRevision]);
 
-  // P1.2: saves run strictly one at a time, and only for the workspace they were made in.
-  const saveQueueRef = useRef(createSaveQueue());
+  // P1.2: saves are only sent for the workspace they were made in.
   const workspaceIdRef = useRef<string | null>(workspaceId);
   useEffect(() => {
     workspaceIdRef.current = workspaceId;
@@ -142,33 +145,52 @@ export function useCanvasPersistence(
   }, []);
 
   /**
-   * Queues a mutation. It is sent on the latest known revision; if another person saved
-   * first, the revision is refreshed and the same change is applied on top (P1.2).
+   * Queues a mutation in the shared outbox. It is sent on the latest known revision; if another
+   * person saved first, the revision is refreshed and the same change is applied on top (P1.2);
+   * if the connection is down, it waits and is replayed in order when it returns (P1.3).
    */
   const enqueueSave = useCallback(
-    (targetWorkspaceId: string, mutation: Omit<CanvasPersistenceMutationPayload, "expectedBaseRevision">) => {
+    (targetWorkspaceId: string, mutation: CanvasMutation) => {
       setPersistenceStatus("saving");
       clearSavedTimer();
-
-      void saveQueueRef.current
-        .enqueue(() =>
-          saveWithRebase(mutation, {
-            send: (m, baseRevision) =>
-              persistCanvasMutation(targetWorkspaceId, { ...m, expectedBaseRevision: baseRevision }),
-            fetchRevision: () => fetchCanvasRevisionApi(targetWorkspaceId),
-            getRevision: () => persistenceRevisionRef.current,
-            setRevision: (revision) => {
-              persistenceRevisionRef.current = revision;
-            },
-            isStale: (e) => e instanceof CanvasPersistenceConflictError,
-            shouldContinue: () => workspaceIdRef.current === targetWorkspaceId,
-          })
-        )
-        .then((result) => handleSuccess(result.newRevision))
-        .catch((err) => handleError(err));
+      enqueueCanvasSave({ workspaceId: targetWorkspaceId, mutation });
     },
-    [handleSuccess, handleError, clearSavedTimer]
+    [clearSavedTimer]
   );
+
+  // How to actually send a queued canvas save. Registered here because it needs this hook's revision.
+  useEffect(() => {
+    const execute = async (item: OutboxItem) => {
+      const { workspaceId: target, mutation } = item.payload as CanvasSavePayload;
+      try {
+        const result = await saveWithRebase(mutation, {
+          send: (m, baseRevision) => persistCanvasMutation(target, { ...m, expectedBaseRevision: baseRevision }),
+          fetchRevision: () => fetchCanvasRevisionApi(target),
+          getRevision: () => persistenceRevisionRef.current,
+          setRevision: (revision) => {
+            persistenceRevisionRef.current = revision;
+          },
+          isStale: (e) => e instanceof CanvasPersistenceConflictError,
+          shouldContinue: () => workspaceIdRef.current === target,
+        });
+        handleSuccess(result.newRevision);
+      } catch (err) {
+        // Temporary trouble (offline, server error): the outbox keeps the save and retries it.
+        // Anything that can never succeed is reported here and then dropped by the outbox.
+        if (classifySaveError(err) === "drop") handleError(err);
+        throw err;
+      }
+    };
+    return registerExecutor(KIND_CANVAS, execute);
+  }, [handleSuccess, handleError]);
+
+  // Leaving a workspace: its waiting canvas saves no longer apply (a different canvas and revision).
+  useEffect(() => {
+    return () => {
+      if (!workspaceId) return;
+      outbox.discard((i) => i.kind === KIND_CANVAS && (i.payload as CanvasSavePayload).workspaceId === workspaceId);
+    };
+  }, [workspaceId]);
 
   /**
    * Persists a batch of CanvasActions derived from applyCanvasActions().

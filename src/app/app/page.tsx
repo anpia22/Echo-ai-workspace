@@ -59,12 +59,15 @@ import {
   useClientMigration,
   isWorkspaceMigrated,
   updateConversationTitleApi,
-  updateConversationApi,
   loadConversationCanvasApi,
 } from "../lib/persistence/client";
 import { startIceServerRefresh } from "../lib/webrtc/iceServersClient";
 import {
-  isReadOnlyError,
+  enqueueConversationCanvasSave,
+  installOutboxBrowserHooks,
+  useOutboxStatus,
+} from "../lib/persistence/client/outboxRuntime";
+import {
   isWorkspaceReadOnly,
   useWorkspaceReadOnly,
 } from "../lib/persistence/client/readOnly";
@@ -471,10 +474,37 @@ function SystemStatusBadge({
   canvasStatus: CanvasPersistenceStatus;
   conversationStatus: ConversationPersistenceStatus;
 }) {
+  const outboxStatus = useOutboxStatus();
   const isError = canvasStatus === "error" || conversationStatus === "error";
   const isConflict = canvasStatus === "conflict" || conversationStatus === "conflict";
   const isSaving = canvasStatus === "saving" || conversationStatus === "saving";
   const isSaved = canvasStatus === "saved" || conversationStatus === "saved";
+
+  // P1.3: changes are waiting because the connection is down or the server is struggling.
+  if (outboxStatus.pending > 0 && (outboxStatus.state === "offline" || outboxStatus.state === "waiting")) {
+    const offline = outboxStatus.state === "offline";
+    const label = `${offline ? "Offline" : "Reconnecting"} · ${outboxStatus.pending} waiting`;
+    return (
+      <div
+        data-testid="system-persistence-offline"
+        role="status"
+        aria-live="polite"
+        className="flex cursor-default items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-50 px-2 py-1 text-xs text-amber-700 dark:border-amber-500/40 dark:bg-amber-950/40 dark:text-amber-400"
+        title={
+          offline
+            ? "You are offline. Your changes are kept and will be saved automatically when the connection returns."
+            : "The server did not answer. Your changes are kept and will be retried automatically."
+        }
+        aria-label={label}
+      >
+        <svg className="h-3 w-3" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+          <circle cx="6" cy="6" r="5" stroke="currentColor" strokeWidth="1.2" />
+          <path d="M6 3v3l2 1" stroke="currentColor" strokeWidth="1.2" strokeLinecap="round" />
+        </svg>
+        <span className="hidden sm:inline">{label}</span>
+      </div>
+    );
+  }
 
   if (isError) {
     return (
@@ -1287,6 +1317,9 @@ function Home() {
     startIceServerRefresh();
   }, []);
 
+  // P1.3: retry saves when the connection returns, and warn before closing with unsaved changes.
+  useEffect(() => installOutboxBrowserHooks(), []);
+
   useEffect(() => {
     isMountedRef.current = true;
 
@@ -2012,21 +2045,12 @@ function Home() {
         setConversations((prev) =>
           prev.map((c) => (c.id === saveConversationId ? { ...c, canvas: nextCanvas } : c))
         );
-        updateConversationApi(currentWorkspaceId, saveConversationId, {
-          metadata: { canvas: nextCanvas },
-        })
-          .then(() => {
-            // After save completion, do not update UI state unless the saved conversation is still the active conversation.
-            if (
-              saveConversationId !== activeConversationIdRef.current ||
-              currentWorkspaceId !== currentWorkspaceIdRef.current
-            ) {
-              return;
-            }
-          })
-          .catch((err) => {
-            if (!isReadOnlyError(err)) console.error("Failed to persist conversation canvas on move:", err);
-          });
+        // P1.3: queued, so a dropped connection retries instead of losing the change.
+        enqueueConversationCanvasSave({
+          workspaceId: currentWorkspaceId,
+          conversationId: saveConversationId,
+          canvas: nextCanvas,
+        });
       }
     }
   };
@@ -2310,20 +2334,12 @@ function Home() {
         setConversations((prev) =>
           prev.map((c) => (c.id === saveConversationId ? { ...c, canvas: nextCanvas } : c))
         );
-        updateConversationApi(requestWorkspaceId, saveConversationId, {
-          metadata: { canvas: nextCanvas },
-        })
-          .then(() => {
-            if (
-              saveConversationId !== activeConversationIdRef.current ||
-              requestWorkspaceId !== currentWorkspaceIdRef.current
-            ) {
-              return;
-            }
-          })
-          .catch((err) => {
-            if (!isReadOnlyError(err)) console.error("Failed to persist conversation canvas:", err);
-          });
+        // P1.3: queued, so a dropped connection retries instead of losing the change.
+        enqueueConversationCanvasSave({
+          workspaceId: requestWorkspaceId,
+          conversationId: saveConversationId,
+          canvas: nextCanvas,
+        });
 
         if (process.env.NODE_ENV !== "production") {
           const paintStart = performance.now();

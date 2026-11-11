@@ -110,7 +110,7 @@ async function main() {
   const page = read("src/app/app/page.tsx");
   check("page shows a View only badge", /View only/.test(page) && /useWorkspaceReadOnly\(\)/.test(page));
   check("viewers cannot trigger AI analysis", /if \(isWorkspaceReadOnly\(\)\) return;/.test(page));
-  check("expected read-only failures are not logged as errors", /isReadOnlyError\(err\)\) console\.error|!isReadOnlyError\(err\)\) console\.error/.test(page));
+  check("conversation-canvas saves go through the outbox, which drops read-only saves silently", /enqueueConversationCanvasSave\(/.test(page) && !/Failed to persist conversation canvas/.test(page));
   const canvasHook = read("src/app/lib/persistence/client/useCanvasPersistence.ts");
   check("canvas hook ignores read-only failures", /isReadOnlyError\(err\)\) return/.test(canvasHook));
 
