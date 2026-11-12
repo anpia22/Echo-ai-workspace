@@ -245,28 +245,28 @@ export default async function BlogPostPage({ params }: PageProps) {
                     href="/demo"
                     className="flex items-center justify-between rounded-xl border border-zinc-200/70 bg-white/80 p-3.5 text-sm font-medium text-zinc-800 shadow-sm transition hover:border-indigo-300 hover:text-indigo-600 dark:border-zinc-700/60 dark:bg-zinc-800/60 dark:text-zinc-200 dark:hover:border-indigo-400/50 dark:hover:text-indigo-300"
                   >
-                    <span>🎯 Interactive Demo</span>
+                    <span>Interactive Demo</span>
                     <span className="text-zinc-400">→</span>
                   </Link>
                   <Link
                     href="/how-it-works"
                     className="flex items-center justify-between rounded-xl border border-zinc-200/70 bg-white/80 p-3.5 text-sm font-medium text-zinc-800 shadow-sm transition hover:border-indigo-300 hover:text-indigo-600 dark:border-zinc-700/60 dark:bg-zinc-800/60 dark:text-zinc-200 dark:hover:border-indigo-400/50 dark:hover:text-indigo-300"
                   >
-                    <span>⚡ How It Works</span>
+                    <span>How It Works</span>
                     <span className="text-zinc-400">→</span>
                   </Link>
                   <Link
                     href="/use-cases"
                     className="flex items-center justify-between rounded-xl border border-zinc-200/70 bg-white/80 p-3.5 text-sm font-medium text-zinc-800 shadow-sm transition hover:border-indigo-300 hover:text-indigo-600 dark:border-zinc-700/60 dark:bg-zinc-800/60 dark:text-zinc-200 dark:hover:border-indigo-400/50 dark:hover:text-indigo-300"
                   >
-                    <span>💡 Explore Use Cases</span>
+                    <span>Explore Use Cases</span>
                     <span className="text-zinc-400">→</span>
                   </Link>
                   <Link
                     href="/about"
                     className="flex items-center justify-between rounded-xl border border-zinc-200/70 bg-white/80 p-3.5 text-sm font-medium text-zinc-800 shadow-sm transition hover:border-indigo-300 hover:text-indigo-600 dark:border-zinc-700/60 dark:bg-zinc-800/60 dark:text-zinc-200 dark:hover:border-indigo-400/50 dark:hover:text-indigo-300"
                   >
-                    <span>🏢 About Echo</span>
+                    <span>About Echo</span>
                     <span className="text-zinc-400">→</span>
                   </Link>
                 </div>
@@ -276,15 +276,9 @@ export default async function BlogPostPage({ params }: PageProps) {
             {post.faqs && post.faqs.length > 0 && (
               <section id="frequently-asked-questions" className="flex scroll-mt-28 flex-col gap-6 border-t border-zinc-200 pt-10 dark:border-zinc-800">
                 <div className="flex flex-col gap-2">
-                  <span className="text-xs font-semibold uppercase tracking-wider text-indigo-600 dark:text-indigo-400">
-                    AEO & GEO Knowledge Vault
-                  </span>
                   <h2 className="text-2xl font-semibold leading-snug tracking-tight text-zinc-900 text-balance dark:text-white">
-                    Frequently Asked Questions & Answers
+                    Frequently asked questions
                   </h2>
-                  <p className="text-sm text-zinc-600 dark:text-zinc-400">
-                    Concise, authoritative answers optimized for search query understanding, answer engines (AEO), and LLM knowledge graphs (GEO).
-                  </p>
                 </div>
                 <div className="flex flex-col gap-4">
                   {post.faqs.map((faq, idx) => (
@@ -304,16 +298,6 @@ export default async function BlogPostPage({ params }: PageProps) {
               </section>
             )}
 
-            <ul className="flex flex-wrap gap-2 border-t border-zinc-200 pt-8 dark:border-zinc-800">
-              {post.keywords.map((keyword) => (
-                <li
-                  key={keyword}
-                  className="rounded-full border border-zinc-200 px-3 py-1 text-xs font-medium text-zinc-600 dark:border-zinc-700 dark:text-zinc-300"
-                >
-                  {keyword}
-                </li>
-              ))}
-            </ul>
           </div>
 
           <aside className="hidden lg:block">
@@ -347,7 +331,7 @@ export default async function BlogPostPage({ params }: PageProps) {
                       href="/demo"
                       className="flex items-center justify-between font-medium text-zinc-700 transition-colors hover:text-indigo-600 dark:text-zinc-300 dark:hover:text-indigo-400"
                     >
-                      <span>🎯 Interactive Demo</span>
+                      <span>Interactive Demo</span>
                       <span>→</span>
                     </Link>
                   </li>
@@ -356,7 +340,7 @@ export default async function BlogPostPage({ params }: PageProps) {
                       href="/how-it-works"
                       className="flex items-center justify-between font-medium text-zinc-700 transition-colors hover:text-indigo-600 dark:text-zinc-300 dark:hover:text-indigo-400"
                     >
-                      <span>⚡ How It Works</span>
+                      <span>How It Works</span>
                       <span>→</span>
                     </Link>
                   </li>
@@ -365,7 +349,7 @@ export default async function BlogPostPage({ params }: PageProps) {
                       href="/use-cases"
                       className="flex items-center justify-between font-medium text-zinc-700 transition-colors hover:text-indigo-600 dark:text-zinc-300 dark:hover:text-indigo-400"
                     >
-                      <span>💡 Use Cases</span>
+                      <span>Use Cases</span>
                       <span>→</span>
                     </Link>
                   </li>
@@ -374,7 +358,7 @@ export default async function BlogPostPage({ params }: PageProps) {
                       href="/about"
                       className="flex items-center justify-between font-medium text-zinc-700 transition-colors hover:text-indigo-600 dark:text-zinc-300 dark:hover:text-indigo-400"
                     >
-                      <span>🏢 About Echo</span>
+                      <span>About Echo</span>
                       <span>→</span>
                     </Link>
                   </li>
