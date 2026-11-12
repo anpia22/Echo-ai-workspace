@@ -8,11 +8,11 @@ import { CtaBand, GradientText, PageHero, SectionHeader, StepRow } from "../../c
 export const metadata: Metadata = withSeo("/how-it-works", {
   title: "How Echo Works",
   description:
-    "Explore how Echo turns conversation into structured visual thinking on a spatial canvas through bidirectional AI reasoning and persistent context.",
+    "Describe a technical decision and Echo drafts a map of the problem, options, decision and tasks. You reshape it, and the AI builds on your version.",
   openGraph: {
     title: "How Echo Works",
     description:
-      "Explore how Echo turns conversation into structured visual thinking on a spatial canvas through bidirectional AI reasoning and persistent context.",
+      "Describe a technical decision and Echo drafts a map of the problem, options, decision and tasks. You reshape it, and the AI builds on your version.",
     type: "website",
   },
 });
@@ -455,7 +455,7 @@ export default function HowItWorksPage() {
             From a thought to a <GradientText>workspace</GradientText>
           </>
         }
-        subtitle="Start with a thought. Talk it through with Echo. Then give those ideas a visual place to develop."
+        subtitle="Describe a technical decision. Echo drafts the map. You reshape it, and the AI builds on your version."
         secondary={{ href: "/use-cases", label: "Explore use cases" }}
       >
         <HeroFlow />
@@ -465,31 +465,31 @@ export default function HowItWorksPage() {
         <SectionHeader
           eyebrow="Five steps"
           title="One continuous loop of thinking"
-          subtitle="No setup and no template to fill in. You begin with whatever you have."
+          subtitle="From a messy technical problem to a saved decision map."
         />
         <div className="flex flex-col gap-5">
           <StepRow
             number="01"
-            title="Bring the rough idea"
+            title="Describe the problem"
             body={
               <>
                 <p>
-                  You don&apos;t need a perfectly structured prompt. Start with a question, a problem, a decision. Anything you&apos;re trying to think through.
+                  Type it, speak it in a voice room, or start from a template: Monolith vs microservices, Build vs buy auth, Sharding vs read replicas, Payment webhook outage.
                 </p>
-                <p>Echo is designed to work from the beginning of a thought, not just its finished form. Any starting point works.</p>
+                <p>You don&apos;t need a structured prompt. A rough description is enough to start.</p>
               </>
             }
             visual={<ThoughtVisual />}
           />
           <StepRow
             number="02"
-            title="Let conversation shape the idea"
+            title="Echo drafts the map"
             body={
               <>
                 <p>
-                  Explore the idea through natural conversation. Ask questions, push back, change direction. Echo responds and helps the thinking develop.
+                  You get connected nodes for the problem, the options, a decision and the follow-up tasks.
                 </p>
-                <p>The conversation is the starting material. It&apos;s how the idea gets clearer before it becomes something you can see.</p>
+                <p>Push back or change direction in the conversation and the draft follows.</p>
               </>
             }
             visual={<ConversationVisual />}
@@ -497,24 +497,24 @@ export default function HowItWorksPage() {
           />
           <StepRow
             number="03"
-            title="Turn conversation into structure"
+            title="You reshape it"
             body={
               <>
-                <p>As the idea becomes clearer, Echo can help organize the thinking into connected relationships, groups, and directions.</p>
-                <p>Scattered ideas start to take shape. The AI drafts the structure and you shape it, so it reflects your thinking.</p>
+                <p>Move, edit, delete and regroup anything. The map should say what you actually think, not what the AI guessed.</p>
+                <p>Mistakes are reversible: undo only reverses your own changes.</p>
               </>
             }
             visual={<StructureVisual />}
           />
           <StepRow
             number="04"
-            title="Give the thinking a visual place"
+            title="Ask the next question"
             body={
               <>
                 <p>
-                  The canvas lets you see how ideas connect spatially. Concepts, options, and decisions can be laid out and explored visually, beyond what a linear conversation thread can show.
+                  The AI reads your edited map, so each answer builds on what you decided, not on a scrolling thread.
                 </p>
-                <p>This is where conversation and visual thinking come together in one shared space.</p>
+                <p>Teammates can join the same canvas with live cursors, and you can meet in a voice room while you work.</p>
               </>
             }
             visual={<CanvasVisual />}
@@ -522,13 +522,13 @@ export default function HowItWorksPage() {
           />
           <StepRow
             number="05"
-            title="Return to ideas where you left them"
+            title="Come back later"
             body={
               <>
                 <p>
-                  The workspace gives your ideas a place to keep developing. Conversation and visual thinking stay connected in one space, so the context of what you were exploring doesn&apos;t get scattered.
+                  Workspaces are saved. Invite teammates with edit or view access, or publish one conversation as a read-only link that expires.
                 </p>
-                <p>Pick up where you left off, add a new thought, or explore a different direction, all in the same workspace.</p>
+                <p>Months later, you can find why an option was rejected.</p>
               </>
             }
             visual={<ContinuationVisual />}
@@ -541,8 +541,8 @@ export default function HowItWorksPage() {
       <FaqSection items={ECHO_FAQ} />
 
       <CtaBand
-        title="Ready to think with Echo?"
-        subtitle="Start with an idea and give it a workspace."
+        title="Bring one real decision"
+        subtitle="Free during public beta. Start from a template or describe your own."
         secondary={{ href: "/use-cases", label: "Explore use cases" }}
       />
     </div>

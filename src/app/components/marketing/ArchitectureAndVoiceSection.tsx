@@ -8,7 +8,7 @@ export function ArchitectureAndVoiceSection() {
           Under The Hood
         </span>
         <h2 className="mt-3 text-3xl font-semibold leading-tight tracking-tight text-zinc-900 dark:text-white sm:text-4xl">
-          Real voice meetings. Zero-lag distributed state.
+          Real voice meetings and a shared canvas that stays in sync.
         </h2>
         <p className="mt-4 text-base leading-relaxed text-zinc-600 dark:text-zinc-300">
           &quot;Thinking out loud&quot; isn&apos;t a metaphor. Echo pairs a P2P WebRTC mesh with a deterministic canvas engine, transcribing live founder debates into visual decision graphs without server bottlenecks.
@@ -36,7 +36,7 @@ export function ArchitectureAndVoiceSection() {
             </p>
           </div>
           <div className="mt-6 rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-xs font-mono text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-400">
-            🎙️ Audio stream → Normalized STT events → Semantic graph actions
+            Audio stream → Speech-to-text events → Canvas suggestions
           </div>
         </FadeIn>
 
@@ -56,11 +56,11 @@ export function ArchitectureAndVoiceSection() {
               Deterministic Action Engine
             </h3>
             <p className="mt-2 text-sm leading-relaxed text-zinc-600 dark:text-zinc-300">
-              Canvas updates don&apos;t blast massive graph states across WebSockets. AI dispatches atomic graph diffs with deduplication hash guards, preventing viewport desync and race conditions.
+              Canvas updates don&apos;t blast massive graph states across WebSockets. AI dispatches atomic graph diffs with deduplication hash guards, so repeated updates are ignored and collaborators stay in sync.
             </p>
           </div>
           <div className="mt-6 rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-xs font-mono text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-400">
-            ⚡ 16ms throttled broadcast · Hash deduplication · Zero viewport jitter
+            Throttled broadcast · Hash deduplication · Small incremental updates
           </div>
         </FadeIn>
 
@@ -84,7 +84,7 @@ export function ArchitectureAndVoiceSection() {
             </p>
           </div>
           <div className="mt-6 rounded-xl border border-zinc-200 bg-zinc-50 p-3 text-xs font-mono text-zinc-600 dark:border-zinc-800 dark:bg-zinc-950/60 dark:text-zinc-400">
-            🛡️ Structured graph extraction · Causal edge paths · Compact token footprint
+            Structured graph extraction · Causal edge paths · Compact token footprint
           </div>
         </FadeIn>
       </div>

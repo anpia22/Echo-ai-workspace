@@ -96,7 +96,7 @@ export default function HomePage() {
       {/* System of Record / Defensibility */}
       <section className="py-14 sm:py-20">
         <SectionHeader
-          eyebrow="Defensibility & Moat"
+          eyebrow="Why it's different"
           title="Why Echo is a system of record, not a whiteboard"
           subtitle="Chat wrappers produce throwaway text. Whiteboards produce unstructured doodles. Echo creates lasting institutional memory."
         />
@@ -124,7 +124,7 @@ export default function HomePage() {
       {/* One audience, concrete jobs */}
       <section className="py-14 sm:py-20">
         <SectionHeader
-          eyebrow="Target Audience"
+          eyebrow="Who it's for"
           title="Built for technical founders and engineering leads"
           subtitle="Designed specifically for leaders making high-impact choices with incomplete information."
         />

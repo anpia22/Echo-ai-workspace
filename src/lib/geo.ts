@@ -56,6 +56,16 @@ export const ECHO_FAQ: { question: string; answer: string }[] = [
       "A chat assistant keeps ideas in a linear thread and a whiteboard has no AI reasoning. Echo connects both: AI conversation produces structure on a canvas, and the canvas stays available as context for the next conversation.",
   },
   {
+    question: "Does Echo connect to Linear or GitHub?",
+    answer:
+      "Not yet. Tasks can be copied out as Markdown today. Sync with issue trackers is on the roadmap.",
+  },
+  {
+    question: "Where does my data go?",
+    answer:
+      "Workspace records are stored in Supabase. Prompts go to NVIDIA's Nemotron model. Voice transcription uses a speech-to-text provider. Details are in the privacy policy.",
+  },
+  {
     question: "Does Echo keep my workspace between sessions?",
     answer:
       "Yes. Echo workspaces are persistent, so you can return to your canvas and continue exactly where you left off. See the privacy policy for how workspace content is handled.",

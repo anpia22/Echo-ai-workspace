@@ -5,13 +5,13 @@ export function BeforeAfterComparison() {
     <section className="py-14 sm:py-20">
       <div className="mx-auto max-w-2xl text-center mb-12">
         <span className="text-xs font-semibold uppercase tracking-[0.18em] text-indigo-600 dark:text-indigo-400">
-          Proof of Value
+          Chat vs. decision map
         </span>
         <h2 className="mt-3 text-3xl font-semibold leading-tight tracking-tight text-zinc-900 dark:text-white sm:text-4xl">
           Why linear chat fails hard decisions
         </h2>
         <p className="mt-4 text-base leading-relaxed text-zinc-600 dark:text-zinc-300">
-          When teams evaluate high-stakes architecture choices in Slack or ChatGPT, trade-offs get buried in scrolling text. Echo turns chaotic debate into a permanent, actionable system of record.
+          When teams evaluate high-stakes architecture choices in Slack or ChatGPT, trade-offs get buried in scrolling text. Echo turns chaotic debate into a structured, saved record. The map below is an illustrative example, not a live integration.
         </p>
       </div>
 
@@ -54,9 +54,9 @@ export function BeforeAfterComparison() {
             <div className="rounded-2xl border border-rose-200 bg-white/90 p-4 text-xs dark:border-rose-900/50 dark:bg-zinc-900/80">
               <p className="font-semibold text-rose-700 dark:text-rose-400">The Failure Mode:</p>
               <ul className="mt-1.5 space-y-1 text-zinc-600 dark:text-zinc-400">
-                <li>❌ Trade-offs and rationale disappear into chat scrollback.</li>
-                <li>❌ No institutional memory: new hires can&apos;t see why options were rejected.</li>
-                <li>❌ Thinking doesn&apos;t lead to action; tickets must be manually recreated.</li>
+                <li>Trade-offs and rationale disappear into chat scrollback.</li>
+                <li>No institutional memory: new hires can&apos;t see why options were rejected.</li>
+                <li>Thinking doesn&apos;t lead to action; tickets must be manually recreated.</li>
               </ul>
             </div>
           </div>
@@ -122,8 +122,8 @@ export function BeforeAfterComparison() {
                 <span className="flex h-5 w-5 items-center justify-center rounded-md bg-indigo-600 text-[10px] font-bold text-white">L</span>
                 <span className="font-mono text-[11px] font-medium">LIN-289: Configure PgBouncer connection pooling</span>
               </div>
-              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300">
-                Synced
+              <span className="rounded-full bg-zinc-100 px-2 py-0.5 text-[10px] font-semibold text-zinc-600 dark:bg-zinc-800 dark:text-zinc-300">
+                Example
               </span>
             </div>
           </div>
@@ -132,9 +132,9 @@ export function BeforeAfterComparison() {
             <div className="rounded-2xl border border-indigo-200 bg-white/90 p-4 text-xs dark:border-indigo-900/50 dark:bg-zinc-900/80">
               <p className="font-semibold text-indigo-700 dark:text-indigo-400">The Echo Advantage:</p>
               <ul className="mt-1.5 space-y-1 text-zinc-600 dark:text-zinc-400">
-                <li>✅ Trade-offs remain spatially connected and visible at a glance.</li>
-                <li>✅ Institutional memory: why options were rejected is permanently preserved.</li>
-                <li>✅ Directly bridges thinking to execution with structured task and schema exports.</li>
+                <li>Trade-offs remain spatially connected and visible at a glance.</li>
+                <li>Institutional memory: why options were rejected is preserved with the workspace.</li>
+                <li>Tasks stay attached to the decision, and you can copy them out as Markdown.</li>
               </ul>
             </div>
           </div>

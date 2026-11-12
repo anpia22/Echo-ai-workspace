@@ -7,11 +7,11 @@ import { Stagger } from "../../components/marketing/motion";
 export const metadata: Metadata = withSeo("/use-cases", {
   title: "Use Cases",
   description:
-    "Discover four primary ways to think with Echo: explore complex problems, plan sequential projects, evaluate architectural decisions, and create emergent ideas.",
+    "Four decisions Echo maps well: architecture choices, build vs buy, incident follow-ups and scope cuts.",
   openGraph: {
     title: "Use Cases",
     description:
-      "Discover four primary ways to think with Echo: explore complex problems, plan sequential projects, evaluate architectural decisions, and create emergent ideas.",
+      "Four decisions Echo maps well: architecture choices, build vs buy, incident follow-ups and scope cuts.",
     type: "website",
   },
 });
@@ -20,10 +20,10 @@ export const metadata: Metadata = withSeo("/use-cases", {
 
 function OverviewMap() {
   const modes = [
-    { name: "Explore", desc: "Questions & relationships", color: "text-zinc-300" },
-    { name: "Plan", desc: "Sequence & dependencies", color: "text-zinc-300" },
-    { name: "Decide", desc: "Options & trade-offs", color: "text-zinc-300" },
-    { name: "Create", desc: "Concepts & iteration", color: "text-zinc-300" },
+    { name: "Architecture", desc: "Options & trade-offs", color: "text-zinc-300" },
+    { name: "Build vs buy", desc: "Criteria & scores", color: "text-zinc-300" },
+    { name: "Incidents", desc: "Causes & action items", color: "text-zinc-300" },
+    { name: "Scope cuts", desc: "Constraints & decisions", color: "text-zinc-300" },
   ];
 
   return (
@@ -40,7 +40,7 @@ function OverviewMap() {
               One Workspace
             </span>
             <span className="text-sm font-semibold text-zinc-900 dark:text-white">
-              Conversation + Visual Canvas
+              Conversation + Decision Map
             </span>
           </div>
 
@@ -116,7 +116,7 @@ function OverviewMap() {
             One Workspace
           </span>
           <span className="text-xs font-semibold text-zinc-900 dark:text-white">
-            Conversation + Visual Canvas
+            Conversation + Decision Map
           </span>
         </div>
 
@@ -361,162 +361,70 @@ function DecideVisual() {
   );
 }
 
-// ─── Mode 04: Create Visual ───────────────────────────────────────────────────
-
-function CreateVisual() {
-  return (
-    <div aria-hidden="true" className="w-full max-w-sm rounded-2xl border border-zinc-700/70 bg-zinc-950 p-4 select-none shadow-xl hover:border-indigo-500/40 hover:shadow-2xl hover:shadow-indigo-500/10 transition-all duration-300">
-      <div className="flex items-center gap-2 mb-3 pb-2 border-b border-zinc-800/60">
-        <div className="h-2 w-2 rounded-full bg-indigo-400 animate-pulse" />
-        <span className="text-xs uppercase tracking-wider text-indigo-400 font-semibold">
-          Iterative Formulation
-        </span>
-      </div>
-
-      <svg className="w-full h-auto block" viewBox="0 0 280 180" fill="none">
-        {/* Subtle grid pattern */}
-        <defs>
-          <pattern id="create-dots" x="0" y="0" width="14" height="14" patternUnits="userSpaceOnUse">
-            <circle cx="2" cy="2" r="0.6" fill="#27272a" />
-          </pattern>
-        </defs>
-        <rect width="100%" height="100%" fill="url(#create-dots)" />
-
-        {/* Fragment 1 */}
-        <rect x="20" y="12" width="70" height="22" rx="5" fill="#18181b" stroke="#3f3f46" strokeWidth="1" strokeDasharray="2 2" />
-        <text x="55" y="26" textAnchor="middle" fill="#a1a1aa" fontSize="9" fontFamily="system-ui, -apple-system, sans-serif">
-          Rough Note
-        </text>
-
-        {/* Fragment 2 */}
-        <rect x="185" y="12" width="75" height="22" rx="5" fill="#18181b" stroke="#3f3f46" strokeWidth="1" strokeDasharray="2 2" />
-        <text x="222" y="26" textAnchor="middle" fill="#a1a1aa" fontSize="9" fontFamily="system-ui, -apple-system, sans-serif">
-          Key Question
-        </text>
-
-        {/* Convergence down to conversation shaping */}
-        <path d="M 55 34 L 110 58" stroke="#6366f1" strokeWidth="1.5" className="animate-echo-beam" />
-        <path d="M 222 34 L 170 58" stroke="#6366f1" strokeWidth="1.5" className="animate-echo-beam" />
-
-        {/* Dialogue shaping container */}
-        <rect x="80" y="58" width="120" height="26" rx="6" fill="#18181b" stroke="#6366f1" strokeWidth="1.5" />
-        <text x="140" y="74" textAnchor="middle" fill="#ffffff" fontSize="10" fontWeight="600" fontFamily="system-ui, -apple-system, sans-serif">
-          Echo Shaping
-        </text>
-
-        {/* Divergence into structured elements */}
-        <path d="M 140 84 V 98 M 65 98 H 215 M 65 98 V 112 M 140 98 V 112 M 215 98 V 112" stroke="#6366f1" strokeWidth="1.5" className="animate-echo-beam" />
-
-        {/* Traveling pulses */}
-        <circle r="3" fill="#818cf8" filter="drop-shadow(0 0 4px #818cf8)">
-          <animateMotion path="M 140 84 V 98 H 65 V 112" dur="2.2s" repeatCount="indefinite" />
-        </circle>
-        <circle r="3" fill="#c084fc" filter="drop-shadow(0 0 4px #c084fc)">
-          <animateMotion path="M 140 84 V 98 H 140 V 112" dur="2.2s" begin="0.3s" repeatCount="indefinite" />
-        </circle>
-        <circle r="3" fill="#818cf8" filter="drop-shadow(0 0 4px #818cf8)">
-          <animateMotion path="M 140 84 V 98 H 215 V 112" dur="2.2s" begin="0.6s" repeatCount="indefinite" />
-        </circle>
-
-        {/* Element A */}
-        <rect x="30" y="112" width="70" height="22" rx="5" fill="#18181b" stroke="#3f3f46" strokeWidth="1" />
-        <text x="65" y="126" textAnchor="middle" fill="#d4d4d8" fontSize="9" fontFamily="system-ui, -apple-system, sans-serif">
-          Structure
-        </text>
-
-        {/* Element B */}
-        <rect x="105" y="112" width="70" height="22" rx="5" fill="#18181b" stroke="#3f3f46" strokeWidth="1" />
-        <text x="140" y="126" textAnchor="middle" fill="#d4d4d8" fontSize="9" fontFamily="system-ui, -apple-system, sans-serif">
-          Outline
-        </text>
-
-        {/* Element C */}
-        <rect x="180" y="112" width="70" height="22" rx="5" fill="#18181b" stroke="#3f3f46" strokeWidth="1" />
-        <text x="215" y="126" textAnchor="middle" fill="#d4d4d8" fontSize="9" fontFamily="system-ui, -apple-system, sans-serif">
-          Concept
-        </text>
-
-        {/* Final output */}
-        <path d="M 65 134 V 144 H 215 V 134 M 140 144 V 152" stroke="#6366f1" strokeWidth="1.5" className="animate-echo-beam" />
-        <rect x="60" y="152" width="160" height="24" rx="6" fill="#18181b" stroke="#10b981" strokeWidth="1.5" />
-        <circle cx="78" cy="164" r="2.5" fill="#10b981" className="animate-pulse" />
-        <text x="144" y="168" textAnchor="middle" fill="#ffffff" fontSize="10" fontWeight="600" fontFamily="system-ui, -apple-system, sans-serif">
-          Emergent Architecture
-        </text>
-      </svg>
-
-      <div className="mt-2 text-center">
-        <span className="text-xs text-zinc-500">Start rough, shape it through dialogue, and watch it take form</span>
-      </div>
-    </div>
-  );
-}
-
-
 const TABS: UseCaseTab[] = [
   {
-    id: "explore",
-    label: "Explore",
-    tagline: "Questions & relationships",
-    heading: "Start with a question and map what surrounds it",
+    id: "architecture",
+    label: "Architecture",
+    tagline: "Shard or replicate",
+    heading: "Architecture decisions",
     description:
-      "When diving into unfamiliar territory or untangling a complex problem, start with what you know. Talk through the questions, map the uncertainties, and let the canvas show how disparate thoughts connect.",
+      "Put competing designs side by side with their trade-offs, then record the one you chose and the tasks that follow.",
     example:
-      "A two-person startup sees checkout latency spike. Echo maps the suspects (database, third-party API, a new release) and marks which ones you have actually checked.",
+      "Our API chokes at 15k QPS. Shard or add read replicas? You get each option with its trade-offs, the one you chose, and the tasks that follow.",
     prompts: [
-      "What are the hidden assumptions behind this approach?",
-      "How do these three disparate pieces of research connect?",
-      "Where are the biggest gaps in our current understanding?",
-    ],
-    visual: <ExploreVisual />,
-  },
-  {
-    id: "plan",
-    label: "Plan",
-    tagline: "Sequence & dependencies",
-    heading: "Move from a rough idea to a structured path",
-    description:
-      "Turn an ambition into a structured sequence. Break the work apart into manageable phases, map dependencies, and see how the pieces relate spatially without losing the context of the conversation that shaped them.",
-    example:
-      "Launch is in six weeks and the backlog is twenty items long. Echo sorts it into phases, shows which tasks block others, and surfaces the critical path.",
-    prompts: [
-      "Break this launch initiative into three distinct phases.",
-      "What needs to happen before this milestone can begin?",
-      "Group these tasks by dependency and surface the critical path.",
-    ],
-    visual: <PlanVisual />,
-  },
-  {
-    id: "decide",
-    label: "Decide",
-    tagline: "Options & trade-offs",
-    heading: "Make trade-offs visible when choosing a direction",
-    description:
-      "When multiple paths seem possible, put the options somewhere you can actually compare them. Surface criteria, weigh downstream consequences, and keep the reasoning visible. You make the call; Echo provides the visual clarity.",
-    example:
-      "Build auth in-house or buy it? Echo lays out both options with cost, risk and audit timing side by side, and records the reasoning behind the choice you make.",
-    prompts: [
-      "Compare Option A (speed) vs Option B (maintainability).",
-      "What are the downstream consequences of each choice?",
-      "What criteria matter most for this architectural decision?",
+      "Our API chokes at 15k QPS. Shard or add read replicas?",
+      "What are the downstream consequences of each option?",
+      "Which criteria matter most for this decision?",
     ],
     visual: <DecideVisual />,
   },
   {
-    id: "create",
-    label: "Create",
-    tagline: "Concepts & iteration",
-    heading: "Let concepts take form through spatial iteration",
+    id: "build-vs-buy",
+    label: "Build vs buy",
+    tagline: "Criteria and scores",
+    heading: "Build vs buy",
     description:
-      "Start with rough fragments. Talk through the idea, shape it, move pieces around, and let the workspace become part of the creative process. Develop architectures, outlines, or presentations without premature constraints.",
+      "Lay out the criteria, see how each option scores against them, and keep a recorded reason you can find again later.",
     example:
-      "You have a rough idea for a new onboarding flow. Echo helps you turn scattered notes into a structure you can move around until it holds together.",
+      "Build auth ourselves or buy it? You get the criteria, how each option scores against them, and a recorded reason you can find again in three months.",
     prompts: [
-      "Help me structure a technical workshop on distributed state.",
-      "Outline a modular design system from these initial sketches.",
-      "What would a simpler version of this user journey look like?",
+      "Build auth ourselves or buy it?",
+      "Compare cost, risk and audit timing for each option.",
+      "Record why we chose this so we can revisit it later.",
     ],
-    visual: <CreateVisual />,
+    visual: <DecideVisual />,
+  },
+  {
+    id: "incidents",
+    label: "Incidents",
+    tagline: "Causes and fixes",
+    heading: "Incident follow-ups",
+    description:
+      "Turn a post-mortem conversation into causes, fixes considered, the fix you picked and the action items.",
+    example:
+      "Payment webhooks failed for two hours. What do we change? You get the causes, the fixes considered, the fix you picked and the action items.",
+    prompts: [
+      "Payment webhooks failed for two hours. What do we change?",
+      "Which causes have we confirmed and which are guesses?",
+      "List the action items and who owns them.",
+    ],
+    visual: <ExploreVisual />,
+  },
+  {
+    id: "scope",
+    label: "Scope cuts",
+    tagline: "What to drop",
+    heading: "Scope cuts",
+    description:
+      "Name the constraint, list what is on the table, and record the cut your team agreed on.",
+    example:
+      "We have six weeks. What do we cut? You get the problem, the options on the table and the decision your team agreed on.",
+    prompts: [
+      "We have six weeks. What do we cut?",
+      "What needs to happen before this milestone can start?",
+      "Group these tasks by dependency.",
+    ],
+    visual: <PlanVisual />,
   },
 ];
 
@@ -527,10 +435,10 @@ export default function UseCasesPage() {
         badge="Use cases"
         title={
           <>
-            Different problems. <GradientText>One space</GradientText> to think through them.
+            Four decisions, <GradientText>one map</GradientText> for each.
           </>
         }
-        subtitle="Founders and engineers hit the same four moments: explore a problem, plan the work, decide between options, and shape something new. Echo gives each one a map you can reshape."
+        subtitle="Technical founders and engineering leads keep hitting the same four decisions. Echo drafts the map for each one, and you reshape it."
         secondary={{ href: "/how-it-works", label: "See how it works" }}
       >
         <OverviewMap />
@@ -538,16 +446,16 @@ export default function UseCasesPage() {
 
       <section className="py-14 sm:py-20">
         <SectionHeader
-          eyebrow="Four ways to think"
-          title="Pick the shape of your problem"
-          subtitle="Echo adapts to the thinking you need to do, giving thoughts room to develop naturally."
+          eyebrow="Four common decisions"
+          title="Start from the one closest to yours"
+          subtitle="Each example shows the prompt you might start with and what you get back."
         />
         <UseCaseTabs tabs={TABS} />
       </section>
 
       <CtaBand
-        title="Whatever you're working through, give the thinking space"
-        subtitle="Start with the idea. Talk it through. Give it somewhere to take shape."
+        title="Bring one real decision"
+        subtitle="Free during public beta. Start from a template or describe your own."
         secondary={{ href: "/how-it-works", label: "See how it works" }}
       />
     </div>

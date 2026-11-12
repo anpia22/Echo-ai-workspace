@@ -15,11 +15,11 @@ import { FadeIn } from "../../components/marketing/motion";
 export const metadata: Metadata = withSeo("/about", {
   title: "About Echo",
   description:
-    "Learn why Echo was built: to eliminate fragmentation between conversational AI and visual thinking by unifying them into one connected workspace.",
+    "Why Echo exists: technical decisions get lost between chat threads and whiteboards, so Echo keeps the conversation and the decision map in one place.",
   openGraph: {
     title: "About Echo",
     description:
-      "Learn why Echo was built: to eliminate fragmentation between conversational AI and visual thinking by unifying them into one connected workspace.",
+      "Why Echo exists: technical decisions get lost between chat threads and whiteboards, so Echo keeps the conversation and the decision map in one place.",
     type: "website",
   },
 });
@@ -86,8 +86,8 @@ export default function AboutPage() {
       <section className="py-14 sm:py-20">
         <SectionHeader
           eyebrow="The problem"
-          title="Decisions get fragmented"
-          subtitle="The reasoning behind an architecture or product call ends up in a chat thread, a whiteboard and someone's notes. A week later nobody can reconstruct why you chose what you chose."
+          title="Decisions get lost between the chat and the whiteboard"
+          subtitle="Technical decisions usually start as a conversation. Someone asks an AI, or a team argues in Slack, and a few weeks later nobody remembers why an option was rejected. The reasoning lives in a thread that scrolled away."
         />
         <div className="mx-auto grid max-w-4xl grid-cols-2 gap-3 sm:grid-cols-4">
           {FRAGMENTS.map((fragment, i) => (
@@ -106,8 +106,8 @@ export default function AboutPage() {
       <section className="py-14 sm:py-20">
         <SectionHeader
           eyebrow="The Echo idea"
-          title="Conversation becomes workspace"
-          subtitle="You talk with Echo. Echo helps organize the thinking. The workspace gives ideas a visual place to develop, keeping your thinking connected and clear."
+          title="The conversation and the map live in one place"
+          subtitle="You describe a messy problem, Echo drafts it as problems, options, decisions and tasks, and you reshape it. The AI reads your version on the next message, so the map is the memory."
         />
         <div className="mx-auto grid max-w-5xl gap-4 md:grid-cols-4">
           {FLOW.map((step, i) => (
@@ -145,7 +145,16 @@ export default function AboutPage() {
         <SectionHeader
           eyebrow="Who is behind Echo"
           title="Built by Anup, for people making hard calls"
-          subtitle="Echo is an independent product, free during beta. If something breaks or you have an idea, email echoaiworkspace@gmail.com and a person will read it."
+          subtitle="Echo is an independent product, built by one person."
+        />
+      </section>
+
+      {/* Where it is today */}
+      <section className="py-14 sm:py-20">
+        <SectionHeader
+          eyebrow="Where it is today"
+          title="Public beta, free to use"
+          subtitle="Paid plans are planned and listed on the pricing page. Feedback, bugs and ideas go to echoaiworkspace@gmail.com, and a person will read them."
         />
       </section>
 
