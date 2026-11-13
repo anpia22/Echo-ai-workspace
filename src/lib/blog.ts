@@ -44,7 +44,7 @@ export const BLOG_POSTS: BlogPost[] = [
       "generative engine optimization",
       "answer engine optimization",
     ],
-    image: "/blog/visual-workspace.jpg",
+    image: "/blog/real-time-collaboration-offline-undo.jpg",
     imageAlt:
       "A shared collaborative canvas of connected cards where one teammate reconnects after a dropped network and their edits sync back into the map.",
     sections: [
