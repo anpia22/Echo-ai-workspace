@@ -56,6 +56,22 @@ export const PUBLIC_PAGES = [
     priority: 0.7,
   },
   {
+    path: "/blog/how-to-turn-messy-problem-into-visual-map-ai-step-by-step",
+    title: "How to Turn a Messy Problem into a Visual Map with AI (Step by Step)",
+    description:
+      "A practical step-by-step tutorial on taking raw, unorganized notes and turning them into an actionable visual node graph using Echo's AI workspace.",
+    changeFrequency: "monthly" as const,
+    priority: 0.8,
+  },
+  {
+    path: "/blog/real-time-collaboration-offline-undo-ai-workspace",
+    title: "Real-Time Collaboration That Survives Bad Wi-Fi",
+    description:
+      "How a collaborative AI workspace handles dropped connections, slow AI responses, and mistakes with offline sync and multiplayer undo.",
+    changeFrequency: "monthly" as const,
+    priority: 0.7,
+  },
+  {
     path: "/blog/agentic-ai-multi-agent-orchestration-workspaces",
     title: "The Rise of Agentic AI and Test-Time Reasoning",
     description:

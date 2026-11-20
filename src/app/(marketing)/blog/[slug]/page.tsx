@@ -44,6 +44,18 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 const RELATED: Record<string, { href: string; label: string }[]> = {
+  "how-to-turn-messy-problem-into-visual-map-ai-step-by-step": [
+    { href: "/demo", label: "Interactive Echo demo" },
+    { href: "/how-it-works", label: "How Echo works" },
+    { href: "/use-cases", label: "Explore Echo use cases" },
+    { href: "/blog/visual-ai-workspace-from-conversation", label: "Turn conversation into a visual workspace" },
+    { href: "/blog/spatial-ai-canvas-screen-meetings-collaboration", label: "Spatial AI canvas & collaboration" },
+  ],
+  "real-time-collaboration-offline-undo-ai-workspace": [
+    { href: "/blog/how-to-turn-messy-problem-into-visual-map-ai-step-by-step", label: "Step-by-step visual mapping guide" },
+    { href: "/demo", label: "Interactive Echo demo" },
+    { href: "/how-it-works", label: "How Echo works" },
+  ],
   "agentic-ai-multi-agent-orchestration-workspaces": [
     { href: "/use-cases", label: "Echo use cases" },
     { href: "/blog/what-problem-does-ai-solve-context-fragmentation", label: "What problem does AI solve?" },
@@ -52,11 +64,13 @@ const RELATED: Record<string, { href: string; label: string }[]> = {
   ],
   "what-problem-does-ai-solve-context-fragmentation": [
     { href: "/use-cases", label: "Echo use cases" },
+    { href: "/blog/how-to-turn-messy-problem-into-visual-map-ai-step-by-step", label: "Step-by-step visual mapping guide" },
     { href: "/blog/spatial-ai-canvas-screen-meetings-collaboration", label: "Spatial AI canvas & screen meetings" },
     { href: "/blog/future-of-remote-meetings-ai-workspace-screen-sharing", label: "Future of remote meetings" },
   ],
   "ai-workspace-for-live-meetings": [
     { href: "/how-it-works", label: "How Echo works" },
+    { href: "/blog/how-to-turn-messy-problem-into-visual-map-ai-step-by-step", label: "Step-by-step visual mapping guide" },
     { href: "/blog/what-problem-does-ai-solve-context-fragmentation", label: "What problem does AI solve?" },
   ],
   "screen-presence-collaborative-meetings": [
@@ -65,6 +79,7 @@ const RELATED: Record<string, { href: string; label: string }[]> = {
   ],
   "visual-ai-workspace-from-conversation": [
     { href: "/use-cases", label: "Use cases" },
+    { href: "/blog/how-to-turn-messy-problem-into-visual-map-ai-step-by-step", label: "Step-by-step visual mapping guide" },
     { href: "/blog/what-problem-does-ai-solve-context-fragmentation", label: "What problem does AI solve?" },
   ],
   "future-of-remote-meetings-ai-workspace-screen-sharing": [
@@ -73,6 +88,7 @@ const RELATED: Record<string, { href: string; label: string }[]> = {
   ],
   "spatial-ai-canvas-screen-meetings-collaboration": [
     { href: "/how-it-works", label: "How Echo works" },
+    { href: "/blog/how-to-turn-messy-problem-into-visual-map-ai-step-by-step", label: "Step-by-step visual mapping guide" },
     { href: "/blog/what-problem-does-ai-solve-context-fragmentation", label: "What problem does AI solve?" },
   ],
 };
