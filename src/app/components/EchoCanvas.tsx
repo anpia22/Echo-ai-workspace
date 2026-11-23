@@ -860,6 +860,12 @@ function EchoCanvasInner({
 
   const handleNodesChange = useCallback(
     (changes: NodeChange<Node<EchoNodeData | EchoGroupData>>[]) => {
+      if (readOnly) {
+        // Viewers never move nodes: drop position changes before they reach
+        // the screen state or the save path (nodesDraggable is the first lock).
+        changes = changes.filter((change) => change.type !== "position");
+      }
+
       onNodesChange(changes);
 
       changes.forEach((change) => {
@@ -884,7 +890,7 @@ function EchoCanvasInner({
         onNodePositionChange?.(movedNode.id, change.position);
       });
     },
-    [nodes, onNodesChange, onNodePositionChange]
+    [nodes, onNodesChange, onNodePositionChange, readOnly]
   );
 
   const onConnect = useCallback(

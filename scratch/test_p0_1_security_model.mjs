@@ -14,6 +14,7 @@
  * Run: node scratch/test_p0_1_security_model.mjs
  */
 import { PGlite } from "@electric-sql/pglite";
+import { vector } from "@electric-sql/pglite/vector";
 import { readFileSync, readdirSync } from "node:fs";
 
 import { fileURLToPath } from "node:url";
@@ -23,7 +24,7 @@ const HARDEN = files.find((f) => f.includes("security_hardening"));
 const BEFORE = files.filter((f) => f < HARDEN);
 const LATER = files.filter((f) => f > HARDEN); // e.g. the Realtime authorization migration
 
-const db = new PGlite();
+const db = new PGlite({ extensions: { vector } });
 
 async function exec(sql, label) {
   try {
@@ -38,6 +39,8 @@ async function exec(sql, label) {
 await exec(`
   CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN; CREATE ROLE service_role NOLOGIN BYPASSRLS;
   CREATE SCHEMA auth;
+  CREATE SCHEMA extensions; -- Supabase keeps extensions here (pgvector for P2.1)
+  GRANT USAGE ON SCHEMA extensions TO anon, authenticated, service_role;
   GRANT USAGE ON SCHEMA public, auth TO anon, authenticated, service_role;
   CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
   CREATE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql STABLE AS $$ SELECT coalesce(nullif(current_setting('request.jwt.claims', true), ''), '{}')::jsonb $$;
@@ -281,12 +284,67 @@ async function shareTableProbes() {
   return out.filter((r) => !r.ok).length;
 }
 
+async function memoryProbes() {
+  await seed();
+  const out = [];
+  const check = (name, ok, detail = "") => out.push({ name, ok, detail });
+  const exists = (await db.query(`SELECT to_regclass('public.memory_chunks') AS t`)).rows[0].t;
+  if (!exists) {
+    console.log("\n(no semantic memory migration present; skipping)");
+    return 0;
+  }
+  const WS2 = "99999999-9999-4999-8999-999999999999";
+  const NODE_A = "aaaa0000-0000-4000-8000-000000000001";
+  const NODE_B = "aaaa0000-0000-4000-8000-000000000002";
+  const NODE_OTHER = "aaaa0000-0000-4000-8000-000000000003";
+  const MSG = "bbbb0000-0000-4000-8000-000000000001";
+  // A unit vector pointing along axis i (1024 dimensions), as pgvector text.
+  const vec = (i, j = null) => "[" + Array.from({ length: 1024 }, (_, k) => (k === i ? 1 : k === j ? 0.3 : 0)).join(",") + "]";
+  await db.exec(`RESET ROLE; INSERT INTO workspaces (id, title) VALUES ('${WS2}', 'other');
+    INSERT INTO canvas_nodes (id, workspace_id, node_type, title) VALUES ('${NODE_A}', '${WS}', 'decision', 'a'), ('${NODE_B}', '${WS}', 'idea', 'b'), ('${NODE_OTHER}', '${WS2}', 'idea', 'c');
+    INSERT INTO messages (id, conversation_id, workspace_id, role, content) VALUES ('${MSG}', '${CONV}', '${WS}', 'user', 'hello');`);
+  const ins = (ws, type, id, content, v, conv = "NULL") => `INSERT INTO memory_chunks (workspace_id, source_type, source_id, conversation_id, content, content_hash, embedding, embedding_model) VALUES ('${ws}', '${type}', '${id}', ${conv}, '${content}', 'h', '${v}', 'm')`;
+  const server = await as("service_role", null, () => attempt(ins(WS, "node", NODE_A, "decision A", vec(0)) ));
+  check("the server can write memory", server.ok, server.error);
+  await as("service_role", null, () => attempt(ins(WS, "node", NODE_B, "idea B", vec(1))));
+  await as("service_role", null, () => attempt(ins(WS, "message", MSG, "message", vec(2), `'${CONV}'`)));
+  await as("service_role", null, () => attempt(ins(WS2, "node", NODE_OTHER, "other workspace secret", vec(0))));
+  const dup = await as("service_role", null, () => attempt(ins(WS, "node", NODE_A, "again", vec(5))));
+  check("one row per source (duplicate refused)", !dup.ok);
+  const bad = await as("service_role", null, () => attempt(ins(WS, "file", NODE_A, "x", vec(5))));
+  check("only node and message sources are accepted", !bad.ok);
+  const search = await as("service_role", null, () => attempt(`SELECT source_type, content, similarity FROM match_memory_chunks($1::uuid, $2::extensions.vector, 5, 0)`, [WS, vec(0, 1)]));
+  check("search returns the closest item first", search.ok && search.rows[0]?.content === "decision A", search.error);
+  check("search never returns another workspace's items", search.ok && !search.rows.some((r) => r.content.includes("other workspace")) && search.rows.length === 3, JSON.stringify(search.rows?.map((r) => r.content)));
+  const minSim = await as("service_role", null, () => attempt(`SELECT content FROM match_memory_chunks($1::uuid, $2::extensions.vector, 5, 0.9)`, [WS, vec(0)]));
+  check("a minimum similarity filters weak matches", minSim.ok && minSim.rows.length === 1, minSim.error);
+  const clamp = await as("service_role", null, () => attempt(`SELECT count(*)::int AS n FROM match_memory_chunks($1::uuid, $2::extensions.vector, 0, -1)`, [WS, vec(0)]));
+  check("a match count of 0 is raised to 1", clamp.ok && clamp.rows[0].n === 1, clamp.error);
+  for (const [label, role, uid] of [["anon", "anon", null], ["a signed-in stranger", "authenticated", STRANGER], ["a workspace viewer", "authenticated", VIEWER], ["a workspace editor", "authenticated", EDITOR], ["a workspace admin", "authenticated", ADMIN]]) {
+    const read = await as(role, uid, () => attempt(`SELECT content FROM memory_chunks`));
+    check(`${label} cannot read memory`, !read.ok);
+    const write = await as(role, uid, () => attempt(ins(WS, "node", NODE_A, "forged", vec(7)) + " ON CONFLICT DO NOTHING"));
+    check(`${label} cannot write memory`, !write.ok);
+    const rpc = await as(role, uid, () => attempt(`SELECT * FROM match_memory_chunks($1::uuid, $2::extensions.vector, 5, 0)`, [WS, vec(0)]));
+    check(`${label} cannot call the search function`, !rpc.ok);
+  }
+  await db.exec(`RESET ROLE; DELETE FROM canvas_nodes WHERE id = '${NODE_A}'; DELETE FROM messages WHERE id = '${MSG}'`);
+  const left = (await db.query(`SELECT content FROM memory_chunks WHERE workspace_id = '${WS}' ORDER BY content`)).rows.map((r) => r.content);
+  check("deleting a node or message removes its memory", left.length === 1 && left[0] === "idea B", JSON.stringify(left));
+  await db.exec(`RESET ROLE; DELETE FROM workspaces WHERE id = '${WS2}'`);
+  const gone = (await db.query(`SELECT count(*)::int AS n FROM memory_chunks WHERE workspace_id = '${WS2}'`)).rows[0].n;
+  check("deleting a workspace removes its memory", gone === 0);
+  console.log("\n=== Semantic memory ===");
+  for (const r of out) console.log(`${r.ok ? "ok        " : "FAILED    "}  ${r.name}${r.detail ? "  - " + r.detail : ""}`);
+  return out.filter((r) => !r.ok).length;
+}
+
 const before = await probes("BEFORE the hardening migration");
 await exec(clean(readFileSync(`${MIG}/${HARDEN}`, "utf8")), HARDEN);
 const after = await probes("AFTER the hardening migration");
 for (const f of LATER) await exec(clean(readFileSync(`${MIG}/${f}`, "utf8")), f);
 // Idempotent: re-applying the same later migrations must not fail.
 for (const f of LATER) await exec(clean(readFileSync(`${MIG}/${f}`, "utf8")), `${f} (second run)`);
-const realtimeFailures = (await realtimeProbes()) + (await shareTableProbes());
+const realtimeFailures = (await realtimeProbes()) + (await shareTableProbes()) + (await memoryProbes());
 console.log(`\nbefore: ${before.vulnerable} vulnerable | after: ${after.vulnerable} vulnerable, ${after.broken} broken legitimate paths | realtime rules failing: ${realtimeFailures}`);
 process.exit(after.vulnerable || after.broken || realtimeFailures ? 1 : 0);

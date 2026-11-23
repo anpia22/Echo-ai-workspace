@@ -114,6 +114,11 @@ async function main() {
   const canvasHook = read("src/app/lib/persistence/client/useCanvasPersistence.ts");
   check("canvas hook ignores read-only failures", /isReadOnlyError\(err\)\) return/.test(canvasHook));
 
+  const canvas = read("src/app/components/EchoCanvas.tsx");
+  check("canvas locks dragging for viewers", /nodesDraggable=\{!readOnly\}/.test(canvas));
+  check("canvas drops position changes for viewers before screen state and saves", /if \(readOnly\) \{[\s\S]*?filter\(\(change\) => change\.type !== "position"\)/.test(canvas));
+  check("the app passes the viewer state to the canvas", /readOnly=\{isViewOnly\}/.test(page));
+
   console.log(`\n${passed} passed, ${failed} failed`);
   process.exit(failed === 0 ? 0 : 1);
 }
