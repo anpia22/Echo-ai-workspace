@@ -20,6 +20,7 @@ import { CanvasRepository } from "../../../../lib/persistence/repositories/canva
 import { getServerSupabaseClient } from "../../../../lib/persistence/server/db";
 import { requireWorkspaceMember } from "../../../../lib/persistence/server/authorization";
 import type { CanvasMutationRequest } from "../../../../lib/persistence/canvasTypes";
+import { scheduleNodeIndexing } from "../../../../lib/memory/schedule";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
@@ -155,6 +156,9 @@ export async function POST(
     // 8. Execute via CanvasRepository (delegates to apply_canvas_mutation_tx RPC)
     const repository = new CanvasRepository();
     const result = await repository.mutateCanvas(actor, mutationReq);
+
+    // 8b. P2.1: index created/changed nodes for semantic memory after the response (never blocks or fails a save)
+    scheduleNodeIndexing(workspaceId, mutationReq.upsertNodes);
 
     // 9. Return authoritative revision to client for next-call OCC
     return NextResponse.json(

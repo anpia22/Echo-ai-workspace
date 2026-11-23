@@ -22,6 +22,7 @@ export const RUN: string[] = [
   "test_p0_2_rate_limit.ts",
   "test_p0_3_observability.ts",
   "test_p1_1_turn.ts",
+  "test_p2_1_memory_indexing.ts",
   "test_p1_2_canvas_rebase.ts",
   "test_p1_3_integration.ts",
   "test_p1_3_outbox.ts",

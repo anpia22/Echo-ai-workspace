@@ -17,6 +17,7 @@ import { resolveServerActor } from "../../../../../../lib/persistence/server/aut
 import { PersistenceError } from "../../../../../../lib/persistence/server/errors";
 import { ConversationRepository } from "../../../../../../lib/persistence/repositories/conversationRepository";
 import type { MessageRole } from "../../../../../../lib/persistence/conversationTypes";
+import { scheduleMessageIndexing } from "../../../../../../lib/memory/schedule";
 
 const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const VALID_ROLES = new Set(["user", "assistant", "system"]);
@@ -86,6 +87,9 @@ export async function POST(
       content,
       metadata,
     });
+
+    // P2.1: index the message for semantic memory after the response (never blocks or fails a save)
+    scheduleMessageIndexing(workspaceId, result.message);
 
     return NextResponse.json({ ok: true, message: result.message }, { status: 201 });
   } catch (error) {

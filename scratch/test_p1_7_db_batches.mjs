@@ -9,11 +9,12 @@
  */
 
 import { PGlite } from "@electric-sql/pglite";
+import { vector } from "@electric-sql/pglite/vector";
 import { readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 
 const MIG = fileURLToPath(new URL("../supabase/migrations", import.meta.url));
-const db = new PGlite();
+const db = new PGlite({ extensions: { vector } });
 
 let passed = 0;
 let failed = 0;
@@ -31,6 +32,8 @@ function check(name, ok, detail = "") {
 await db.exec(`
   CREATE ROLE anon NOLOGIN; CREATE ROLE authenticated NOLOGIN; CREATE ROLE service_role NOLOGIN BYPASSRLS;
   CREATE SCHEMA auth;
+  CREATE SCHEMA extensions; -- Supabase keeps extensions here (pgvector for P2.1)
+  GRANT USAGE ON SCHEMA extensions TO anon, authenticated, service_role;
   GRANT USAGE ON SCHEMA public, auth TO anon, authenticated, service_role;
   CREATE FUNCTION auth.uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT nullif(current_setting('request.jwt.claim.sub', true), '')::uuid $$;
   CREATE FUNCTION auth.jwt() RETURNS jsonb LANGUAGE sql STABLE AS $$ SELECT coalesce(nullif(current_setting('request.jwt.claims', true), ''), '{}')::jsonb $$;
