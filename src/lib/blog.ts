@@ -19,6 +19,129 @@ export type BlogPost = {
 
 export const BLOG_POSTS: BlogPost[] = [
   {
+    slug: "chatgpt-canvas-vs-miro-ai-vs-echo",
+    title: "ChatGPT Canvas vs Miro AI vs Echo: Which Turns Text into a Mind Map?",
+    description:
+      "ChatGPT Canvas vs Miro AI, with Echo as the third option, for anyone searching for an AI mind map generator. See when you need a document, a whiteboard, or a decision map.",
+    excerpt:
+      "ChatGPT Canvas, Miro AI, and Echo answer different searches that people lump together as an AI mind map. Here is which one to open for a draft, a workshop board, or a decision.",
+    publishedAt: "2026-11-26",
+    readingMinutes: 9,
+    keywords: [
+      "ChatGPT Canvas vs Miro",
+      "Miro AI vs ChatGPT",
+      "AI mind map generator",
+      "turn text into a mind map",
+      "AI mind map from text",
+      "Miro AI mind map",
+      "best AI mind mapping tool",
+      "ChatGPT for brainstorming",
+      "visual thinking tools",
+      "AI whiteboard",
+      "Miro ChatGPT plugin",
+    ],
+    image: "/blog/chatgpt-canvas-vs-miro-ai-vs-echo.jpg",
+    imageAlt:
+      "Three panels labeled Document for ChatGPT, Whiteboard for Miro AI, and Decision map for Echo.",
+    sections: [
+      {
+        heading: "ChatGPT Canvas vs Miro AI: start with the job, not the logo",
+        paragraphs: [
+          "People searching ChatGPT Canvas vs Miro, Miro AI vs ChatGPT, or an AI mind map generator are usually trying to turn text into a mind map. Those products do not return the same object. ChatGPT returns writing or code you revise in the chat. Miro AI returns a mind map on a shared whiteboard. Echo returns a decision map: the problem, the options, the decision, and the tasks.",
+          "Pick from the output you need to keep. A paragraph you will email belongs in ChatGPT. A workshop the whole team will cover in stickies belongs in Miro. A product or architecture dilemma you will still be arguing about next week belongs in Echo. The rest of this post is the practical test, using each product's own documentation as of November 2026.",
+        ],
+      },
+      {
+        heading: "What ChatGPT Canvas is in November 2026",
+        paragraphs: [
+          "Canvas is the name most comparison posts still use, and it is still what people type into Google. OpenAI's model release notes for 28 May 2026 say canvas is no longer available in GPT-5.5 Instant or GPT-5.5 Thinking. Writing and coding now happen in the chat through writing blocks and code blocks. Paid users can keep canvas on legacy models for a limited time, until those models are sunset. Read the note on [OpenAI's model release notes](https://help.openai.com/en/articles/9624314-model-release-notes).",
+          "A writing block is an editable draft inside the reply: an email, a Slack update, a one-page document. You edit the text yourself, or you highlight a passage and ask ChatGPT to revise that passage. Code blocks keep code separate so you can edit it, preview HTML, React, SVG, Mermaid diagrams, and Vega charts, or run supported Python. That is [OpenAI's description of writing blocks and code blocks](https://help.openai.com/en/articles/20001246-working-with-writing-blocks-and-code-blocks-in-chatgpt).",
+          "A Mermaid preview is a diagram rendered from code. It is useful when you ask ChatGPT to sketch a flowchart. It is not a board. Teammates do not drag those nodes around a shared canvas, drop stickies beside them, or follow your viewport. For ChatGPT for brainstorming, the strength is the draft and the reasoning in the thread. The weakness is that the room still has to go somewhere else to point at a shared picture.",
+        ],
+      },
+      {
+        heading: "What a Miro AI mind map actually produces",
+        paragraphs: [
+          "Miro is the AI whiteboard people mean when they search for a mind map the team can edit. Miro's help center says you open Create with AI, choose a diagram or a mind map, describe it, and Miro writes an editable diagram on the board. A follow-up prompt such as \"add a step\" edits that diagram in place. The same help article covers flowcharts and other diagram types, not only mind maps. See [Miro AI with diagrams and mind maps](https://help.miro.com/hc/en-us/articles/28782102127890-Miro-AI-with-Diagrams-and-mindmaps).",
+          "Miro's mind map page says you can also start from a root node and generate, or expand a branch with ideas, topics, or questions. After that, the map sits on the same infinite board as stickies, docs, and other diagrams. Teammates comment, edit in real time, or record a Talktrack. Miro also meters these AI actions with credits that reset monthly. The amount depends on the plan and the action, so check [Miro AI credits](https://help.miro.com/hc/en-us/articles/19756209116178-Miro-AI-credits) before you standardize a workshop on generation.",
+          "If your company already lives in Miro, this is the shortest path from a prompt to a board people recognize. OpenAI also lists a [Miro plugin for ChatGPT](https://openai.com/business/plugins/miro/) that can summarize a board you already have or lay out a new one from chat. ChatGPT and Miro are often a pair, not a duel: ChatGPT researches or drafts, Miro holds the workshop.",
+        ],
+      },
+      {
+        heading: "What Echo does with the same messy text",
+        paragraphs: [
+          "Echo is built for one job on the homepage: you type or speak a messy product or architecture problem, and it drafts a map of the problem, the options, a decision, and the follow-up tasks. You move, rename, delete, and regroup the nodes. The next reply reads the edited map, so you do not restate the decision in a separate thread. [How Echo works](/how-it-works) walks that loop. The [step-by-step visual mapping guide](/blog/how-to-turn-messy-problem-into-visual-map-ai-step-by-step) shows it on a launch dilemma.",
+          "Other people can join the same canvas with live cursors and a voice room, and follow the presenter's view during a design review. Undo reverses your own changes. The workspace is saved, so you can come back to why an option was rejected. That is a narrower tool than Miro. Echo does not try to be the company's sticky-note workshop, UML editor, or slide surface. It also does not try to be the place you polish an email or run a Python snippet. Those stay with ChatGPT.",
+        ],
+      },
+      {
+        heading: "Run one paragraph through the job, not through a feature list",
+        paragraphs: [
+          "Use a sample you can paste today. Label it as a sample, then replace it with your own notes before you trust the result:",
+          "\"We have three weeks to beta. Checkout tests are pushing Postgres CPU to the limit. One engineer wants to shard. Another wants a connection pool and read replicas. Custom auth may miss the SOC 2 review. iOS push notifications fail in the background. Nobody has written the rollback steps.\"",
+          "In ChatGPT, ask for a recommendation and a one-page decision note. Expect a writing block you can edit, and a Mermaid diagram if you ask for a preview. You will get clear prose. You will still have to copy the conclusion somewhere the team can point at it together.",
+          "In Miro, open Create with AI, choose mind map, and paste the same paragraph. Miro's documentation says the mind map lands on the board as an editable diagram, and later prompts change that diagram. From there the board can grow stickies, a flowchart, and comments. That is the right move when the next hour is a workshop.",
+          "In Echo, paste the same paragraph into the [demo](/demo) or a workspace. Expect connected nodes for the problem, the options on the table, a decision, and tasks. Edit anything that is wrong. Ask a follow-up against the edited map, then invite the people who have to live with the decision into the voice room. That is the right move when the output has to stay a decision, not a brainstorm wall.",
+        ],
+      },
+      {
+        heading: "Where ChatGPT is the stronger tool",
+        paragraphs: [
+          "Use ChatGPT when the artifact is language or code. Writing blocks are built for drafts you will revise line by line. Code blocks are built for reading, previewing, and running code without leaving the conversation. The model is also the better first pass when you do not yet know what you think and you want a written argument you can attack.",
+          "Use ChatGPT, then the Miro plugin, when the research should end on a Miro board your team already has. That combination covers a search such as Miro ChatGPT plugin more honestly than a forced winner. Leave ChatGPT when the group needs to rearrange a shared picture during the meeting. A diagram preview in the chat does not give them that picture.",
+        ],
+      },
+      {
+        heading: "Where Miro AI is the stronger AI whiteboard",
+        paragraphs: [
+          "Use Miro when the session is spatial in the workshop sense. You need many formats on one board, a mind map beside a flowchart, stickies from a retrospective, a doc, and a room full of people who already know Miro. Miro AI is the best AI mind mapping tool in that setting because the generated map is already on the board the team will keep using, and you can expand a branch with ideas, topics, or questions.",
+          "Miro is the weaker choice when every brainstorm turns into another board and the decision itself never gets a stable shape. A mind map of topics is not yet a record of what you rejected. If the meeting's job is to leave with a problem, a chosen option, and tasks, generate the board in Miro only if someone will still do that structuring by hand.",
+        ],
+      },
+      {
+        heading: "Where Echo is the stronger decision map",
+        paragraphs: [
+          "Use Echo when the text is a dilemma, not a topic outline. The useful map names the problem, puts the options next to each other, records the decision, and breaks out tasks. You correct the map by hand, and the following question uses your correction. Teammates join that same map with cursors and voice, instead of watching a recap after the call.",
+          "Echo is the weaker choice for a company-wide whiteboard, a designed diagram set, or a document you need to send. If you need UML, a retrospective wall, or a polished spec, Miro or ChatGPT will do that job with less friction. Echo earns the tab when you would otherwise re-explain the same trade-off in Slack next month. The [use cases](/use-cases) page shows the kinds of decisions the map is meant to hold.",
+        ],
+      },
+      {
+        heading: "A 10-minute test before you standardize",
+        paragraphs: [
+          "Take one real decision your team is stuck on. Spend three minutes in ChatGPT and see whether a writing block is the thing you would send. Spend three minutes in Miro and see whether a mind map on a board is the thing the workshop would keep. Spend three minutes in the Echo demo and see whether the nodes match the decision you are actually trying to make. Keep the tool whose output you would still open on Monday.",
+          "If the Monday artifact is a document, stay with ChatGPT. If it is a board, stay with Miro. If it is the decision and the tasks, stay with Echo and keep the [step-by-step map](/blog/how-to-turn-messy-problem-into-visual-map-ai-step-by-step) as the working guide.",
+        ],
+      },
+    ],
+    faqs: [
+      {
+        question: "Can ChatGPT Canvas turn text into a mind map?",
+        answer:
+          "ChatGPT can draft a written outline, and code blocks can preview a Mermaid diagram. As of the 28 May 2026 model notes, canvas is no longer available on GPT-5.5 Instant or Thinking. Writing blocks and code blocks handle that work in the chat. None of those is a shared whiteboard your team edits together.",
+      },
+      {
+        question: "Can Miro AI generate a mind map from text?",
+        answer:
+          "Yes. Miro's help center describes Create with AI: choose a mind map, describe it or paste text, and Miro places an editable diagram on the board. Further prompts edit that diagram in place. You can also expand a branch with ideas, topics, or questions.",
+      },
+      {
+        question: "Miro AI vs ChatGPT: which is better for brainstorming?",
+        answer:
+          "ChatGPT is better when brainstorming should become a draft or a coded diagram preview. Miro AI is better when brainstorming should become a shared board with a mind map, stickies, and live editing. Many teams use both, including through the Miro plugin for ChatGPT.",
+      },
+      {
+        question: "What is the best AI mind mapping tool for a product or architecture decision?",
+        answer:
+          "Use the tool that stores the decision, not only the topics. Miro is strongest as a general AI whiteboard. Echo is built to map a messy dilemma into problems, options, a decision, and tasks, then keep that edited map as the context for the next question.",
+      },
+      {
+        question: "Does ChatGPT still have Canvas in 2026?",
+        answer:
+          "OpenAI's 28 May 2026 release notes say canvas is no longer available in GPT-5.5 Instant or GPT-5.5 Thinking. Writing blocks and code blocks replace it in chat. Paid users could keep canvas on legacy models for a limited time until those models were sunset. Check OpenAI's current help page before you rely on the canvas name.",
+      },
+    ],
+  },
+  {
     slug: "how-to-turn-messy-problem-into-visual-map-ai-step-by-step",
     title: "How to Turn a Messy Problem into a Visual Map with AI (Step by Step)",
     description:
@@ -106,7 +229,7 @@ export const BLOG_POSTS: BlogPost[] = [
         paragraphs: [
           "You do not need a team meeting to begin visual thinking. The fastest way to see the value is to take a problem that is currently causing friction on your own project.",
           "Grab a rambling Slack thread, an unformatted meeting dump, or a product trade-off you are currently mulling over. Open the [interactive Echo demo](/demo), paste your text into the prompt bar, and watch it transform into a structured visual map.",
-          "To learn more about the philosophy behind spatial intelligence, read [about Echo](/about) or explore our article on [turning conversation into a visual AI workspace](/blog/visual-ai-workspace-from-conversation).",
+          "If you are choosing between a chat draft, a whiteboard, and a decision map, compare [ChatGPT Canvas, Miro AI, and Echo](/blog/chatgpt-canvas-vs-miro-ai-vs-echo). For the idea behind the canvas, read [about Echo](/about) or [turning a conversation into a visual workspace](/blog/visual-ai-workspace-from-conversation).",
         ],
       },
     ],

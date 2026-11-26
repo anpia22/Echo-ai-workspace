@@ -44,12 +44,17 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 const RELATED: Record<string, { href: string; label: string }[]> = {
-  "how-to-turn-messy-problem-into-visual-map-ai-step-by-step": [
+  "chatgpt-canvas-vs-miro-ai-vs-echo": [
+    { href: "/blog/how-to-turn-messy-problem-into-visual-map-ai-step-by-step", label: "Step-by-step visual mapping guide" },
     { href: "/demo", label: "Interactive Echo demo" },
     { href: "/how-it-works", label: "How Echo works" },
     { href: "/use-cases", label: "Explore Echo use cases" },
-    { href: "/blog/visual-ai-workspace-from-conversation", label: "Turn conversation into a visual workspace" },
-    { href: "/blog/spatial-ai-canvas-screen-meetings-collaboration", label: "Spatial AI canvas & collaboration" },
+  ],
+  "how-to-turn-messy-problem-into-visual-map-ai-step-by-step": [
+    { href: "/blog/chatgpt-canvas-vs-miro-ai-vs-echo", label: "ChatGPT Canvas vs Miro AI vs Echo" },
+    { href: "/demo", label: "Interactive Echo demo" },
+    { href: "/how-it-works", label: "How Echo works" },
+    { href: "/use-cases", label: "Explore Echo use cases" },
   ],
   "real-time-collaboration-offline-undo-ai-workspace": [
     { href: "/blog/how-to-turn-messy-problem-into-visual-map-ai-step-by-step", label: "Step-by-step visual mapping guide" },
